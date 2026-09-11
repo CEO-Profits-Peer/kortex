@@ -126,7 +126,7 @@ def main() -> int:
     # vorbeigelaufen.
     from transform.generate import Generator
 
-    gen = Generator(cfg.gemini_api_key, working)
+    gen = Generator(cfg.gemini_api_keys, working)
     card = gen.make_card(
         text=(
             'Wasser verdunstet an der Oberflaeche von Ozeanen und Seen. Der '

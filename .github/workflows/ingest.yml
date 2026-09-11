@@ -64,6 +64,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Optional. Das Gratiskontingent gilt pro Google-PROJEKT, ein
+          # zweiter Schluessel aus einem zweiten Projekt ist deshalb ein
+          # zweiter kompletter Satz. Fehlt das Secret, ist die Variable
+          # leer und die Pipeline benutzt einfach nur den ersten.
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
           # Beide Namen sind geprueft, nicht geraten:
           # gemini-flash-latest zeigt auf das jeweils neueste Flash-Modell
           # und ist genau deshalb staendig ausgelastet (503). text-embedding-004
@@ -89,3 +94,28 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: |
           python pipeline/run.py ${{ inputs.source && format('--source {0}', inputs.source) || '' }}
+
+      # --- Evergreen ----------------------------------------------------
+      #
+      # Laeuft NACH den Nachrichten und mit dem, was vom Tageskontingent
+      # uebrig ist. Die Reihenfolge ist Absicht: Nachrichten sind nur
+      # heute etwas wert, ein Wikipedia-Artikel ueber Zinseszins auch
+      # morgen noch. Was heute nicht drankommt, holt der naechste Lauf.
+      #
+      # `continue-on-error`, weil ein Fehlschlag hier den Nachrichtenlauf
+      # nicht nachtraeglich rot faerben soll - der ist zu dem Zeitpunkt
+      # schon durch und hat geschrieben.
+      - name: Evergreen-Karten
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_MODEL: gemini-3.5-flash
+          GEMINI_EMBEDDING_MODEL: gemini-embedding-001
+          INGEST_LANGUAGES: de,en
+          MAX_GEMINI_CALLS_PER_RUN: "300"
+          AUTO_APPROVE: "true"
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: python pipeline/evergreen.py

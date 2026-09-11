@@ -17,6 +17,7 @@ import json
 import logging
 import random
 import time
+from collections.abc import Sequence
 from typing import Any
 
 from google import genai
@@ -405,8 +406,19 @@ def _shuffle_options(card: dict[str, Any]) -> None:
 
 
 class Generator:
-    def __init__(self, api_key: str, model: str) -> None:
-        self.client = genai.Client(api_key=api_key)
+    def __init__(self, api_key: str | Sequence[str], model: str) -> None:
+        # Mehrere Schluessel sind erlaubt, und das ist keine Spielerei:
+        # das Gratiskontingent gilt pro PROJEKT (siehe FALLBACK_MODELS).
+        # Ein zweiter Schluessel aus einem zweiten Google-Projekt ist
+        # deshalb ein zweiter kompletter Satz Kontingente - zehn Modelle
+        # mal zwanzig Anfragen, noch einmal.
+        #
+        # Die Reihenfolge ist: erst alle Modelle des ersten Schluessels,
+        # dann alle Modelle des zweiten. Nicht umgekehrt - so bleibt das
+        # beste Modell so lange wie moeglich im Spiel.
+        self.api_keys: list[str] = [api_key] if isinstance(api_key, str) else list(api_key)
+        self.key_index = 0
+        self.client = genai.Client(api_key=self.api_keys[0])
         # Das gewuenschte Modell zuerst, danach die Ausweichmodelle - ohne
         # Dubletten, falls das gewuenschte schon in der Liste steht.
         self.models: list[str] = [model] + [m for m in FALLBACK_MODELS if m != model]
@@ -428,12 +440,28 @@ class Generator:
         return self.models[self.model_index]
 
     def _next_model(self) -> bool:
-        """Auf das naechste Ausweichmodell wechseln. False, wenn keins mehr da ist."""
-        if self.model_index + 1 >= len(self.models):
-            return False
-        self.model_index += 1
-        log.warning('Wechsle auf Ausweichmodell: %s', self.model)
-        return True
+        """Naechstes Modell - und wenn keins mehr da ist, naechster Schluessel.
+
+        False erst, wenn beides aufgebraucht ist.
+        """
+        if self.model_index + 1 < len(self.models):
+            self.model_index += 1
+            log.warning('Wechsle auf Ausweichmodell: %s', self.model)
+            return True
+
+        if self.key_index + 1 < len(self.api_keys):
+            self.key_index += 1
+            self.client = genai.Client(api_key=self.api_keys[self.key_index])
+            # Mit dem neuen Schluessel fangen die Kontingente von vorne an,
+            # also auch wieder beim besten Modell.
+            self.model_index = 0
+            log.warning(
+                'Alle Modelle aufgebraucht - Schluessel %d von %d, zurueck auf %s',
+                self.key_index + 1, len(self.api_keys), self.model,
+            )
+            return True
+
+        return False
 
     def _generate(self, prompt: str, config: types.GenerateContentConfig):
         """Ein Aufruf, mit Geduld.

@@ -114,6 +114,31 @@ class Database:
             )
         return out
 
+    def source_by_id(self, source_id: str) -> Source | None:
+        """Eine Quelle direkt holen, auch ohne Feed-Adresse.
+
+        fetchable_sources() ueberspringt alles ohne Feed - richtig fuer
+        den Nachrichtenlauf, falsch fuer Evergreen: Wikipedia hat keinen
+        Feed und soll trotzdem Quelle sein. Die Themenliste ersetzt dort
+        den Feed.
+        """
+        rows = self._get("/sources", {"select": "*", "id": f"eq.{source_id}", "limit": "1"})
+        if not rows:
+            return None
+        row = rows[0]
+        return Source(
+            id=row["id"],
+            handle=row["handle"],
+            display_name=row["display_name"],
+            license_class=row["license_class"],
+            license_name=row.get("license_name"),
+            feed_urls=row.get("feed_urls") or [],
+            default_category_id=row.get("default_category_id"),
+            default_language=row.get("default_language") or "de",
+            default_region_code=row.get("default_region_code"),
+            trust_score=row.get("trust_score") or 50,
+        )
+
     def categories(self) -> list[dict[str, Any]]:
         return self._get(
             "/categories", {"select": "id,slug,kind,parent_id", "is_active": "eq.true"}

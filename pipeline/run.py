@@ -126,7 +126,7 @@ def main() -> int:
     dry = args.dry_run or cfg.dry_run
 
     db = Database(cfg)
-    gen = Generator(cfg.gemini_api_key, cfg.gemini_model)
+    gen = Generator(cfg.gemini_api_keys, cfg.gemini_model)
 
     sources = db.fetchable_sources()
     if args.source:
