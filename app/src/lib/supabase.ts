@@ -62,8 +62,21 @@ export const supabase = createClient(url ?? 'http://localhost', anonKey ?? 'miss
  * serverseitig (supabase/migrations/0003_functions.sql).
  */
 export const api = {
-  async getFeed(batchSize = 10): Promise<ContentItem[]> {
-    const { data, error } = await supabase.rpc('get_feed', { p_batch_size: batchSize });
+  /**
+   * Der Feed.
+   *
+   * `exclude` sind die Karten, die schon in der Liste stehen. Ohne diese
+   * Angabe liefert der Server irgendwann genau die zurueck, die die App
+   * als Dubletten wegwirft - die Liste waechst dann nicht mehr, und man
+   * kommt beim Scrollen nicht weiter, bis man neu laedt.
+   */
+  async getFeed(batchSize = 10, exclude: string[] = []): Promise<ContentItem[]> {
+    const { data, error } = await supabase.rpc('get_feed', {
+      p_batch_size: batchSize,
+      // Nur die letzten 60: mehr braucht der Ausschluss nicht, und eine
+      // Liste, die mit jeder Sitzung waechst, wuerde die Anfrage aufblaehen.
+      p_exclude: exclude.slice(-60),
+    });
     if (error) throw error;
     return (data ?? []) as ContentItem[];
   },

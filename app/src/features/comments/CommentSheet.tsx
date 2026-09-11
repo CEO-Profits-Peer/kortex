@@ -23,20 +23,19 @@ import type { CommentAnswer, CommentQuestion } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
- * Der Kommentarbereich - genauer: die Nachfragen zu einer Karte.
+ * Der Kommentarbereich einer Karte.
  *
- * Bewusst kein allgemeiner Kommentarbereich. Warum, steht ausfuehrlich in
- * supabase/migrations/0036_comments.sql; die Kurzfassung: die Zielgruppe
- * faengt bei 14 an, und ein offener Bereich fuer Minderjaehrige ist eine
- * Aufsichtspflicht, die dieses Projekt nicht erfuellen kann.
+ * Offen: jeder sieht alles, jeder darf schreiben, so viel er will, ohne
+ * die Karte vorher gelesen zu haben. Der erste Entwurf war deutlich
+ * enger - das war meine Vorsicht, nicht die Anforderung.
  *
- * Also genau zwei Arten von Beitrag: eine FRAGE zur Karte, und eine
- * ANTWORT auf eine Frage. Das Eingabefeld sagt das auch so ("Was ist dir
- * unklar?"), denn die Beschriftung eines Feldes bestimmt, was hineinkommt,
- * staerker als jede Regel daneben.
+ * Geprueft wird vor dem Senden, in der Datenbank (0040, 0041): auf
+ * Beschimpfungen, Drohungen und den Austausch von Kontaktdaten. Die
+ * Pruefung sitzt dort und nicht hier, weil eine Pruefung, die der Client
+ * ausloest, der Client auch ueberspringen kann.
  *
- * Eine Frage pro Person und Karte. Wer eine zweite stellen will, soll erst
- * auf die erste eine Antwort bekommen.
+ * Eine Ebene Verschachtelung: Kommentar, Antworten darauf. Tiefer
+ * verschachtelte Verlaeufe sind auf einem Handy nicht mehr lesbar.
  */
 
 function timeAgo(iso: string): string {
@@ -165,14 +164,7 @@ export function CommentSheet({
         await load();
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      setNote(
-        msg.includes('card not read')
-          ? 'Lies die Karte erst zu Ende.'
-          : msg.includes('schon eine Frage')
-            ? 'Du hast zu dieser Karte schon eine Frage gestellt.'
-            : 'Hat nicht geklappt.',
-      );
+      setNote(e instanceof Error ? e.message : 'Hat nicht geklappt.');
     } finally {
       setBusy(false);
     }
@@ -212,7 +204,7 @@ export function CommentSheet({
 
           <View style={styles.head}>
             <View style={styles.headText}>
-              <Text style={styles.title}>Fragen zur Karte</Text>
+              <Text style={styles.title}>Kommentare</Text>
               <Text style={styles.subtitle} numberOfLines={1}>
                 {cardTitle}
               </Text>
@@ -232,8 +224,8 @@ export function CommentSheet({
               <ActivityIndicator color={color.ink.low} />
             ) : items.length === 0 ? (
               <Text style={styles.empty}>
-                Noch keine Frage. Wenn dir etwas unklar ist, bist du
-                wahrscheinlich nicht allein.
+                Noch keine Kommentare. Wenn dir etwas auffällt oder unklar
+                ist, bist du wahrscheinlich nicht allein.
               </Text>
             ) : (
               items.map((q, i) => (
@@ -269,7 +261,7 @@ export function CommentSheet({
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder={replyTo ? 'Deine Antwort' : 'Was ist dir unklar?'}
+              placeholder={replyTo ? 'Deine Antwort' : 'Schreib etwas dazu'}
               placeholderTextColor={color.ink.low}
               style={styles.input}
               multiline
@@ -295,7 +287,7 @@ export function CommentSheet({
           </View>
 
           <Text style={styles.rules}>
-            Fragen zur Karte, keine Links, keine Kontaktdaten.
+            Sei fair. Keine Links, keine Kontaktdaten.
           </Text>
         </View>
       </KeyboardAvoidingView>

@@ -159,7 +159,7 @@ export function ActionRail({
         */}
       <RailButton
         icon="comment"
-        label={commentCount > 0 ? short(commentCount) : 'Fragen'}
+        label={commentCount > 0 ? short(commentCount) : 'Kommentar'}
         tint={tint}
         onPress={onComment}
       />

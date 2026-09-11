@@ -17,6 +17,7 @@ import Animated, {
 
 import { ActionRail } from '@/components/ActionRail';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
+import { CardBlock } from '@/components/CardBlock';
 import { CardTypeBadge } from '@/components/CardTypeBadge';
 import { FitBox } from '@/components/FitBox';
 import { CommentSheet } from '@/features/comments/CommentSheet';
@@ -34,7 +35,7 @@ import { contentState, setContentState, useContentState } from '@/lib/contentSta
 import { usePrefs } from '@/lib/prefs';
 import { shareCard } from '@/lib/share';
 import { api } from '@/lib/supabase';
-import type { BodyBlock, ContentItem, Source } from '@/lib/types.db';
+import type { ContentItem, Source } from '@/lib/types.db';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 type Props = {
@@ -78,66 +79,6 @@ const BEAT = {
  */
 const BEAT_DURATION = 240;
 
-function Block({ block, accent }: { block: BodyBlock; accent: string }) {
-  switch (block.type) {
-    case 'para':
-      // KEIN numberOfLines mehr.
-      //
-      // Frueher stand hier 6 Zeilen mit der Begruendung "abgeschnitten ist
-      // lesbar, verkleinert nicht". Das stimmte, solange es nichts anderes
-      // gab. Inzwischen gibt es zwei bessere Antworten auf zu viel Text:
-      // FitBox verkleinert passgenau, und reicht das nicht, teilt
-      // paginate() auf eine zweite Seite.
-      //
-      // Drei Mechanismen fuer dasselbe Problem sind einer zu viel - und
-      // ausgerechnet der schlechteste gewann, weil er zuerst greift. Das
-      // Ergebnis waren Saetze, die mitten im Wort mit "..." aufhoerten.
-      return (
-        <Text style={styles.para}>
-          {block.text}
-        </Text>
-      );
-
-    case 'bullet':
-      return (
-        <View style={styles.bullets}>
-          {block.items.slice(0, 4).map((line, i) => (
-            <View key={i} style={styles.bulletRow}>
-              <View style={[styles.bulletMark, { backgroundColor: accent }]} />
-              <Text style={styles.para}>
-                {line}
-              </Text>
-            </View>
-          ))}
-        </View>
-      );
-
-    case 'stat':
-      return (
-        <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: accent }]} numberOfLines={1}>
-            {block.value}
-          </Text>
-          <Text style={styles.statLabel}>
-            {block.label}
-          </Text>
-        </View>
-      );
-
-    case 'quote':
-      return (
-        <View style={[styles.quote, { borderLeftColor: accent }]}>
-          <Text style={styles.quoteText}>
-            {block.text}
-          </Text>
-          {block.attribution ? <Text style={styles.quoteAttr}>— {block.attribution}</Text> : null}
-        </View>
-      );
-
-    default:
-      return null;
-  }
-}
 
 function ContentCardBase({
   item,
@@ -493,7 +434,7 @@ function ContentCardBase({
                 key={`${page}-${i}`}
                 entering={beat(BEAT.firstBlock + i * BEAT.perBlock)}
               >
-                <Block block={b} accent={accent} />
+                <CardBlock block={b} accent={accent} />
               </Animated.View>
             ))}
 
@@ -674,19 +615,7 @@ const styles = StyleSheet.create({
 
   burst: { position: 'absolute', width: BURST, height: BURST },
 
-  para: { ...type.body, color: color.ink.high, flex: 1 },
-
-  bullets: { gap: space.md },
-  bulletRow: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
-  bulletMark: { width: 6, height: 6, borderRadius: 1, marginTop: 10 },
-
-  stat: { gap: space.xs },
-  statValue: { ...type.display },
-  statLabel: { ...type.label, color: color.ink.mid },
-
-  quote: { borderLeftWidth: 2, paddingLeft: space.lg, gap: space.sm },
-  quoteText: { ...type.deck, color: color.ink.high, fontStyle: 'italic' },
-  quoteAttr: { ...type.meta, color: color.ink.low },
+  // Die Stile der Textbloecke stehen bei ihnen: components/CardBlock.tsx
 
   // Die Blaetter-Leiste sitzt zwischen Buehne und Fusszeile: immer sichtbar,
   // nie vom Inhalt verdeckt - das war der Grund, warum der Pruefen-Knopf

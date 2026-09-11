@@ -168,12 +168,26 @@ export function FeedScreen({
     })();
   }, [withCheckpoint]);
 
+  /**
+   * Alle Kennungen, die schon geladen wurden.
+   *
+   * In einer Ref, nicht im State: der Wert wird nur beim Nachladen
+   * gebraucht, und eine Zustandsaenderung wuerde den ganzen Feed neu
+   * rendern.
+   */
+  const loadedIds = useRef<string[]>([]);
+
   const loadMore = useCallback(async () => {
     if (loadingMore.current) return;
     loadingMore.current = true;
     try {
       const started = Date.now();
-      const batch = await (loader ? loader(BATCH_SIZE) : api.getFeed(BATCH_SIZE));
+      // Was schon in der Liste steht, mitschicken. Sonst liefert der
+      // Server irgendwann genau das, was die App gleich wegwirft - und
+      // der Feed sitzt fest.
+      const batch = await (loader
+        ? loader(BATCH_SIZE)
+        : api.getFeed(BATCH_SIZE, loadedIds.current));
       analytics.feedLoaded(batch.length, Date.now() - started);
 
       // Ein kleiner Nachschlag statt einer Schema-Aenderung: welche dieser
@@ -221,6 +235,7 @@ export function FeedScreen({
         // sind Likes und Reposts nach jedem Neuladen unsichtbar - siehe
         // lib/contentState.ts.
         void hydrateContentState(next.map((i) => i.id));
+        loadedIds.current = next.map((i) => i.id);
         return next;
       });
       setError(null);
