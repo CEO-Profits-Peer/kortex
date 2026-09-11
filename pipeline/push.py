@@ -5,11 +5,14 @@
     python pipeline/push.py --dry-run
     python pipeline/push.py --limit 50
 
-Die Datenbank schreibt Benachrichtigungen (Trigger auf follows und
-reposts, Migration 0051), dieses Skript holt sie ab und stellt sie zu.
+Dies ist NICHT mehr der Hauptweg. Seit 0053 stoesst eine neue Zeile in
+`notifications` eine Edge Function an, die in Sekunden zustellt.
 
-Warum getrennt, siehe Migrationskopf: eine Datenbank, die beim Speichern
-eines Klicks auf Googles Push-Dienst wartet, haengt, wenn der haengt.
+Dieses Skript ist das Auffangnetz und laeuft im GitHub-Workflow alle drei
+Stunden: was der Sofortweg verpasst hat - Funktion gerade nicht
+erreichbar, Push-Dienst kurz weg, VAPID-Secrets dort noch nicht gesetzt -
+geht hier nachtraeglich raus. Beide Wege beachten `sent_at`, also kann
+niemand dieselbe Meldung zweimal bekommen.
 
 Braucht drei Werte in pipeline/.env:
 

@@ -17,13 +17,12 @@
 -- gerade langsam ist. Die Tabelle entkoppelt das: der Klick ist sofort
 -- fertig, die Nachricht geht hinterher.
 --
--- Was das kostet, steht auch hier: der Versender laeuft im selben
--- GitHub-Workflow wie die Pipeline, also alle drei Stunden. "X folgt dir"
--- kommt damit im Schnitt anderthalb Stunden zu spaet. Fuer den Anfang
--- akzeptabel, auf Dauer nicht - der naechste Schritt waere eine
--- Edge Function am Datenbank-Webhook, die in Sekunden zustellt und im
--- Gratiskontingent liegt. Das ist bewusst noch nicht gebaut, weil es
--- einen Deploy-Weg braucht, den es hier noch nicht gibt.
+-- NACHTRAG (0053/0054): Hier stand, der Versand haenge am
+-- Drei-Stunden-Takt des GitHub-Workflows und eine Edge Function sei
+-- "bewusst noch nicht gebaut". Beides ist ueberholt. Eine neue Zeile in
+-- dieser Tabelle stoesst jetzt eine Edge Function an, gemessen 2,8
+-- Sekunden bis `sent_at`. pipeline/push.py ist zum Auffangnetz geworden:
+-- es holt nach, was der Sofortweg verpasst hat.
 -- =============================================================================
 
 -- --- Wohin geschickt wird ---------------------------------------------------

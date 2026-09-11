@@ -125,11 +125,9 @@ jobs:
       # Laeuft zuletzt und unabhaengig vom Rest: ob Karten erzeugt wurden,
       # hat nichts damit zu tun, ob jemandem gefolgt wurde.
       #
-      # Der wunde Punkt ist der Takt. Alle drei Stunden heisst: "X folgt
-      # dir" kommt im Schnitt anderthalb Stunden zu spaet. Fuer den Anfang
-      # tragbar, auf Dauer nicht - der naechste Schritt ist eine Supabase
-      # Edge Function am Datenbank-Webhook, die in Sekunden zustellt und
-      # ebenfalls im Gratiskontingent liegt.
+      # Der Takt spielt keine Rolle mehr: zugestellt wird sofort ueber
+      # die Edge Function (Migration 0053). Dieser Schritt ist das
+      # Auffangnetz fuer das, was dort durchgefallen ist.
       #
       # Fehlen die VAPID-Secrets, beendet sich das Skript mit einer
       # Meldung und laesst die Nachrichten in der Tabelle liegen. Sie
