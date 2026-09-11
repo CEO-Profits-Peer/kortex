@@ -6,12 +6,14 @@ import { Platform } from 'react-native';
 import type {
   Category,
   CategoryDetail,
+  CommentQuestion,
   DailyChallenge,
   DailyLeaderboard,
   DailySubmission,
   FollowingItem,
   MySocial,
   PersonHit,
+  PostCommentResult,
   PublicProfile,
   CourseDetail,
   CourseSummary,
@@ -362,6 +364,47 @@ export const api = {
     const { data, error } = await supabase.rpc('get_my_content_state', { p_ids: ids });
     if (error) throw error;
     return (data ?? {}) as Record<string, { liked: boolean; reposted: boolean }>;
+  },
+
+  // --- Kommentare ------------------------------------------------------
+
+  async comments(contentId: string, limit = 30): Promise<CommentQuestion[]> {
+    const { data, error } = await supabase.rpc('get_comments', {
+      p_content_id: contentId,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return (data ?? []) as CommentQuestion[];
+  },
+
+  /**
+   * Frage stellen oder antworten.
+   *
+   * Die Vorpruefung laeuft in der Datenbank und entscheidet sofort - der
+   * Rueckgabewert sagt, ob der Beitrag sichtbar ist oder warum nicht.
+   */
+  async postComment(
+    contentId: string,
+    body: string,
+    parentId?: string,
+  ): Promise<PostCommentResult> {
+    const { data, error } = await supabase.rpc('post_comment', {
+      p_content_id: contentId,
+      p_body: body,
+      p_parent_id: parentId ?? null,
+    });
+    if (error) throw error;
+    return data as PostCommentResult;
+  },
+
+  async reportComment(id: string): Promise<void> {
+    const { error } = await supabase.rpc('report_comment', { p_id: id });
+    if (error) throw error;
+  },
+
+  async deleteComment(id: string): Promise<void> {
+    const { error } = await supabase.rpc('delete_comment', { p_id: id });
+    if (error) throw error;
   },
 
   // --- Tagesaufgabe ----------------------------------------------------

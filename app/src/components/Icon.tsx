@@ -33,7 +33,7 @@ export type IconName =
   | 'news' | 'knowledge' | 'interactive' | 'lesson'
   // Sonstiges
   | 'leaderboard' | 'lock' | 'plus' | 'sliders'
-  | 'listen' | 'listening';
+  | 'listen' | 'listening' | 'comment';
 
 type Props = {
   name: IconName;
@@ -193,6 +193,14 @@ function IconBase({ name, size = 20, color: tint = color.ink.mid }: Props) {
       )}
       {/* Laeuft gerade: dieselbe Quelle, aber die Wellen sind ein
           Pausenzeichen. Ein Tipp haelt an. */}
+      {/* Sprechblase mit eckiger Spitze - dieselbe Strichsprache wie der
+          Rest, keine runde Comic-Blase. */}
+      {name === 'comment' && (
+        <>
+          <Path d="M4.5 6.5h15v9.5h-9l-4.2 3.2v-3.2H4.5z" {...s} />
+          <Path d="M8.5 10.2h7M8.5 13h4.5" {...s} />
+        </>
+      )}
       {name === 'listening' && (
         <>
           <Path d="M5 9.5h2.5L11 6.5v11L7.5 14.5H5z" {...s} />

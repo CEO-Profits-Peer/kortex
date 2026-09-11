@@ -19,6 +19,7 @@ import { ActionRail } from '@/components/ActionRail';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { CardTypeBadge } from '@/components/CardTypeBadge';
 import { FitBox } from '@/components/FitBox';
+import { CommentSheet } from '@/features/comments/CommentSheet';
 import { KineticCard } from '@/features/kinetic/KineticCard';
 import { isKineticScript } from '@/features/kinetic/types';
 import { Icon } from '@/components/Icon';
@@ -172,6 +173,16 @@ function ContentCardBase({
    */
   const likeCount = Math.max(0, (item.like_count ?? 0) + delta);
   const [rated, setRated] = useState<'too_easy' | 'too_hard' | null>(null);
+
+  /**
+   * Der Kommentarbereich und seine Zahl.
+   *
+   * Die Zahl kommt mit der Karte vom Server und wird lokal nachgefuehrt,
+   * solange der Bereich offen ist - sonst zeigt die Leiste beim
+   * Schliessen noch den alten Stand.
+   */
+  const [sheet, setSheet] = useState(false);
+  const [comments, setComments] = useState(item.comment_count ?? 0);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
   const accent = categoryAccent(accentHex);
@@ -269,6 +280,15 @@ function ContentCardBase({
 
   const applyLike = useCallback(
     (next: boolean) => {
+      // Nichts tun, wenn sich nichts aendert.
+      //
+      // Ohne das zaehlt jeder Doppeltipp weiter hoch: die Geste ruft
+      // immer applyLike(true), auch auf einer Karte, die schon geliked
+      // ist. Der Server bleibt bei eins - der Trigger zaehlt nur echte
+      // Wechsel -, aber die Anzeige lief davon. Zehnmal tippen, zehn
+      // Likes, und beim naechsten Laden wieder einer.
+      if (contentState(item.id).liked === next) return;
+
       setContentState(item.id, {
         liked: next,
         delta: contentState(item.id).delta + (next ? 1 : -1),
@@ -502,10 +522,13 @@ function ContentCardBase({
             onListen={kinetic ? undefined : () => toggleSpeech(item)}
             onRepost={onRepost}
             tint={accent}
-            categoryLabel={categoryLabel}
             onLike={() => applyLike(!liked)}
             onShare={onShare}
-            onSurf={onSurf}
+            commentCount={comments}
+            onComment={() => {
+              haptics.light();
+              setSheet(true);
+            }}
           />
 
           <Animated.View style={[styles.burst, burstStyle]} pointerEvents="none">
@@ -513,6 +536,14 @@ function ContentCardBase({
           </Animated.View>
         </View>
       </GestureDetector>
+
+      <CommentSheet
+        contentId={item.id}
+        cardTitle={item.title}
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        onCountChange={setComments}
+      />
 
       {multi ? (
         <View style={styles.pager}>

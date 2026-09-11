@@ -75,6 +75,8 @@ export type ContentItem = {
    * ihn in einer frueheren Sitzung gesetzt hat.
    */
   like_count: number;
+  /** Sichtbare Fragen zu dieser Karte. Ein Trigger haelt das aktuell (0036). */
+  comment_count: number;
   interaction_template: string | null;
   interaction_data: Record<string, unknown> | null;
   /**
@@ -414,4 +416,31 @@ export type DailyLeaderboard = {
   rows: DailyLeaderRow[];
   me: { pos: number; correct: number; total: number; duration_ms: number } | null;
   players: number;
+};
+
+// --- Kommentare --------------------------------------------------------------
+
+export type CommentAuthor = {
+  handle: string;
+  display_name: string;
+  avatar_seed: string;
+  avatar_path: string | null;
+  is_mine: boolean;
+};
+
+export type CommentAnswer = CommentAuthor & {
+  id: string;
+  body: string;
+  at: string;
+};
+
+export type CommentQuestion = CommentAnswer & {
+  answers: CommentAnswer[];
+};
+
+export type PostCommentResult = {
+  id: string;
+  /** 'visible' oder 'blocked' - die Vorpruefung entscheidet sofort (0037). */
+  status: 'visible' | 'blocked';
+  reason: string | null;
 };

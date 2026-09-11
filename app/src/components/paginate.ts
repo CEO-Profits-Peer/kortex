@@ -27,8 +27,15 @@ import type { BodyBlock, ContentItem } from '@/lib/types.db';
  * schätzen, weil ein Schätzfehler nach oben jetzt abgefedert wird statt
  * abgeschnitten zu werden.
  *
- * Deshalb liegen die Kapazitäten unten rund ein Viertel höher als vorher:
- * genau der Spielraum, den FitBox mit seinem Mindestfaktor auffängt.
+ * Die Kapazitäten waren zwischenzeitlich ein Viertel höher, weil FitBox
+ * ja nachfedert. Das ging schief, als die Zeilenbegrenzung aus den
+ * Absätzen flog (vorher schnitt sie lange Texte einfach ab, was die
+ * Schätzung künstlich stützte). Ohne sie wurden Karten deutlich höher als
+ * geschätzt, FitBox lief in seinen Mindestfaktor, und der Rest wurde
+ * abgeschnitten — genau das, was vermieden werden sollte.
+ *
+ * Jetzt wieder knapp geschätzt. Eine zweite Seite ist ärgerlich, eine
+ * abgeschnittene Karte ist kaputt.
  */
 
 export type Page = {
@@ -68,9 +75,9 @@ const VISUAL_LINES = 6; // die Blaupausen-Grafik
  * ein kleineres Übel als ein Blättern, das niemand braucht.
  */
 function capacity(screenHeight: number): number {
-  if (screenHeight < 700) return 24;
-  if (screenHeight < 820) return 29;
-  return 34;
+  if (screenHeight < 700) return 20;
+  if (screenHeight < 820) return 24;
+  return 28;
 }
 
 export function paginate(

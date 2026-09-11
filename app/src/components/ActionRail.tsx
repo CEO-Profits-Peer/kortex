@@ -85,11 +85,11 @@ export function ActionRail({
   reposted,
   speaking,
   tint,
-  categoryLabel,
+  commentCount,
   onLike,
   onRepost,
   onShare,
-  onSurf,
+  onComment,
   onListen,
 }: {
   liked: boolean;
@@ -98,11 +98,12 @@ export function ActionRail({
   reposted: boolean;
   speaking: boolean;
   tint: string;
-  categoryLabel?: string;
+  /** Sichtbare Fragen zu dieser Karte. */
+  commentCount: number;
   onLike: () => void;
   onRepost: () => void;
   onShare: () => void;
-  onSurf: () => void;
+  onComment: () => void;
   /**
    * Fehlt auf Erklaerkarten - und das ist kein Versehen.
    *
@@ -147,15 +148,22 @@ export function ActionRail({
         tint={tint}
         onPress={onRepost}
       />
+      {/**
+        * Die Sprechblase steht dort, wo vorher die Lupe stand.
+        *
+        * Die Lupe fuehrte in die Kategorie - dasselbe Ziel wie das
+        * Hashtag oben links, das ohnehin antippbar ist. Zwei Wege zum
+        * selben Ort auf einem Schirm, auf dem vier Knoepfe Platz haben,
+        * ist eine Verschwendung. Die Fragen zur Karte hatten dagegen gar
+        * keinen.
+        */}
+      <RailButton
+        icon="comment"
+        label={commentCount > 0 ? short(commentCount) : 'Fragen'}
+        tint={tint}
+        onPress={onComment}
+      />
       <RailButton icon="share" label="Teilen" tint={tint} onPress={onShare} />
-      {categoryLabel ? (
-        <RailButton
-          icon="search"
-          label={`#${categoryLabel}`}
-          tint={tint}
-          onPress={onSurf}
-        />
-      ) : null}
     </View>
   );
 }
