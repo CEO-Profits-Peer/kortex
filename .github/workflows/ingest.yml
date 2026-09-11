@@ -1,0 +1,72 @@
+name: Ingest
+
+# Der kostenlose Cron-Ersatz.
+#
+# Render berechnet Cron-Jobs, Vercel Hobby erlaubt einen pro Tag, hat 10 s
+# Timeout und verbietet kommerzielle Nutzung. GitHub Actions gibt privaten
+# Repos rund 2000 Minuten im Monat und 6 Stunden pro Job. Ein Batch-Job wie
+# dieser gehoert genau hierhin, nicht auf einen Webserver.
+#
+# Bei 4 Laeufen taeglich a ~3 Minuten sind das etwa 360 Minuten im Monat.
+
+on:
+  schedule:
+    # Alle 6 Stunden. Haeufiger lohnt nicht: die meisten Pressestellen
+    # veroeffentlichen zu Buerozeiten, und jeder Lauf kostet Gemini-Kontingent.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Trockenlauf (nichts schreiben)"
+        type: boolean
+        default: false
+      source:
+        description: "Nur diese Quellen-ID (leer = alle)"
+        type: string
+        default: ""
+
+concurrency:
+  # Zwei gleichzeitige Laeufe wuerden dieselben Artikel doppelt verarbeiten
+  # und das Kontingent verbrennen.
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Abhaengigkeiten
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Beide Namen sind geprueft, nicht geraten:
+          # gemini-flash-latest zeigt auf das jeweils neueste Flash-Modell
+          # und ist genau deshalb staendig ausgelastet (503). text-embedding-004
+          # gibt es gar nicht mehr (404). Faellt gemini-3.5-flash aus, weicht
+          # die Pipeline selbst aus - siehe FALLBACK_MODELS.
+          GEMINI_MODEL: gemini-3.5-flash
+          GEMINI_EMBEDDING_MODEL: gemini-embedding-001
+          INGEST_LANGUAGES: de,en
+          # Sicherheitsnetz: eine Schleife darf nicht das ganze Kontingent
+          # verbrennen, bevor jemand es merkt.
+          MAX_ITEMS_PER_RUN: "120"
+          MAX_GEMINI_CALLS_PER_RUN: "300"
+          # Nichts geht ungeprueft live, solange das auf false steht.
+          AUTO_APPROVE: "false"
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          python pipeline/run.py ${{ inputs.source && format('--source {0}', inputs.source) || '' }}

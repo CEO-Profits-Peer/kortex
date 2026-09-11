@@ -1,0 +1,334 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+
+import { Icon } from '@/components/Icon';
+import { useIsActiveCard } from '@/lib/activeCard';
+import { getPrefs } from '@/lib/prefs';
+import { speakSentence, stopSpeech } from '@/lib/speech';
+import type { ContentItem } from '@/lib/types.db';
+import { color, motion, radius, space, type } from '@/theme/tokens';
+
+import { KineticStage } from './KineticStage';
+import {
+  estimateBeatMs,
+  isKineticScript,
+  type KineticBeat,
+  type KineticShow,
+} from './types';
+
+/**
+ * Die Erklaerkarte.
+ *
+ * Text weicht einer Grafik, die Grafik baut sich auf, eine Stimme spricht
+ * dazu, und unten steht immer genau der Satz, der gerade gesprochen wird.
+ *
+ * Wie der Takt zustande kommt
+ * ---------------------------
+ * Nicht ueber einen Zeitplan. Jeder Satz wird als EIGENE Aeusserung
+ * gesprochen, und der naechste Takt beginnt, wenn die Sprachausgabe fertig
+ * meldet. Damit stimmt Bild und Ton auf jedem Geraet - auch bei einer
+ * Systemstimme, die doppelt so schnell spricht wie meine.
+ *
+ * Ohne Ton laeuft dieselbe Abfolge auf geschaetzten Zeiten weiter. Das ist
+ * kein Notbehelf, sondern der haeufigere Fall: im Browser ist die
+ * Sprachausgabe bis zur ersten Beruehrung gesperrt, und viele schauen
+ * stumm. Die Karte muss auch dann funktionieren - deshalb steht der Text
+ * unten und nicht nur in der Stimme.
+ *
+ * Was sie ausdruecklich NICHT tut
+ * -------------------------------
+ * Sie haelt niemanden fest. Kein Vollbild, keine Sperre, kein "erst zu Ende
+ * sehen". Wer weiterwischt, wischt weiter - die Karte hoert dann auf zu
+ * reden und faengt beim naechsten Mal von vorne an. Eine Erklaerkarte ist
+ * ein Angebot im Feed, kein Video mit Werbepause.
+ */
+
+/** Eine feste leere Liste - eine frische waere wieder eine neue Identitaet. */
+const NO_BEATS: KineticBeat[] = [];
+
+export function KineticCard({
+  item,
+  accent,
+}: {
+  item: ContentItem;
+  accent: string;
+}) {
+  /**
+   * Beides gemerkt, und das ist keine Mikro-Optimierung.
+   *
+   * `beats` steckt in der Abhaengigkeitsliste des Taktgebers weiter unten.
+   * Waere es bei jedem Rendern ein neues Array, wuerde der Taktgeber bei
+   * jedem Rendern neu starten - und die Karte kommt nie ueber den ersten
+   * Satz hinaus.
+   *
+   * Genau das ist passiert, und die Rueckkopplung war hübsch: Sprechen
+   * meldet den Sprecher an, das Anmelden rendert die Karte neu (die
+   * "Hoeren"-Taste zeigt ja den Zustand), das Neurendern startet den
+   * Taktgeber neu, der spricht wieder von vorn. Endlos bei Takt eins.
+   */
+  const script = useMemo(
+    () => (isKineticScript(item.kinetic_script) ? item.kinetic_script : null),
+    [item.kinetic_script],
+  );
+  const beats = script?.beats ?? NO_BEATS;
+
+  const isActive = useIsActiveCard(item.id);
+  const [beat, setBeat] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [finished, setFinished] = useState(false);
+
+  /** Laeuft gerade eine Aeusserung oder ein Zeitgeber? Zum Abbrechen. */
+  const cancel = useRef<(() => void) | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * Fuer welchen Takt schon gesprochen wird.
+   *
+   * Der zweite Riegel gegen dieselbe Rueckkopplung: selbst wenn der Effekt
+   * aus einem anderen Grund erneut laeuft, wird derselbe Satz nicht ein
+   * zweites Mal angefangen.
+   */
+  const speaking = useRef<number | null>(null);
+
+  const clearPending = useCallback(() => {
+    cancel.current?.();
+    cancel.current = null;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    speaking.current = null;
+  }, []);
+
+  // --- Anfangen, aufhoeren -------------------------------------------------
+  //
+  // Verlaesst die Karte das Bild, wird zurueckgesetzt. Beim naechsten Mal
+  // laeuft sie von vorn. Auf halber Strecke wieder einzusteigen waere
+  // schlimmer als neu anzufangen: man haette den Anfang der Erklaerung
+  // verpasst und wuesste nicht, dass er fehlt.
+  useEffect(() => {
+    if (isActive) return;
+    clearPending();
+    setBeat(0);
+    setPaused(false);
+    setFinished(false);
+  }, [isActive, clearPending]);
+
+  // --- Der Taktgeber --------------------------------------------------------
+  useEffect(() => {
+    if (!isActive || paused || finished || beats.length === 0) return;
+
+    const current = beats[beat];
+    if (!current) return;
+    if (speaking.current === beat) return;
+    speaking.current = beat;
+
+    const next = () => {
+      cancel.current = null;
+      timer.current = null;
+      speaking.current = null;
+      if (beat + 1 < beats.length) {
+        setBeat(beat + 1);
+      } else {
+        setFinished(true);
+        stopSpeech();
+      }
+    };
+
+    if (getPrefs().audioEnabled) {
+      cancel.current = speakSentence({
+        cardId: item.id,
+        text: current.say,
+        language: item.language,
+        onDone: next,
+      });
+      // Sicherheitsnetz: meldet die Sprachausgabe nie zurueck - im Browser
+      // passiert das, wenn sie ohne Nutzergeste blockiert wird -, laeuft
+      // die Karte nach der geschaetzten Zeit trotzdem weiter. Ohne das
+      // bliebe sie beim ersten Satz stehen, und zwar stumm.
+      timer.current = setTimeout(next, estimateBeatMs(current.say) + 1800);
+    } else {
+      timer.current = setTimeout(next, estimateBeatMs(current.say));
+    }
+
+    // Kein Aufraeumen beim erneuten Durchlauf: das Aufraeumen erledigen
+    // clearPending() an den Stellen, die wirklich abbrechen (Pause, Karte
+    // verlassen, Ausbau). Haenge es hier an den Effekt, bricht jedes
+    // Neurendern den laufenden Satz ab.
+  }, [isActive, paused, finished, beat, beats, item.id, item.language]);
+
+  useEffect(() => () => clearPending(), [clearPending]);
+
+  if (!script || beats.length === 0) return null;
+
+  const current = beats[beat];
+  const previous: KineticShow | null = beat > 0 ? beats[beat - 1].show : null;
+
+  const toggle = () => {
+    if (finished) return replay();
+    if (paused) {
+      setPaused(false);
+    } else {
+      clearPending();
+      setPaused(true);
+    }
+  };
+
+  const replay = () => {
+    clearPending();
+    setBeat(0);
+    setFinished(false);
+    setPaused(false);
+  };
+
+  return (
+    <View style={styles.root}>
+      {/* Kopf: Titel bleibt stehen, damit man nach dem Wischen weiss,
+          worum es ueberhaupt geht. */}
+      <Text style={styles.title} numberOfLines={2}>
+        {item.title}
+      </Text>
+
+      {/* Fortschritt als Striche, einer pro Takt - dasselbe Muster wie in
+          Stories, und es sagt sofort, wie lange das noch dauert. */}
+      <View style={styles.ticks}>
+        {beats.map((_, i) => (
+          <Tick key={i} state={i < beat ? 'done' : i === beat ? 'now' : 'todo'} accent={accent} />
+        ))}
+      </View>
+
+      <View style={styles.stageWrap}>
+        <KineticStage
+          show={current.show}
+          previous={previous}
+          accent={accent}
+          cardSeed={item.id}
+        />
+      </View>
+
+      {/* Der gesprochene Satz. Immer nur der aktuelle. */}
+      <Caption text={current.say} />
+
+      <View style={styles.controls}>
+        <Pressable
+          onPress={toggle}
+          hitSlop={10}
+          style={styles.control}
+          accessibilityLabel={finished ? 'Nochmal' : paused ? 'Weiter' : 'Pause'}
+        >
+          <Icon
+            name={finished ? 'refresh' : paused ? 'listen' : 'listening'}
+            size={15}
+            color={color.ink.mid}
+          />
+          <Text style={styles.controlText}>
+            {finished ? 'Nochmal' : paused ? 'Weiter' : 'Pause'}
+          </Text>
+        </Pressable>
+
+        <Text style={styles.step}>
+          {beat + 1} / {beats.length}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// --- Fortschrittsstrich ------------------------------------------------------
+
+function Tick({ state, accent }: { state: 'done' | 'now' | 'todo'; accent: string }) {
+  const p = useSharedValue(state === 'todo' ? 0 : 1);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    const to = state === 'todo' ? 0 : 1;
+    p.value = reduceMotion ? to : withTiming(to, { duration: motion.fast });
+  }, [state, p, reduceMotion]);
+
+  const anim = useAnimatedStyle(() => ({
+    opacity: 0.28 + 0.72 * p.value,
+    backgroundColor: state === 'now' ? accent : color.ink.mid,
+  }));
+
+  return <Animated.View style={[styles.tick, state === 'now' && styles.tickNow, anim]} />;
+}
+
+// --- Untertitel --------------------------------------------------------------
+
+/**
+ * Der gerade gesprochene Satz.
+ *
+ * Der alte verschwindet, der neue kommt - und zwar nicht gleichzeitig,
+ * sondern nacheinander. Zwei Saetze, die sich ueberlagern, sind einen
+ * Wimpernschlag lang beide halb lesbar, und das liest sich wie ein Fehler.
+ */
+function Caption({ text }: { text: string }) {
+  const [shown, setShown] = useState(text);
+  const p = useSharedValue(1);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (text === shown) return;
+    if (reduceMotion) {
+      setShown(text);
+      return;
+    }
+    p.value = withTiming(0, { duration: 130 });
+    const t = setTimeout(() => {
+      setShown(text);
+      p.value = withTiming(1, { duration: 190 });
+    }, 140);
+    return () => clearTimeout(t);
+  }, [text, shown, p, reduceMotion]);
+
+  const anim = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ translateY: (1 - p.value) * 6 }],
+  }));
+
+  return (
+    <View style={styles.captionWrap}>
+      <Animated.Text style={[styles.caption, anim]}>{shown}</Animated.Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, gap: space.md },
+
+  title: { ...type.label, fontSize: 14, color: color.ink.mid },
+
+  ticks: { flexDirection: 'row', gap: 4, height: 3 },
+  tick: { flex: 1, height: 3, borderRadius: 2 },
+  tickNow: { flex: 1.6 },
+
+  // Die Buehne bekommt den ganzen freien Platz und zentriert darin. Damit
+  // steht eine kurze Aussage genauso mittig wie eine lange Tabelle, statt
+  // oben zu kleben.
+  stageWrap: { flex: 1, justifyContent: 'center' },
+
+  // Feste Mindesthoehe: sonst springt die Buehne bei jedem Satzwechsel,
+  // weil ein zweizeiliger Untertitel mehr Platz braucht als ein einzeiliger.
+  captionWrap: { minHeight: 58, justifyContent: 'flex-end' },
+  caption: { ...type.body, fontSize: 16, lineHeight: 23, color: color.ink.high },
+
+  controls: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  control: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  controlText: { ...type.meta, color: color.ink.mid },
+  step: { ...type.mono, fontSize: 11, color: color.ink.low, marginLeft: 'auto' },
+});

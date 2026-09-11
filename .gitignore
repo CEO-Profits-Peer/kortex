@@ -1,0 +1,48 @@
+# --- Secrets -----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.p12
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# --- Node / Expo -------------------------------------------------------------
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.tsbuildinfo
+.eas/
+
+# --- Python (Pipeline) -------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# --- Supabase ----------------------------------------------------------------
+supabase/.temp/
+supabase/.branches/
+
+# --- OS / Editor -------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Build-Artefakte ---------------------------------------------------------
+*.apk
+*.aab
+*.ipa
+*.log
+
+# Expo Export-Tests
+app/.expo-export-test/

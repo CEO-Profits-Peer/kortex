@@ -1,0 +1,80 @@
+{
+  "tabs": {
+    "courses": "Kurse",
+    "feed": "Feed",
+    "search": "Suche",
+    "profile": "Profil"
+  },
+  "feed": {
+    "empty_title": "Noch nichts da",
+    "empty_body": "Die Pipeline hat noch keine freigegebenen Inhalte geliefert.",
+    "error_title": "Kein Feed",
+    "batch_complete": "Batch geschafft",
+    "batch_sub": "{{count}} Grids gelesen",
+    "quiz_cta": "Quiz starten",
+    "quiz_skip": "Weiterlesen",
+    "enough_title": "Das reicht für heute",
+    "enough_body": "Du hast heute {{count}} Grids gelesen. Was davon hängen geblieben ist, fragen wir dich morgen."
+  },
+  "quiz": {
+    "correct": "Richtig",
+    "wrong": "Daneben",
+    "next": "Weiter",
+    "xp_gained": "+{{xp}} XP",
+    "mastery_gained": "+{{mastery}} Mastery"
+  },
+  "review": {
+    "title": "Wiederholung",
+    "subtitle": "{{count}} Fragen warten",
+    "why": "Wiederholung nach ein paar Tagen ist der einzige Weg, wie Wissen wirklich hängen bleibt."
+  },
+  "search": {
+    "placeholder": "#kategorie, @quelle oder Thema",
+    "hint_hash": "Kategorien leveln",
+    "hint_at": "Quellen und Freunde",
+    "no_results": "Nichts gefunden",
+    "kinds": {
+      "category": "Kategorie",
+      "source": "Quelle",
+      "profile": "Person",
+      "course": "Kurs",
+      "content": "Grid"
+    }
+  },
+  "profile": {
+    "xp": "XP",
+    "mastery": "Mastery",
+    "streak": "Streak",
+    "streak_days": "{{count}} Tage",
+    "cards_read": "Gelesen",
+    "focus_time": "Fokuszeit",
+    "leaderboard": "Rangliste",
+    "friends": "Freunde",
+    "achievements": "Abzeichen",
+    "radar": "Wissens-Radar"
+  },
+  "leaderboard": {
+    "scope_region": "Region",
+    "scope_friends": "Freunde",
+    "scope_global": "Global",
+    "note": "Die Rangliste läuft über Mastery, nicht über gelesene Grids. Hier zählt nur, was du wirklich kannst."
+  },
+  "onboarding": {
+    "welcome": "Willkommen",
+    "region": "Wo bist du zuhause?",
+    "birth_year": "In welchem Jahr bist du geboren?",
+    "interests": "Was interessiert dich?",
+    "interests_hint": "Wähle mindestens 3",
+    "continue": "Weiter",
+    "finish": "Los geht's"
+  },
+  "common": {
+    "retry": "Nochmal",
+    "cancel": "Abbrechen",
+    "loading": "Lädt",
+    "offline": "Keine Verbindung",
+    "too_easy": "Zu einfach",
+    "too_hard": "Zu schwer",
+    "known": "Kenne ich"
+  }
+}

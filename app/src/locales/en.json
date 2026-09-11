@@ -1,0 +1,80 @@
+{
+  "tabs": {
+    "courses": "Courses",
+    "feed": "Feed",
+    "search": "Search",
+    "profile": "Profile"
+  },
+  "feed": {
+    "empty_title": "Nothing here yet",
+    "empty_body": "The pipeline hasn't published any approved content yet.",
+    "error_title": "No feed",
+    "batch_complete": "Batch done",
+    "batch_sub": "{{count}} grids read",
+    "quiz_cta": "Start quiz",
+    "quiz_skip": "Keep reading",
+    "enough_title": "That's enough for today",
+    "enough_body": "You read {{count}} grids today. We'll ask you tomorrow what stuck."
+  },
+  "quiz": {
+    "correct": "Correct",
+    "wrong": "Not quite",
+    "next": "Next",
+    "xp_gained": "+{{xp}} XP",
+    "mastery_gained": "+{{mastery}} mastery"
+  },
+  "review": {
+    "title": "Review",
+    "subtitle": "{{count}} questions waiting",
+    "why": "Coming back to a question days later is the only thing that makes knowledge stick."
+  },
+  "search": {
+    "placeholder": "#category, @source or topic",
+    "hint_hash": "Level up categories",
+    "hint_at": "Sources and friends",
+    "no_results": "Nothing found",
+    "kinds": {
+      "category": "Category",
+      "source": "Source",
+      "profile": "Person",
+      "course": "Course",
+      "content": "Grid"
+    }
+  },
+  "profile": {
+    "xp": "XP",
+    "mastery": "Mastery",
+    "streak": "Streak",
+    "streak_days": "{{count}} days",
+    "cards_read": "Read",
+    "focus_time": "Focus time",
+    "leaderboard": "Leaderboard",
+    "friends": "Friends",
+    "achievements": "Badges",
+    "radar": "Knowledge radar"
+  },
+  "leaderboard": {
+    "scope_region": "Region",
+    "scope_friends": "Friends",
+    "scope_global": "Global",
+    "note": "The leaderboard runs on mastery, not on grids read. Only what you actually know counts here."
+  },
+  "onboarding": {
+    "welcome": "Welcome",
+    "region": "Where are you based?",
+    "birth_year": "What year were you born?",
+    "interests": "What are you into?",
+    "interests_hint": "Pick at least 3",
+    "continue": "Continue",
+    "finish": "Let's go"
+  },
+  "common": {
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "loading": "Loading",
+    "offline": "No connection",
+    "too_easy": "Too easy",
+    "too_hard": "Too hard",
+    "known": "I know this"
+  }
+}

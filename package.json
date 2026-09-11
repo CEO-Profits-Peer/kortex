@@ -1,0 +1,20 @@
+{
+  "name": "elycic-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wurzel-Skripte. Das eigentliche Expo-Projekt liegt in app/, die Ingestion-Pipeline in pipeline/. Diese Datei existiert nur, damit npm-Befehle aus dem Repo-Wurzelverzeichnis funktionieren.",
+  "scripts": {
+    "start": "cd app && npx expo start",
+    "web": "cd app && npx expo start --web",
+    "android": "cd app && npx expo start --android",
+    "tunnel": "cd app && npx expo start --tunnel",
+    "typecheck": "cd app && npx tsc --noEmit",
+    "doctor": "cd app && npx expo-doctor",
+    "db:push": "npx supabase@latest db push",
+    "pipeline": "python pipeline/run.py",
+    "pipeline:dry": "python pipeline/run.py --dry-run",
+    "icons": "python scripts/make_icons.py",
+    "build:web": "cd app && npx expo export --platform web --output-dir ../dist && cd .. && python scripts/finish_web.py",
+    "deploy:web": "npm run build:web && npx wrangler pages deploy dist --project-name=elycic"
+  }
+}

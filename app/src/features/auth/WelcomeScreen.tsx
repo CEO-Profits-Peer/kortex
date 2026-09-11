@@ -1,0 +1,139 @@
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { analytics } from '@/lib/analytics';
+import { haptics } from '@/lib/haptics';
+
+import { GridBackground } from '@/components/GridBackground';
+import { EmailAuthForm } from '@/features/auth/EmailAuthForm';
+import { GoogleButton } from '@/features/auth/GoogleButton';
+import { BRAND } from '@/lib/brand';
+import { signInAnonymously } from '@/lib/useSession';
+import { color, radius, space, type } from '@/theme/tokens';
+
+/**
+ * Der erste Bildschirm.
+ *
+ * Fuer den Prototyp bewusst ein einziger Knopf statt eines Formulars: jede
+ * Eingabemaske vor dem ersten Inhalt kostet Tester. Das vollstaendige
+ * Onboarding (Region, Geburtsjahr, Interessen) kommt in v0.2 - dann wird
+ * derselbe anonyme Account um eine E-Mail ergaenzt, ohne dass Fortschritt
+ * verloren geht.
+ */
+export function WelcomeScreen() {
+  const insets = useSafeAreaInsets();
+  const [busy, setBusy] = useState(false);
+  const [signin, setSignin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const start = async () => {
+    setBusy(true);
+    setError(null);
+    haptics.medium();
+    try {
+      await signInAnonymously();
+      analytics.signedIn('anonymous');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Anmeldung fehlgeschlagen';
+      setError(
+        /anonymous/i.test(msg)
+          ? 'Anonyme Anmeldung ist im Supabase-Dashboard noch nicht aktiviert: ' +
+              'Authentication → Sign In / Providers → Anonymous einschalten.'
+          : msg,
+      );
+      setBusy(false);
+    }
+  };
+
+  return (
+    <GridBackground>
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={styles.hero}>
+          <Text style={styles.wordmark}>{BRAND.name}</Text>
+          <Text style={styles.claim}>
+            Kurze {BRAND.unit.many}. Echte Fragen.{'\n'}Und in drei Tagen fragen wir nochmal.
+          </Text>
+        </View>
+
+        <View style={styles.actions}>
+          {signin ? (
+            <>
+              <GoogleButton label="Anmelden mit Google" />
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>oder</Text>
+                <View style={styles.orLine} />
+              </View>
+              <EmailAuthForm mode="signin" />
+              <Pressable onPress={() => setSignin(false)} hitSlop={8}>
+                <Text style={styles.switchMode}>Doch neu anfangen</Text>
+              </Pressable>
+            </>
+          ) : (
+          <>
+          <Pressable
+            onPress={start}
+            disabled={busy}
+            style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+            accessibilityRole="button"
+          >
+            {busy ? (
+              <ActivityIndicator color={color.bg} />
+            ) : (
+              <Text style={styles.ctaLabel}>Los geht's</Text>
+            )}
+          </Pressable>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {/* Google steht UNTER dem anonymen Start, nicht darueber. Der
+              schnellste Weg zum ersten Inhalt bleibt der Weg ohne Konto -
+              wer sich lieber gleich anmeldet, findet es direkt darunter. */}
+          <GoogleButton />
+
+          <Pressable onPress={() => setSignin(true)} hitSlop={8}>
+            <Text style={styles.switchMode}>Ich habe schon ein Konto</Text>
+          </Pressable>
+
+          <Text style={styles.legal}>
+            Es wird ein anonymes Konto angelegt — keine E-Mail, kein Passwort.
+            Du kannst es später jederzeit sichern.
+          </Text>
+          </>
+          )}
+        </View>
+      </View>
+    </GridBackground>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, paddingHorizontal: space.xl, justifyContent: 'space-between' },
+  hero: { flex: 1, justifyContent: 'center', gap: space.lg },
+  wordmark: {
+    ...type.display,
+    fontSize: 44,
+    lineHeight: 50,
+    color: color.ink.max,
+    letterSpacing: -1.2,
+  },
+  claim: { ...type.deck, color: color.ink.mid },
+
+  actions: { gap: space.md, paddingBottom: space.xxl },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: color.ink.faint },
+  orText: { ...type.meta, color: color.ink.low },
+  cta: {
+    height: 56,
+    borderRadius: radius.lg,
+    backgroundColor: color.signal.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaPressed: { opacity: 0.82 },
+  ctaLabel: { ...type.label, fontSize: 17, color: color.bg },
+  error: { ...type.meta, color: color.signal.error, lineHeight: 18 },
+  legal: { ...type.meta, color: color.ink.low, textAlign: 'center', lineHeight: 16 },
+  switchMode: { ...type.label, color: color.signal.primary, textAlign: 'center', paddingVertical: space.sm },
+});

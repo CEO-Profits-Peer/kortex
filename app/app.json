@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "ElyCic",
+    "slug": "elycic",
+    "scheme": "elycic",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#0B0C0E",
+    "splash": {
+      "image": "./assets/generated/splash.png",
+      "backgroundColor": "#0B0C0E",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "app.elycic.mobile",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "app.elycic.mobile",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/generated/adaptive-icon.png",
+        "backgroundColor": "#0B0C0E"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/generated/favicon.png",
+      "name": "ElyCic",
+      "shortName": "ElyCic",
+      "themeColor": "#0B0C0E",
+      "backgroundColor": "#0B0C0E",
+      "display": "standalone",
+      "lang": "de"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-font",
+      "expo-splash-screen",
+      "expo-image",
+      "expo-audio"
+    ],
+    "experiments": {},
+    "icon": "./assets/generated/icon.png"
+  }
+}

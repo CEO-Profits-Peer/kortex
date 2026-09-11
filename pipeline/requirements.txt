@@ -1,0 +1,11 @@
+# Ingestion-Pipeline. Laeuft lokal und in GitHub Actions.
+#
+# Bewusst KEIN supabase-py: die Bibliothek zieht Auth-, Realtime- und
+# Storage-Clients mit, von denen wir nichts brauchen, und genau dieser
+# Abhaengigkeitsbaum bricht unter Python 3.14. PostgREST ist eine normale
+# REST-Schnittstelle - httpx reicht.
+feedparser==6.0.11        # RSS/Atom parsen
+trafilatura==2.0.0        # Artikeltext aus HTML (entfernt Werbung, Navigation, Scripts)
+httpx==0.28.1             # HTTP: Feeds, Artikel, PostgREST
+google-genai==1.44.0      # Gemini: Structured Output + Embeddings
+python-dotenv==1.1.1
