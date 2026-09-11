@@ -126,15 +126,32 @@ def _code(exc: Exception) -> int | None:
 
 
 def _is_missing_model(exc: Exception) -> bool:
-    """Modell gibt es in diesem Konto nicht.
+    """Dieses Modell ist nicht zu gebrauchen - das naechste vielleicht schon.
 
-    Warten hilft dagegen nichts, das naechste Modell schon. Genau dieser Fall
-    kam vor: zwei Ausweichmodelle standen in der Modellliste und antworteten
-    trotzdem mit 404.
+    Zwei Faelle, gleiche Behandlung:
+
+      404  Das Modell gibt es in diesem Konto nicht. Kam schon einmal vor:
+           zwei Ausweichmodelle standen in der Liste und antworteten mit 404.
+
+      400 INVALID_ARGUMENT
+           Das Modell gibt es, aber es nimmt diese Anfrage nicht an - nicht
+           jedes Flash-Modell versteht response_schema und thinking_config
+           gleich. Gemessen: gemini-3.6-flash antwortet auf exakt dieselbe
+           Anfrage, die gemini-3.8-flash beantwortet, mit 400.
+
+           Das ist ein kleiner, aber teurer Unterschied: 400 ist kein
+           voruebergehender Fehler, also hat die Pipeline drei davon
+           gezaehlt und den ganzen Lauf abgebrochen - wegen EINES
+           untauglichen Modells mitten in der Ausweichliste. Ein Modell,
+           das die Anfrage nicht mag, darf den Lauf nicht beenden; es darf
+           nur uebersprungen werden.
     """
-    if _code(exc) == 404:
+    code = _code(exc)
+    if code == 404:
         return True
     text = str(exc).lower()
+    if code == 400 and "invalid_argument" in text:
+        return True
     return "not_found" in text or "is not found" in text
 
 
