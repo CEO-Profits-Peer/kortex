@@ -219,6 +219,27 @@ def main() -> int:
                 continue
 
             embedding = gen.embed(item.text, cfg.embedding_model)
+
+            # --- Erzaehlt das schon eine andere Karte? -------------------
+            #
+            # Erst hier, nicht frueher: der Vergleich braucht die
+            # Einbettung, und die kostet einen eigenen Aufruf. Ihn fuer
+            # jeden Rohartikel auszugeben - auch fuer die, die gleich
+            # durch die Relevanz- oder Inhaltspruefung fallen - waere
+            # teurer als die paar Modellaufrufe, die es spart.
+            #
+            # Verglichen wird der Quelltext, nicht die fertige Karte: zwei
+            # Meldungen ueber denselben Start sind sich im Original
+            # aehnlicher als in zwei verschieden formulierten Karten.
+            twin = db.similar_to(embedding, cfg.dedupe_threshold)
+            if twin:
+                stats["duplicate"] += 1
+                log.info(
+                    "  Dublette: %s  (wie '%s', %.0f%%)",
+                    item.title[:44], twin["title"][:34], twin["similarity"] * 100,
+                )
+                continue
+
             # Freigabe nicht pauschal, sondern nach Vertrauen in die Quelle.
             #
             # AUTO_APPROVE=true heisst nicht "alles durchwinken". Die
@@ -293,17 +314,37 @@ def main() -> int:
             gen.first_error,
         )
 
-    log.info(
-        "Fertig · gesehen %d · bekannt %d · Lizenz uebersprungen %d · "
-        "ohne Lernwert %d · unbrauchbar %d · abgelehnt %d · angenommen %d · "
-        "Erklaerkarten %d (%d verworfen) · "
-        "geschrieben %d · Gemini-Aufrufe %d · Wiederholungen %d · Modell %s",
-        stats["seen"], stats["already_known"], stats["skipped_license"],
-        stats["irrelevant"], stats["gemini_unusable"], stats["rejected"],
-        stats["accepted"], stats["held_for_review"],
-        stats["kinetic"], stats["kinetic_rejected"],
-        written, gen.calls, gen.retries, gen.model,
-    )
+    # Der Bericht, fuer den der ganze Lauf gemacht wird.
+    #
+    # Er kam bisher nie an. Die Formatzeichenkette hatte dreizehn
+    # Platzhalter und bekam vierzehn Werte - also verschob sich alles um
+    # eins, und der letzte blieb uebrig. Python meldet das nicht als
+    # Absturz, sondern schreibt "--- Logging error ---" samt Traceback
+    # nach stderr und macht weiter. Wer den Lauf ueber GitHub Actions
+    # ansieht, scrollt an einer Fehlermeldung vorbei und findet dort, wo
+    # die Zusammenfassung stehen sollte, gar nichts.
+    #
+    # Deshalb jetzt eine Zeile pro Wert. Laenger, dafuer kann sich beim
+    # naechsten neuen Zaehler nichts mehr verschieben.
+    log.info("Fertig.")
+    for label, value in [
+        ("gesehen", stats["seen"]),
+        ("schon bekannt", stats["already_known"]),
+        ("Lizenz uebersprungen", stats["skipped_license"]),
+        ("ohne Lernwert", stats["irrelevant"]),
+        ("Dublette", stats["duplicate"]),
+        ("Gemini unbrauchbar", stats["gemini_unusable"]),
+        ("Pruefung abgelehnt", stats["rejected"]),
+        ("angenommen", stats["accepted"]),
+        ("davon Erklaerkarten", stats["kinetic"]),
+        ("Drehbuch verworfen", stats["kinetic_rejected"]),
+        ("wartet auf Freigabe", stats["held_for_review"]),
+        ("geschrieben", written),
+        ("Gemini-Aufrufe", gen.calls),
+        ("Wiederholungen", gen.retries),
+    ]:
+        log.info("  %-22s %d", label, value)
+    log.info("  %-22s %s", "zuletzt genutztes Modell", gen.model)
 
     # Verteilung der Wortdeckung - damit die Schwelle in
     # validate/checks.py an Zahlen justiert wird und nicht an Gefuehl.

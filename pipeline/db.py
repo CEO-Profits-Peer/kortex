@@ -133,6 +133,28 @@ class Database:
 
     # --- Schreiben -----------------------------------------------------------
 
+    def similar_to(self, embedding: list[float], threshold: float) -> dict[str, Any] | None:
+        """Gibt es schon eine Karte, die dasselbe erzaehlt?
+
+        Der content_hash faengt nur denselben ARTIKEL. Zwei Meldungen ueber
+        denselben Satellitenstart haben verschiedene Hashes und ergaben
+        bisher zwei Karten - siehe Migration 0046.
+
+        Ein Fehlschlag hier darf den Lauf nicht anhalten: lieber eine
+        Dublette zu viel als eine Karte zu wenig.
+        """
+        try:
+            response = self.http.post(
+                "/rpc/find_similar_content",
+                json={"p_embedding": embedding, "p_min_similarity": threshold},
+            )
+            if response.status_code >= 400:
+                return None
+            rows = response.json()
+            return rows[0] if rows else None
+        except Exception:  # noqa: BLE001 - Netz, Timeout, alles
+            return None
+
     def insert_items(self, items: list[dict[str, Any]]) -> int:
         """Einfuegen, Duplikate still ignorieren.
 
