@@ -51,10 +51,38 @@ TRANSIENT_CODES = (429, 500, 502, 503, 504)
 #: zwar in der Modellliste, liefern beim Aufruf aber 404. Nur was tatsaechlich
 #: geantwortet hat, steht hier. Namen, die es spaeter nicht mehr gibt, werden
 #: beim ersten Versuch uebersprungen - siehe _is_missing_model.
+# --- Warum hier zehn Modelle stehen und nicht drei ---------------------------
+#
+# Gemessen an der echten API, Fehlerdetail eines 429:
+#
+#     GenerateRequestsPerDayPerProjectPerModel-FreeTier
+#     generate_content_free_tier_requests = 20
+#
+# Zwanzig Anfragen. Pro TAG. Das war die eigentliche Ursache dafuer, dass
+# der Feed nie voll wurde - nicht die Feeds, nicht die Pruefung. Mit drei
+# Modellen sind das 60 Karten am Tag, und davon geht noch ein Teil fuer
+# Erklaerkarten und abgelehnte Versuche drauf.
+#
+# Das Kontingent gilt "PerProjectPerModel", also je Modell einzeln. Zehn
+# Modelle sind zehn Toepfe. Das ist eine Kruecke und soll auch eine
+# bleiben: der richtige Weg ist Abrechnung im Google-Konto zu aktivieren,
+# dann kostet dieselbe Menge Karten ein paar Cent und die Liste hier
+# koennte wieder auf ein Modell zusammenschrumpfen.
+#
+# Reihenfolge ist Qualitaetsreihenfolge: die grossen Flash-Modelle zuerst,
+# die Lite-Varianten zuletzt. Was ein schwaecheres Modell schlechter
+# macht, faengt die deterministische Pruefung ohnehin ab.
 FALLBACK_MODELS = (
     "gemini-3.5-flash",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
     "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+    "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-2.5-flash-lite",
 )
 
 MAX_ATTEMPTS = 4
@@ -110,8 +138,32 @@ def _is_missing_model(exc: Exception) -> bool:
     return "not_found" in text or "is not found" in text
 
 
+def _is_daily_quota(exc: Exception) -> bool:
+    """Tageskontingent dieses Modells ist aufgebraucht.
+
+    Sieht aus wie ein 429 und ist doch das Gegenteil: bei Ueberlastung
+    hilft Warten, hier hilft es bis Mitternacht nicht. Der Unterschied
+    steht im Fehlerdetail:
+
+        GenerateRequestsPerDayPerProjectPerModel-FreeTier   -> Tag
+        GenerateRequestsPerMinute...                        -> Minute
+
+    Ohne diese Unterscheidung wartet die Pipeline vier Mal mit wachsender
+    Pause auf ein Kontingent, das heute nicht wiederkommt - rund zwanzig
+    verlorene Sekunden vor jedem Modellwechsel, zehn Mal hintereinander.
+    """
+    if _code(exc) != 429:
+        return False
+    text = str(exc)
+    return "PerDay" in text or "free_tier_requests" in text
+
+
 def _is_transient(exc: Exception) -> bool:
     if _is_missing_model(exc):
+        return False
+    # Aufgebrauchtes Tageskontingent ist kein voruebergehender Fehler -
+    # aber ein Grund, sofort das naechste Modell zu nehmen.
+    if _is_daily_quota(exc):
         return False
     if _code(exc) in TRANSIENT_CODES:
         return True
@@ -395,6 +447,11 @@ class Generator:
                     if _is_missing_model(exc):
                         # Kein Grund zu warten - das Modell kommt nicht wieder.
                         break
+                    if _is_daily_quota(exc):
+                        # Auch kein Grund zu warten - das Kontingent kommt
+                        # erst morgen wieder. Direkt zum naechsten Topf.
+                        log.info('%s: Tageskontingent aufgebraucht', self.model)
+                        break
                     if not _is_transient(exc) or attempt == MAX_ATTEMPTS - 1:
                         break
                     delay = BASE_DELAY * (2**attempt) + random.uniform(0, 1.5)
@@ -406,7 +463,9 @@ class Generator:
                     time.sleep(delay)
 
             # Alle Versuche mit diesem Modell verbraucht.
-            if last is not None and (_is_transient(last) or _is_missing_model(last))                     and self._next_model():
+            if last is not None and (
+                _is_transient(last) or _is_missing_model(last) or _is_daily_quota(last)
+            ) and self._next_model():
                 continue
             raise last if last else RuntimeError('Gemini: unbekannter Fehler')
 
