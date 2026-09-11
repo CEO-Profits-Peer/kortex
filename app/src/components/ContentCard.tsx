@@ -29,7 +29,7 @@ import { track } from '@/lib/eventBuffer';
 import { haptics } from '@/lib/haptics';
 import { sound } from '@/lib/sound';
 import { onSpeechChange, speakingCardId, toggleSpeech } from '@/lib/speech';
-import { setContentState, useContentState } from '@/lib/contentState';
+import { contentState, setContentState, useContentState } from '@/lib/contentState';
 import { usePrefs } from '@/lib/prefs';
 import { shareCard } from '@/lib/share';
 import { api } from '@/lib/supabase';
@@ -80,9 +80,19 @@ const BEAT_DURATION = 240;
 function Block({ block, accent }: { block: BodyBlock; accent: string }) {
   switch (block.type) {
     case 'para':
-      // Abgeschnitten ist lesbar, verkleinert auf einem 5-Zoll-Display nicht.
+      // KEIN numberOfLines mehr.
+      //
+      // Frueher stand hier 6 Zeilen mit der Begruendung "abgeschnitten ist
+      // lesbar, verkleinert nicht". Das stimmte, solange es nichts anderes
+      // gab. Inzwischen gibt es zwei bessere Antworten auf zu viel Text:
+      // FitBox verkleinert passgenau, und reicht das nicht, teilt
+      // paginate() auf eine zweite Seite.
+      //
+      // Drei Mechanismen fuer dasselbe Problem sind einer zu viel - und
+      // ausgerechnet der schlechteste gewann, weil er zuerst greift. Das
+      // Ergebnis waren Saetze, die mitten im Wort mit "..." aufhoerten.
       return (
-        <Text style={styles.para} numberOfLines={6}>
+        <Text style={styles.para}>
           {block.text}
         </Text>
       );
@@ -93,7 +103,7 @@ function Block({ block, accent }: { block: BodyBlock; accent: string }) {
           {block.items.slice(0, 4).map((line, i) => (
             <View key={i} style={styles.bulletRow}>
               <View style={[styles.bulletMark, { backgroundColor: accent }]} />
-              <Text style={styles.para} numberOfLines={3}>
+              <Text style={styles.para}>
                 {line}
               </Text>
             </View>
@@ -107,7 +117,7 @@ function Block({ block, accent }: { block: BodyBlock; accent: string }) {
           <Text style={[styles.statValue, { color: accent }]} numberOfLines={1}>
             {block.value}
           </Text>
-          <Text style={styles.statLabel} numberOfLines={2}>
+          <Text style={styles.statLabel}>
             {block.label}
           </Text>
         </View>
@@ -116,7 +126,7 @@ function Block({ block, accent }: { block: BodyBlock; accent: string }) {
     case 'quote':
       return (
         <View style={[styles.quote, { borderLeftColor: accent }]}>
-          <Text style={styles.quoteText} numberOfLines={5}>
+          <Text style={styles.quoteText}>
             {block.text}
           </Text>
           {block.attribution ? <Text style={styles.quoteAttr}>— {block.attribution}</Text> : null}
@@ -150,7 +160,17 @@ function ContentCardBase({
    * Wiedereinblenden neu aufgebaut wird. Geschrieben wurde der Like
    * durchaus, gelesen hat ihn nur nie jemand. Siehe lib/contentState.ts.
    */
-  const { liked, reposted } = useContentState(item.id);
+  const { liked, reposted, delta } = useContentState(item.id);
+
+  /**
+   * Die angezeigte Like-Zahl.
+   *
+   * Grundlage ist der Wert vom Server; dazu kommt, was in dieser Sitzung
+   * getippt wurde. `Math.max(0, ...)` faengt den einen Fall ab, in dem die
+   * Zahl sonst negativ wuerde: eine Karte mit Zaehlerstand 0, die schon
+   * als geliked gilt (aelterer Like, bevor der Zaehler existierte).
+   */
+  const likeCount = Math.max(0, (item.like_count ?? 0) + delta);
   const [rated, setRated] = useState<'too_easy' | 'too_hard' | null>(null);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -249,7 +269,10 @@ function ContentCardBase({
 
   const applyLike = useCallback(
     (next: boolean) => {
-      setContentState(item.id, { liked: next });
+      setContentState(item.id, {
+        liked: next,
+        delta: contentState(item.id).delta + (next ? 1 : -1),
+      });
       next ? haptics.medium() : haptics.light();
       // Nur beim Setzen, nicht beim Zuruecknehmen: ein Ton fuer "doch nicht"
       // klingt nach Fehler, und ein Like zurueckzunehmen ist keiner.
@@ -429,12 +452,12 @@ function ContentCardBase({
           ) : (
           <FitBox onOverflow={() => setForceSplit(true)}>
           <Animated.View style={[styles.content, contentDrift]}>
-            <Animated.Text entering={beat(BEAT.title)} style={styles.title} numberOfLines={3}>
+            <Animated.Text entering={beat(BEAT.title)} style={styles.title} numberOfLines={4}>
               {item.title}
             </Animated.Text>
 
             {item.deck ? (
-              <Animated.Text entering={beat(BEAT.deck)} style={styles.deck} numberOfLines={2}>
+              <Animated.Text entering={beat(BEAT.deck)} style={styles.deck} numberOfLines={4}>
                 {item.deck}
               </Animated.Text>
             ) : null}
@@ -473,6 +496,7 @@ function ContentCardBase({
 
           <ActionRail
             liked={liked}
+            likeCount={likeCount}
             reposted={reposted}
             speaking={speaking}
             onListen={kinetic ? undefined : () => toggleSpeech(item)}

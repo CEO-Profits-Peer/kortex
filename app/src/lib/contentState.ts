@@ -24,9 +24,23 @@ import { api } from './supabase';
  * das Netz warten.
  */
 
-type State = { liked: boolean; reposted: boolean };
+type State = {
+  liked: boolean;
+  reposted: boolean;
+  /**
+   * Wie sich die Like-Zahl in DIESER Sitzung veraendert hat.
+   *
+   * Die Karte bringt `like_count` vom Server mit - darin steckt ein
+   * frueher gesetzter eigener Like schon drin. Wuerde man beim Anzeigen
+   * einfach +1 rechnen, sobald `liked` gilt, zaehlte man ihn doppelt.
+   *
+   * Deshalb ein Versatz: er beginnt bei null und bewegt sich nur, wenn
+   * hier und jetzt getippt wird. Angezeigt wird `like_count + delta`.
+   */
+  delta: number;
+};
 
-const NONE: State = { liked: false, reposted: false };
+const NONE: State = { liked: false, reposted: false, delta: 0 };
 
 const store = new Map<string, State>();
 const listeners = new Map<string, Set<(s: State) => void>>();
@@ -61,7 +75,14 @@ export async function hydrateContentState(ids: string[]): Promise<void> {
   try {
     const map = await api.myContentState(fresh);
     for (const [id, s] of Object.entries(map)) {
-      store.set(id, { liked: Boolean(s.liked), reposted: Boolean(s.reposted) });
+      // Den Versatz NICHT zuruecksetzen: wer geliked hat und dann
+      // nachlaedt, soll seine Zahl behalten.
+      const before = store.get(id) ?? NONE;
+      store.set(id, {
+        liked: Boolean(s.liked),
+        reposted: Boolean(s.reposted),
+        delta: before.delta,
+      });
       emit(id);
     }
   } catch {

@@ -149,14 +149,25 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
         {p.bio ? <Text style={styles.bio}>{p.bio}</Text> : null}
 
         <View style={styles.stats}>
-          <View style={styles.statCol}>
+          {/* Antippbar: hinter der Zahl steht die Liste, und die ist der
+              Weg, auf dem man neue Leute findet. Eine Zahl ohne Ziel ist
+              an dieser Stelle eine Sackgasse. */}
+          <Pressable
+            onPress={() => router.push(`/people/${encodeURIComponent(p.handle)}?mode=followers`)}
+            style={({ pressed }) => [styles.statCol, pressed && { opacity: 0.7 }]}
+            hitSlop={6}
+          >
             <Text style={styles.statValue}>{p.follower_count}</Text>
             <Text style={styles.statLabel}>Folgen dir</Text>
-          </View>
-          <View style={styles.statCol}>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push(`/people/${encodeURIComponent(p.handle)}?mode=following`)}
+            style={({ pressed }) => [styles.statCol, pressed && { opacity: 0.7 }]}
+            hitSlop={6}
+          >
             <Text style={styles.statValue}>{p.following_count}</Text>
             <Text style={styles.statLabel}>Folgt</Text>
-          </View>
+          </Pressable>
           {p.mastery_total !== null ? (
             <View style={styles.statCol}>
               <Text style={[styles.statValue, { color: color.signal.mastery }]}>

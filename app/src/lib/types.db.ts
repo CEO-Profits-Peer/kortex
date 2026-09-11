@@ -69,6 +69,12 @@ export type ContentItem = {
   word_count: number;
   /** Vom Server berechnet: ab wann die Card als gelesen zaehlt */
   dwell_target_ms: number;
+  /**
+   * Wie oft die Karte insgesamt geliked wurde. Ein Trigger haelt das
+   * aktuell (0018); die Zahl enthaelt den eigenen Like bereits, wenn man
+   * ihn in einer frueheren Sitzung gesetzt hat.
+   */
+  like_count: number;
   interaction_template: string | null;
   interaction_data: Record<string, unknown> | null;
   /**

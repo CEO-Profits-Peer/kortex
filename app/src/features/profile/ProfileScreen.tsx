@@ -37,12 +37,33 @@ import { color, radius, space, type } from '@/theme/tokens';
  * noch dort, wo etwas antippbar ist — dann bedeutet ein Rahmen etwas.
  */
 
-function Count({ value, label, tint }: { value: number | string; label: string; tint?: string }) {
-  return (
-    <View style={styles.count}>
+function Count({
+  value,
+  label,
+  tint,
+  onPress,
+}: {
+  value: number | string;
+  label: string;
+  tint?: string;
+  /** Gesetzt, wenn hinter der Zahl eine Liste steht. */
+  onPress?: () => void;
+}) {
+  const inner = (
+    <>
       <Text style={[styles.countValue, tint ? { color: tint } : null]}>{value}</Text>
       <Text style={styles.countLabel}>{label}</Text>
-    </View>
+    </>
+  );
+  if (!onPress) return <View style={styles.count}>{inner}</View>;
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => [styles.count, pressed && { opacity: 0.7 }]}
+    >
+      {inner}
+    </Pressable>
   );
 }
 
@@ -176,9 +197,21 @@ export function ProfileScreen() {
         <View style={styles.counts}>
           <Count value={social.repost_count} label="Empfohlen" />
           <View style={styles.divider} />
-          <Count value={social.follower_count} label="Follower" />
+          <Count
+            value={social.follower_count}
+            label="Follower"
+            onPress={() =>
+              router.push(`/people/${encodeURIComponent(social.handle)}?mode=followers`)
+            }
+          />
           <View style={styles.divider} />
-          <Count value={social.following_count} label="Folgt" />
+          <Count
+            value={social.following_count}
+            label="Folgt"
+            onPress={() =>
+              router.push(`/people/${encodeURIComponent(social.handle)}?mode=following`)
+            }
+          />
           <View style={styles.divider} />
           <Count value={p?.mastery_total ?? 0} label="Mastery" tint={color.signal.mastery} />
         </View>

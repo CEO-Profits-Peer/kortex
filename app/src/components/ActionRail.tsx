@@ -72,8 +72,16 @@ function RailButton({
   );
 }
 
+/** Grosse Zahlen kurz: 1234 -> 1,2k. Auf einer Leiste ist Platz knapp. */
+function short(n: number): string {
+  if (n < 1000) return String(n);
+  const k = n / 1000;
+  return `${k < 10 ? k.toFixed(1).replace('.', ',') : Math.round(k)}k`;
+}
+
 export function ActionRail({
   liked,
+  likeCount,
   reposted,
   speaking,
   tint,
@@ -85,6 +93,8 @@ export function ActionRail({
   onListen,
 }: {
   liked: boolean;
+  /** Gesamtzahl der Likes, einschliesslich des eigenen. */
+  likeCount: number;
   reposted: boolean;
   speaking: boolean;
   tint: string;
@@ -119,7 +129,11 @@ export function ActionRail({
       ) : null}
       <RailButton
         icon={liked ? 'like-filled' : 'like'}
-        label={liked ? 'geliked' : 'Like'}
+        // Die Zahl statt des Wortes, sobald es etwas zu zaehlen gibt.
+        // "Like" sagt nur, was der Knopf tut - das sieht man am Symbol.
+        // Die Zahl sagt, was andere von der Karte hielten, und das ist die
+        // Auskunft, die man an dieser Stelle sucht.
+        label={likeCount > 0 ? short(likeCount) : liked ? 'geliked' : 'Like'}
         active={liked}
         tint={tint}
         onPress={onLike}

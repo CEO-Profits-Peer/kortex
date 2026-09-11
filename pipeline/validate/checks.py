@@ -407,6 +407,41 @@ def _show_numbers(show: dict[str, Any]) -> list[str]:
     return out
 
 
+
+#: Sieht aus wie ein Aktenzeichen: Grossbuchstaben, Bindestrich, Ziffern.
+#: "GSI-M-2", "SSI-M-2-1", "SR-M".
+CODE_RE = re.compile(r"^[A-Z]{2,}(?:[-–][A-Z0-9]+)+$")
+
+#: Blanke Ganzzahl ab fuenf Stellen, ohne Einheit und ohne Trennzeichen.
+#: "875606" ist eine Dokumentnummer; eine echte Groesse dieser Ordnung
+#: schriebe das Modell als "875.606" oder mit Einheit.
+BARE_ID_RE = re.compile(r"^\d{5,}$")
+
+
+def _looks_like_ids(rows: list) -> bool:
+    """Ist diese Tabelle eine Aktenliste statt einer Groessenreihe?
+
+    Der Anlass war eine echte Karte: CERN-Sicherheitsregeln, vorgetragen
+    als Tabelle aus Regelkuerzeln und EDMS-Dokumentnummern. Technisch
+    fehlerfrei - jede Zahl stand im Quelltext -, und trotzdem erklaert sie
+    nichts. Man sieht einer Aktennummer beim Wachsen nicht zu.
+
+    Erkannt wird beides, was so eine Liste ausmacht: Kuerzel links,
+    blanke lange Nummern rechts. Eines von beidem genuegt.
+    """
+    if len(rows) < 2:
+        return False
+
+    left = [str(r[0]).strip() for r in rows if isinstance(r, list) and len(r) == 2]
+    right = [str(r[1]).strip() for r in rows if isinstance(r, list) and len(r) == 2]
+    if len(left) < 2:
+        return False
+
+    codes = sum(1 for v in left if CODE_RE.match(v))
+    bare = sum(1 for v in right if BARE_ID_RE.match(v))
+    return codes >= 2 or bare >= 2
+
+
 def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
     """Taugt dieses Drehbuch, oder wird es eine Textkarte?
 
@@ -446,6 +481,8 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
             head = show.get("head")
             if head is not None and (not isinstance(head, list) or len(head) != 2):
                 return Result(False, f"Takt {i}: Tabellenkopf nicht zweispaltig")
+            if _looks_like_ids(rows):
+                return Result(False, f"Takt {i}: Tabelle aus Kennungen statt Groessen")
         if show["kind"] == "bars":
             labels, values = show.get("labels"), show.get("values")
             if not isinstance(labels, list) or not isinstance(values, list):

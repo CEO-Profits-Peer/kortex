@@ -109,8 +109,12 @@ export function SearchScreen() {
       router.push(`/u/${encodeURIComponent(hit.subtitle.replace(/^@/, ''))}`);
     } else if (hit.kind === 'course') {
       router.push(`/course/${encodeURIComponent(hit.id)}`);
+    } else if (hit.kind === 'content') {
+      // Direkt auf die Karte. Wer eine Karte sucht, will sie lesen - und
+      // danach weiterwischen, statt zurueck in die Liste zu muessen.
+      router.push(`/reel/${encodeURIComponent(hit.id)}`);
     }
-    // Quellen, Personen und Kurse bekommen eigene Ansichten in v0.4.
+    // Quellen bekommen eine eigene Ansicht in v0.4.
   }, []);
 
   const roots = categories.filter((c) => !c.parent_id);

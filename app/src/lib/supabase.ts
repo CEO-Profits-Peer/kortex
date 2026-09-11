@@ -287,6 +287,26 @@ export const api = {
     return (data ?? []) as PersonHit[];
   },
 
+  /** Wer dieser Person folgt. */
+  async followers(handle: string, limit = 50): Promise<PersonHit[]> {
+    const { data, error } = await supabase.rpc('get_followers', {
+      p_handle: handle,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return (data ?? []) as PersonHit[];
+  },
+
+  /** Wem diese Person folgt. */
+  async following(handle: string, limit = 50): Promise<PersonHit[]> {
+    const { data, error } = await supabase.rpc('get_following', {
+      p_handle: handle,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return (data ?? []) as PersonHit[];
+  },
+
   async searchPeople(query: string, limit = 20): Promise<PersonHit[]> {
     const { data, error } = await supabase.rpc('search_people', {
       p_query: query,

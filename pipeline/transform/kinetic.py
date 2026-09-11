@@ -100,10 +100,34 @@ Die Stimme liest den Satz vor, das Bild baut sich dabei auf. Der Reiz
 entsteht dadurch, dass sich von Takt zu Takt etwas SICHTBAR aendert -
 eine Tabellenzeile kommt dazu, ein Balken waechst.
 
+WAS IN EINE TABELLE ODER AUF BALKEN GEHOERT
+Nur GROESSEN, die man vergleichen kann: Betraege, Jahre, Anteile,
+Entfernungen, Mengen, Zeiten.
+
+NIEMALS Kennungen. Aktenzeichen, Dokumentnummern, Katalognummern,
+Vertragsnummern, Artikelnummern, Paragraphen, Registriernummern. Sie sehen
+aus wie Zahlen, sind aber Namen - man kann sie nicht vergleichen, nicht
+addieren, und aus ihnen wird nichts sichtbar.
+
+  Schlecht:  REGELUNG | EDMS-NUMMER
+             SR-M     | 875606
+             GSI-M-2  | 875610
+  Das ist eine Aktenliste. Sie erklaert nichts, sie belegt nur, dass es
+  Akten gibt.
+
+  Gut:       JAHR | GUTHABEN
+             1    | 1.060 EUR
+             2    | 1.124 EUR
+  Hier sieht man beim Wachsen zu.
+
+Die Probe: Wuerde jemand beim Zusehen "ah, deshalb" denken? Oder nur
+"aha, Nummern"? Beim zweiten setze "suitable": false.
+
 WANN DU ABLEHNEN MUSST
 Setze "suitable": false und gib keine Takte zurueck, wenn eines zutrifft:
 - Der Text enthaelt keinen Verlauf, keinen Vergleich und keine Groessen,
   die man nebeneinander stellen kann.
+- Die einzigen Zahlen im Text sind Kennungen (siehe oben).
 - Das Drehbuch waere nur der Fliesstext in Haeppchen. Wenn sich das Bild
   von Takt zu Takt nicht aendert, ist es keine Erklaerkarte.
 - Die Zahlen im Text reichen nicht fuer mindestens eine Tabelle oder
