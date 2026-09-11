@@ -83,7 +83,9 @@ FALLBACK_MODELS = (
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
     "gemini-3.1-flash-lite-preview",
-    "gemini-2.5-flash-lite",
+    # gemini-2.5-flash-lite steht bewusst NICHT mehr hier: die API
+    # antwortet mit 404 "no longer available to new users". Es kostet
+    # jedes Mal einen Anlauf und liefert nie etwas.
 )
 
 MAX_ATTEMPTS = 4
@@ -438,6 +440,20 @@ class Generator:
     @property
     def model(self) -> str:
         return self.models[self.model_index]
+
+    @property
+    def exhausted(self) -> bool:
+        """Sind Modelle UND Schluessel durch?
+
+        Wichtig fuer die Fehlermeldung: "drei Aufrufe fehlgeschlagen,
+        pruef deine Konfiguration" ist irrefuehrend, wenn schlicht das
+        Tageskontingent alle ist. Das eine sucht man stundenlang, das
+        andere wartet man ab.
+        """
+        return (
+            self.model_index + 1 >= len(self.models)
+            and self.key_index + 1 >= len(self.api_keys)
+        )
 
     def _next_model(self) -> bool:
         """Naechstes Modell - und wenn keins mehr da ist, naechster Schluessel.

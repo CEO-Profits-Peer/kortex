@@ -153,8 +153,17 @@ def main() -> int:
                 if card is None:
                     stats["gemini_unusable"] += 1
                     if gen.consecutive_failures >= 3:
-                        log.error("Drei Gemini-Aufrufe in Folge fehlgeschlagen. Abbruch.\n"
-                                  "  Ursache: %s", gen.first_error)
+                        if gen.exhausted:
+                            log.warning(
+                                "Tageskontingent aufgebraucht - alle %d Modelle, "
+                                "alle %d Schluessel. Der naechste Lauf macht da "
+                                "weiter, wo dieser aufhoert: was schon eine Karte "
+                                "hat, faellt vorher raus und kostet nichts.",
+                                len(gen.models), len(gen.api_keys),
+                            )
+                        else:
+                            log.error("Drei Gemini-Aufrufe in Folge fehlgeschlagen.\n"
+                                      "  Ursache: %s", gen.first_error)
                         break
                     continue
 

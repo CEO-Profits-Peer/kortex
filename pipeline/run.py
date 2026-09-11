@@ -200,7 +200,22 @@ def main() -> int:
                 # Drei Fehlschlaege in Folge sind kein Zufall, sondern ein
                 # Konfigurationsfehler. Weiterzumachen kostet nur Zeit und
                 # verdeckt die Ursache hinter einer grossen Zahl.
+                #
+                # Ausser das Tageskontingent ist schlicht alle. Das sieht
+                # genauso aus und ist kein Fehler - "pruef deine
+                # Konfiguration" waere dann eine Fehlleitung, die man
+                # stundenlang verfolgt, waehrend man nur bis morgen
+                # warten muesste.
                 if gen.consecutive_failures >= 3:
+                    if gen.exhausted:
+                        log.warning(
+                            'Tageskontingent aufgebraucht - alle %d Modelle, alle '
+                            '%d Schluessel. Kein Fehler, nur Schluss fuer heute. '
+                            'Ein zweiter Schluessel aus einem ZWEITEN Google-Projekt '
+                            'waere ein zweiter Satz Kontingente (GEMINI_API_KEY_2).',
+                            len(gen.models), len(gen.api_keys),
+                        )
+                        break
                     log.error(
                         'Drei Gemini-Aufrufe in Folge fehlgeschlagen. Abbruch.\n'
                         '  Ursache: %s\n'
