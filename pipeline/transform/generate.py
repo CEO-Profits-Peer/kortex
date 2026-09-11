@@ -201,12 +201,54 @@ REGELN, die wichtiger sind als alles andere:
 - Keine Superlative, keine Werbesprache, kein "revolutionaer", kein
   "bahnbrechend". Nuechtern und praezise.
 
+WIE VIEL AUF EINE KARTE PASST
+Eine Karte ist EIN Handybildschirm. Nicht anderthalb. Wer mehr
+hineinschreibt, zwingt die App, den Text zu verkleinern oder eine zweite
+Seite anzuhaengen - beides macht die Karte schlechter.
+
+Das Budget, streng:
+- title:       hoechstens 60 Zeichen
+- deck:        hoechstens 110 Zeichen, EIN Satz
+- body_blocks: 2 bis 4 Bloecke, zusammen 50 bis 85 Woerter
+- ein 'para':  hoechstens 3 Saetze
+- ein 'bullet': hoechstens 3 Punkte, jeder hoechstens 60 Zeichen
+Im Zweifel weniger. Eine Karte, die einen Gedanken ganz bringt, ist besser
+als eine, die drei anreisst.
+
+WAS EINE KARTE INTERESSANT MACHT
+Nicht der Anlass, sondern die Ueberraschung. Jede Karte braucht EINEN
+Satz, bei dem jemand innehaelt - eine Zahl, die groesser ist als erwartet,
+ein Vergleich, der sitzt, eine Folge, die nicht offensichtlich ist.
+
+Die Probe: Wuerde ein Siebzehnjaehriger das jemandem weitererzaehlen?
+- "Die Kommission hat Mittel bewilligt" -> nein, das ist Verwaltung.
+- "Mit dem Geld koennte man jede Schule des Landes zwei Jahre heizen"
+  -> ja, das ist eine Groessenordnung.
+Steckt im Quelltext nichts dergleichen, nimm die konkreteste Zahl und
+setze sie in ein Verhaeltnis, das im Text steht. Erfinde kein Verhaeltnis
+dazu.
+
+Keine Floskeln: "wichtiger Schritt", "zeigt einmal mehr", "in Zeiten von".
+Sie kosten Platz und sagen nichts.
+
+WENN MAN VORWISSEN BRAUCHT
+Setze nichts voraus, was nicht im Quelltext erklaert wird. Steht dort ein
+Fachbegriff, ohne den die Karte unverstaendlich bleibt, gehoert die
+Erklaerung in den ERSTEN Block - in einem Halbsatz, nicht als Vorrede.
+
+  Schlecht: "Der Perigaeumsdurchgang faellt diesmal mit Vollmond zusammen."
+  Gut:      "Der Mond steht der Erde am naechsten - Perigaeum - und ist
+             gleichzeitig voll."
+
+Braeuchte es dafuer mehr als einen Halbsatz, ist der Text fuer eine Karte
+ungeeignet: "usable": false.
+
 FORM:
-- title: hoechstens 60 Zeichen, konkret. Keine Frage, kein Clickbait.
-- deck: ein Satz, der sagt, warum das interessant ist.
-- body_blocks: 2 bis 4 Bloecke, zusammen 50 bis 90 Woerter.
-  'para' fuer Fliesstext, 'bullet' fuer Aufzaehlungen, 'stat' fuer eine
-  einzelne praegnante Zahl (value + label), 'quote' fuer ein Zitat aus dem Text.
+- title: konkret. Keine Frage, kein Clickbait.
+- deck: sagt, warum das ueberrascht - nicht, worum es geht.
+- body_blocks: 'para' fuer Fliesstext, 'bullet' fuer Aufzaehlungen, 'stat'
+  fuer eine einzelne praegnante Zahl (value + label), 'quote' fuer ein
+  Zitat aus dem Text.
 - Genau 3 Antwortmoeglichkeiten. Die falschen muessen plausibel sein.
 - difficulty: 1 = Grundschule, 3 = Oberstufe, 5 = Studium.
 

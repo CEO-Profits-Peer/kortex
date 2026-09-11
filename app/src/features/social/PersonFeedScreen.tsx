@@ -49,6 +49,26 @@ export function PersonFeedScreen({
 
   const loader = useCallback(
     async (batchSize: number): Promise<ContentItem[]> => {
+      // Die angetippte Karte kommt IMMER zuerst - auch ohne Person.
+      //
+      // Vorher stand das nur im Zweig mit Handle. Ein Link direkt auf eine
+      // Karte (geteilt, aus einer Benachrichtigung) landete deshalb im
+      // gewoehnlichen Feed, und die Karte, um die es ging, kam gar nicht
+      // vor. Das ist der Unterschied zwischen "oeffne das hier" und
+      // "oeffne irgendwas".
+      const head: ContentItem[] = [];
+      if (seen.current.size === 0 && !handle) {
+        try {
+          const start = await api.contentById(startId);
+          if (start) {
+            head.push(start);
+            seen.current.add(start.id);
+          }
+        } catch {
+          // Karte zurueckgezogen oder abgelaufen: dann eben der Feed.
+        }
+      }
+
       if (!personExhausted.current && handle) {
         try {
           const items = await api.personFeed(handle, seen.current.size === 0 ? startId : undefined);
@@ -57,7 +77,7 @@ export function PersonFeedScreen({
           // Weniger als angefragt heisst: das war alles, was diese Person hat.
           if (fresh.length > 0) {
             if (fresh.length < batchSize) personExhausted.current = true;
-            return fresh;
+            return [...head, ...fresh];
           }
           personExhausted.current = true;
         } catch {
@@ -72,7 +92,7 @@ export function PersonFeedScreen({
       const rest = await api.getFeed(batchSize);
       const fresh = rest.filter((i) => !seen.current.has(i.id));
       fresh.forEach((i) => seen.current.add(i.id));
-      return fresh;
+      return [...head, ...fresh];
     },
     [handle, startId],
   );

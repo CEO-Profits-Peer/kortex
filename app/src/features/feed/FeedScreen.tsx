@@ -14,6 +14,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { useMeasuredHeight } from '@/components/useMeasuredHeight';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { activeCardId, setActiveCard } from '@/lib/activeCard';
+import { hydrateContentState } from '@/lib/contentState';
 import { eventBuffer } from '@/lib/eventBuffer';
 import { api, configError, supabase } from '@/lib/supabase';
 import type { Category, ContentItem, Source } from '@/lib/types.db';
@@ -209,6 +210,10 @@ export function FeedScreen({
         if (prev.length === 0 && next.length > 0 && activeCardId() === null) {
           setActiveCard(next[0].id);
         }
+        // Nachholen, was ich mit diesen Karten schon gemacht habe. Ohne das
+        // sind Likes und Reposts nach jedem Neuladen unsichtbar - siehe
+        // lib/contentState.ts.
+        void hydrateContentState(next.map((i) => i.id));
         return next;
       });
       setError(null);

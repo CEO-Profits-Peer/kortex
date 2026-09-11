@@ -29,6 +29,7 @@ import { track } from '@/lib/eventBuffer';
 import { haptics } from '@/lib/haptics';
 import { sound } from '@/lib/sound';
 import { onSpeechChange, speakingCardId, toggleSpeech } from '@/lib/speech';
+import { setContentState, useContentState } from '@/lib/contentState';
 import { usePrefs } from '@/lib/prefs';
 import { shareCard } from '@/lib/share';
 import { api } from '@/lib/supabase';
@@ -140,10 +141,18 @@ function ContentCardBase({
   const { reduceMotion } = usePrefs();
   const m = reduceMotion ? 0 : 1;
 
-  const [liked, setLiked] = useState(false);
+  /**
+   * Like und Repost kommen aus dem gemeinsamen Speicher, nicht aus dem
+   * Zustand der Karte.
+   *
+   * Vorher stand hier `useState(false)`. Das hiess: wegscrollen,
+   * zurueckscrollen - und das Herz war wieder leer, weil die Karte beim
+   * Wiedereinblenden neu aufgebaut wird. Geschrieben wurde der Like
+   * durchaus, gelesen hat ihn nur nie jemand. Siehe lib/contentState.ts.
+   */
+  const { liked, reposted } = useContentState(item.id);
   const [rated, setRated] = useState<'too_easy' | 'too_hard' | null>(null);
   const [shareNote, setShareNote] = useState<string | null>(null);
-  const [reposted, setReposted] = useState(false);
 
   const accent = categoryAccent(accentHex);
   const interactive = isInteractionBuilt(item.interaction_template) && item.interaction_data;
@@ -240,7 +249,7 @@ function ContentCardBase({
 
   const applyLike = useCallback(
     (next: boolean) => {
-      setLiked(next);
+      setContentState(item.id, { liked: next });
       next ? haptics.medium() : haptics.light();
       // Nur beim Setzen, nicht beim Zuruecknehmen: ein Ton fuer "doch nicht"
       // klingt nach Fehler, und ein Like zurueckzunehmen ist keiner.
@@ -292,13 +301,13 @@ function ContentCardBase({
 
   const onRepost = useCallback(async () => {
     const next = !reposted;
-    setReposted(next);
+    setContentState(item.id, { reposted: next });
     haptics.medium();
     try {
       await api.setRepost(item.id, next);
       setShareNote(next ? 'Empfohlen — steht jetzt auf deinem Profil' : 'Empfehlung zurückgenommen');
     } catch (e) {
-      setReposted(!next);
+      setContentState(item.id, { reposted: !next });
       // Der Server laesst nur reposten, was gelesen wurde (0016).
       const msg = e instanceof Error ? e.message : '';
       setShareNote(
@@ -466,7 +475,7 @@ function ContentCardBase({
             liked={liked}
             reposted={reposted}
             speaking={speaking}
-            onListen={() => toggleSpeech(item)}
+            onListen={kinetic ? undefined : () => toggleSpeech(item)}
             onRepost={onRepost}
             tint={accent}
             categoryLabel={categoryLabel}

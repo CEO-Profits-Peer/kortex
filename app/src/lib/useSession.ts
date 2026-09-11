@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 
 import { analytics } from './analytics';
+import { resetContentState } from './contentState';
 import { supabase } from './supabase';
 
 /**
@@ -74,5 +75,7 @@ export async function signInAnonymously() {
 
 export async function signOut() {
   analytics.reset();
+  // Der naechste Nutzer auf diesem Geraet hat andere Likes.
+  resetContentState();
   await supabase.auth.signOut();
 }

@@ -257,10 +257,28 @@ def validate(card: dict[str, Any], source_text: str) -> Result:
     if not (2 <= len(body) <= 4):
         return Result(False, "falsche Anzahl Bloecke")
 
+    # --- Passt das ueberhaupt auf einen Bildschirm? --------------------------
+    #
+    # Der Prompt bittet um ein Budget, diese Pruefung setzt es durch. Ohne
+    # sie haengt die Kartenlaenge an der Tagesform des Modells, und zu lange
+    # Karten werden von der App entweder verkleinert oder auf eine zweite
+    # Seite geschoben - beides schlechter als eine Karte, die passt.
+    #
+    # Die Grenzen liegen etwas weiter als im Prompt: er bittet um 50 bis 85
+    # Woerter, abgelehnt wird erst ab 110. Eine Karte wegen fuenf Woertern
+    # wegzuwerfen waere Verschwendung; das Budget soll lenken, nicht
+    # schikanieren.
+    title = (card.get("title") or "").strip()
+    if len(title) > 70:
+        return Result(False, f"Titel zu lang ({len(title)} Zeichen)")
+    deck = (card.get("deck") or "").strip()
+    if len(deck) > 130:
+        return Result(False, f"Unterzeile zu lang ({len(deck)} Zeichen)")
+
     text = card_text(card)
     words = len(text.split())
-    if not (35 <= words <= 130):
-        return Result(False, f"Laenge {words} Woerter ausserhalb 35-130")
+    if not (35 <= words <= 110):
+        return Result(False, f"Laenge {words} Woerter ausserhalb 35-110")
 
     quiz = card.get("quiz") or {}
     options = quiz.get("options") or []

@@ -297,6 +297,24 @@ export const api = {
   },
 
   /**
+   * Eine einzelne Karte, per Kennung.
+   *
+   * Fuer den direkten Weg auf ein Reel - aus dem Profil, aus einem
+   * geteilten Link. RLS laesst freigegebene Karten lesen, deshalb braucht
+   * es dafuer keine eigene Funktion.
+   */
+  async contentById(id: string): Promise<ContentItem | null> {
+    const { data, error } = await supabase
+      .from('content_items')
+      .select('*')
+      .eq('id', id)
+      .eq('status', 'approved')
+      .maybeSingle();
+    if (error) throw error;
+    return (data as ContentItem) ?? null;
+  },
+
+  /**
    * Der Feed einer Person: erst die angetippte Karte, dann ihre Reposts,
    * dann ihre oeffentlichen Likes. Laeuft das aus, uebernimmt der normale
    * Feed - das entscheidet der Aufrufer, nicht der Server.
@@ -309,6 +327,21 @@ export const api = {
     });
     if (error) throw error;
     return (data ?? []) as ContentItem[];
+  },
+
+  /**
+   * Was ich mit diesen Karten gemacht habe - geliked, repostet.
+   *
+   * Kommt nicht mit dem Feed mit: der gibt Tabellenzeilen zurueck, in die
+   * nichts Nutzerbezogenes hineinpasst. Eine Anfrage pro Stapel.
+   */
+  async myContentState(
+    ids: string[],
+  ): Promise<Record<string, { liked: boolean; reposted: boolean }>> {
+    if (ids.length === 0) return {};
+    const { data, error } = await supabase.rpc('get_my_content_state', { p_ids: ids });
+    if (error) throw error;
+    return (data ?? {}) as Record<string, { liked: boolean; reposted: boolean }>;
   },
 
   // --- Tagesaufgabe ----------------------------------------------------

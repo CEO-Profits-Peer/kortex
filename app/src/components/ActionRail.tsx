@@ -93,17 +93,30 @@ export function ActionRail({
   onRepost: () => void;
   onShare: () => void;
   onSurf: () => void;
-  onListen: () => void;
+  /**
+   * Fehlt auf Erklaerkarten - und das ist kein Versehen.
+   *
+   * Eine Erklaerkarte spricht von sich aus und hat ihren eigenen
+   * Pause-Knopf. Stuende hier ein zweiter, griffen beide auf dieselbe
+   * Stimme zu: "Stopp" haette die laufende Aeusserung abgebrochen, der
+   * Abspieler haette das als "Takt fertig" gelesen und weitergeschaltet -
+   * und "Hoeren" haette zusaetzlich den ganzen Kartentext daruebergelegt.
+   * Zwei Bedienelemente fuer eine Sache sind hier nicht doppelt gemoppelt,
+   * sondern kaputt.
+   */
+  onListen?: () => void;
 }) {
   return (
     <View style={styles.rail} pointerEvents="box-none">
-      <RailButton
-        icon={speaking ? 'listening' : 'listen'}
-        label={speaking ? 'Stopp' : 'Hören'}
-        active={speaking}
-        tint={tint}
-        onPress={onListen}
-      />
+      {onListen ? (
+        <RailButton
+          icon={speaking ? 'listening' : 'listen'}
+          label={speaking ? 'Stopp' : 'Hören'}
+          active={speaking}
+          tint={tint}
+          onPress={onListen}
+        />
+      ) : null}
       <RailButton
         icon={liked ? 'like-filled' : 'like'}
         label={liked ? 'geliked' : 'Like'}
