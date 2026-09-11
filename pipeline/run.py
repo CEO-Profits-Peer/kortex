@@ -51,6 +51,11 @@ log = logging.getLogger("pipeline")
 #: Pressestellen und Agenturen mit Eigeninteresse (50-75).
 AUTO_APPROVE_MIN_TRUST = 80
 
+#: Nach wie vielen fertigen Karten zwischengespeichert wird. Klein genug,
+#: dass ein Abbruch wenig kostet; gross genug, dass es nicht bei jeder
+#: Karte eine Anfrage gibt.
+WRITE_EVERY = 5
+
 
 def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
     """Aus Rohartikel + Gemini-Karte eine Zeile fuer content_items.
@@ -125,6 +130,7 @@ def main() -> int:
     # sagen, ob die Schwelle von 55 Prozent richtig sitzt - eine Schwelle,
     # von der man nur die Ablehnungen kennt, kann man nicht beurteilen.
     coverages: list[float] = []
+    written = 0
 
     for src in sources:
         if stats["seen"] >= cfg.max_items_per_run:
@@ -242,14 +248,25 @@ def main() -> int:
             stats["accepted"] += 1
             if check.coverage is not None:
                 coverages.append(check.coverage)
+
+            # Zwischendurch schreiben, nicht erst am Schluss.
+            #
+            # Der Workflow bricht nach zwanzig Minuten ab, und ein Lauf
+            # braucht bei ausgelasteten Modellen leicht laenger. Wer alles
+            # bis zum Ende sammelt, verliert bei einem Abbruch ALLES - eine
+            # halbe Stunde Modellaufrufe fuer nichts. In Bloecken zu
+            # schreiben kostet ein paar zusaetzliche Anfragen und macht den
+            # Abbruch harmlos.
+            if not dry and len(rows) >= WRITE_EVERY:
+                written += db.insert_items(rows)
+                rows = []
             log.info("  ✓ %s%s", card["title"], "  [Erklaerkarte]" if script else "")
 
         if not dry:
             db.mark_fetched(src.id)
 
-    written = 0
     if rows and not dry:
-        written = db.insert_items(rows)
+        written += db.insert_items(rows)
 
     if gen.first_error and stats["accepted"] == 0:
         log.error(
