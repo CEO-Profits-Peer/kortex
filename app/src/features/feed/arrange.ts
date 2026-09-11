@@ -19,6 +19,9 @@ import type { ContentItem } from '@/lib/types.db';
  *      (die Anti-Monotonie-Regel aus dem Konzept).
  *   3. Aufgaben etwa alle vier Karten — "alle 3–4 Swipes eine interaktive
  *      Card". Zu dicht ermüdet, zu dünn und man vergisst, dass es sie gibt.
+ *   0b. Die erste Karte ist nie eine Wiederholung. Wer die App öffnet und
+ *       als Erstes etwas Gelesenes sieht, schließt sie wieder — das ist
+ *       der teuerste Moment, den es gibt.
  *   4. Erklärkarten so oft wie möglich, aber nie zwei hintereinander.
  *      Sie sind das Beste, was der Feed zu bieten hat — und genau deshalb
  *      dürfen sie sich nicht stapeln: zwei gesprochene Vorträge in Folge
@@ -51,6 +54,7 @@ function penalty(
   sinceInteractive: number,
   position: number,
   sinceKinetic: number,
+  isRepeat: boolean,
 ): number {
   let p = 0;
 
@@ -101,13 +105,26 @@ function penalty(
     }
   }
 
+  // Regel 0b — Wiederholungen nach hinten, auf Platz eins gar nicht.
+  //
+  // Der Server liefert sie schon zuletzt (0035). Diese Anordnung würde sie
+  // sonst wieder nach vorn mischen, weil sie thematisch gut passen -
+  // ausgerechnet die Eigenschaft, die eine Wiederholung nutzlos macht.
+  if (isRepeat) {
+    p += position === 0 ? 1000 : 200;
+  }
+
   // Bei Gleichstand gewinnt die Relevanz vom Server.
   p += serverRank * 0.5;
 
   return p;
 }
 
-export function arrangeBatch(items: ContentItem[]): ContentItem[] {
+export function arrangeBatch(
+  items: ContentItem[],
+  /** Welche davon hat der Nutzer schon gelesen? */
+  repeats: ReadonlySet<string> = new Set(),
+): ContentItem[] {
   if (items.length < 3) return items;
 
   const pool: Scored[] = items.map((item, index) => ({ item, index }));
@@ -125,6 +142,7 @@ export function arrangeBatch(items: ContentItem[]): ContentItem[] {
       // out.length ist die Zielposition - danach entscheidet sich Regel 0.
       const s = penalty(
         pool[i].item, prev, prev2, pool[i].index, sinceInteractive, out.length, sinceKinetic,
+        repeats.has(pool[i].item.id),
       );
       if (s < bestScore) {
         bestScore = s;
@@ -145,13 +163,17 @@ export function arrangeBatch(items: ContentItem[]): ContentItem[] {
  * Beim Anhängen eines neuen Batches muss die letzte Karte des alten mitzählen —
  * sonst entsteht genau an der Naht eine Wiederholung.
  */
-export function appendArranged(existing: ContentItem[], incoming: ContentItem[]): ContentItem[] {
+export function appendArranged(
+  existing: ContentItem[],
+  incoming: ContentItem[],
+  repeats: ReadonlySet<string> = new Set(),
+): ContentItem[] {
   const known = new Set(existing.map((i) => i.id));
   const fresh = incoming.filter((i) => !known.has(i.id));
   if (fresh.length === 0) return existing;
 
   const tail = existing.slice(-2);
-  const arranged = arrangeBatch([...tail, ...fresh]);
+  const arranged = arrangeBatch([...tail, ...fresh], repeats);
   // Die zwei Übergabekarten wieder abziehen — sie stehen schon in der Liste.
   const withoutTail = arranged.filter((i) => !tail.some((t) => t.id === i.id));
   return [...existing, ...withoutTail];

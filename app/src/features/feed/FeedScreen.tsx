@@ -178,23 +178,30 @@ export function FeedScreen({
 
       // Ein kleiner Nachschlag statt einer Schema-Aenderung: welche dieser
       // IDs stehen schon in user_content_state?
+      //
+      // Das Ergebnis wird HIER gebraucht, nicht erst beim Zeichnen: die
+      // Anordnung muss wissen, was eine Wiederholung ist, um sie nach
+      // hinten zu schieben. Deshalb erst abwarten, dann anordnen.
+      const seenNow = new Set<string>();
       if (batch.length > 0) {
         const { data: seen } = await supabase
           .from('user_content_state')
           .select('content_id')
           .in('content_id', batch.map((b) => b.id));
-        if (seen?.length) {
-          setRepeats((prev) => {
-            const next = new Set(prev);
-            for (const row of seen) next.add((row as { content_id: string }).content_id);
-            return next;
-          });
+        for (const row of seen ?? []) {
+          seenNow.add((row as { content_id: string }).content_id);
+        }
+        if (seenNow.size > 0) {
+          setRepeats((prev) => new Set([...prev, ...seenNow]));
         }
       }
       // Der Server rankt nach Relevanz, arrangeBatch sorgt fuer Abwechslung.
       // Zwei getrennte Ziele, zwei getrennte Stellen.
       setItems((prev) => {
-        const next = prev.length === 0 ? arrangeBatch(batch) : appendArranged(prev, batch);
+        const next =
+          prev.length === 0
+            ? arrangeBatch(batch, seenNow)
+            : appendArranged(prev, batch, seenNow);
         /**
          * Die erste Karte ist ab jetzt die aktive - ohne auf eine
          * Sichtbarkeitsmeldung zu warten.

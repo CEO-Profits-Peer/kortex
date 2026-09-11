@@ -25,7 +25,20 @@ export const color = {
     max: '#F2F4F7', // Ueberschriften
     high: '#C9CFD9', // Fliesstext
     mid: '#8A929F', // Sekundaer, Metadaten
-    low: '#5A616D', // Deaktiviert, Platzhalter
+    /**
+     * Nachgemessen: der alte Wert #5A616D lag bei 3,1:1 gegen den Grund -
+     * deutlich unter den 4,5:1, die fuer Text gelten. Betroffen war alles
+     * Kleine: Quellenangabe, Hinweise, Zeitangaben, Bildunterschriften,
+     * Untertitel der Erklaerkarten.
+     *
+     * #7E8695 liegt bei 5,3:1, auf derselben leicht blaeulichen Achse.
+     *
+     * Das ist bewusst keine Einstellung geworden. Eine Option "heller"
+     * waere die falsche Antwort auf Text, der von vornherein zu dunkel
+     * ist - der Fliesstext liegt naemlich schon bei 12,5:1 und braucht
+     * nichts.
+     */
+    low: '#7E8695', // Beiwerk, Platzhalter
     faint: '#2A2F3A', // Trennlinien, Rahmen
   },
 

@@ -171,6 +171,35 @@ CARD_SCHEMA: dict[str, Any] = {
 PROMPT = """Du schreibst Karten fuer eine Lern-App. Zielgruppe: 14 bis 25 Jahre,
 neugierig, nicht dumm. Sprache: {language}.
 
+DIESE KARTE WIRD MASCHINELL GEPRUEFT.
+Was die Pruefung ablehnt, ist verlorene Arbeit - deshalb stehen ihre
+Regeln hier, damit du sie beim Schreiben schon einhaeltst. Sie sind nicht
+verhandelbar und werden Wort fuer Wort nachgerechnet:
+
+  1. ZAHLEN. Jede mehrstellige Zahl in der Karte muss im Quelltext
+     vorkommen. Nicht umrechnen, nicht runden, nicht in andere Einheiten
+     bringen. "1.500" und "1500" gelten als dieselbe Zahl, "1,5
+     Millionen" nicht.
+
+  2. NAMEN. Jede Folge aus zwei oder mehr grossgeschriebenen Woertern
+     muss GENAU SO im Quelltext stehen. Das ist der haeufigste Grund, aus
+     dem Karten abgelehnt werden.
+       Quelle: "die Kommission" -> schreibe nicht "Europaeische Kommission"
+       Quelle: "MARTIN AUER"    -> schreibe nicht "Baeckerei Martin Auer"
+     Ein erklaerendes Wort DAVOR ist erlaubt ("Fotograf Ouriel
+     Morgensztern" geht, wenn der Name im Text steht). Ein erfundenes
+     Wort dahinter nicht.
+     Im Zweifel: nur den Teil schreiben, der woertlich dasteht.
+
+  3. EIGENE WORTE, aber nicht zu viele. Mindestens die Haelfte der langen
+     Inhaltswoerter deiner Karte muss auch im Quelltext vorkommen.
+     Umformulieren ist erwuenscht, Neuschreiben nicht. Wenn du merkst,
+     dass du den Sachverhalt aus eigenem Wissen ergaenzt: hoer auf.
+
+  4. NICHT VERSCHAERFEN. Bleibt die Quelle vorsichtig ("Zusammenhang",
+     "deutet darauf hin", "koennte"), bleibst du es auch. Aus
+     "haengt zusammen mit" darf nie "fuehrt zu" werden.
+
 REGELN, die wichtiger sind als alles andere:
 - Verwende AUSSCHLIESSLICH Fakten, die woertlich im Quelltext unten stehen.
   Kein Vorwissen, keine Einordnung, die nicht im Text steht, keine Zahlen,
