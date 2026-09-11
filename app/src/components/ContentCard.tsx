@@ -18,7 +18,7 @@ import Animated, {
 import { ActionRail } from '@/components/ActionRail';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { CardBlock } from '@/components/CardBlock';
-import { CardTypeBadge } from '@/components/CardTypeBadge';
+import { CardTypeBadge, StaleBadge, isStale } from '@/components/CardTypeBadge';
 import { FitBox } from '@/components/FitBox';
 import { CommentSheet } from '@/features/comments/CommentSheet';
 import { KineticCard } from '@/features/kinetic/KineticCard';
@@ -365,6 +365,12 @@ function ContentCardBase({
             <Pressable onPress={onSurf} hitSlop={6}>
               <Text style={[styles.category, { color: accent }]}>#{categoryLabel}</Text>
             </Pressable>
+          ) : null}
+          {/* Alte Nachricht: anschreiben statt verstecken. Frueher fiel
+              sie nach vierzehn Tagen aus dem Feed; jetzt bleibt sie und
+              sagt selbst, dass sie nicht mehr aktuell ist. */}
+          {isStale(item.content_type, item.published_at ?? item.created_at) ? (
+            <StaleBadge when={(item.published_at ?? item.created_at) as string} />
           ) : null}
           {isRepeat ? (
             <Animated.View entering={FadeIn} style={styles.repeat}>

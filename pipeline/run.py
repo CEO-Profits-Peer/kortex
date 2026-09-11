@@ -66,18 +66,18 @@ def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
     """
     src = item.source
 
-    # Nachricht oder Wissen - und daran haengt die Haltbarkeit.
+    # Nachricht oder Wissen. Die Einordnung entscheidet zwei Dinge, und
+    # seit 0049 nicht mehr die Haltbarkeit - geloescht wird nichts:
     #
-    # Bisher stand hier fest "news", und news verfaellt nach 14 Tagen
-    # (get_feed filtert auf expires_at). Damit waere JEDE Karte aus der
-    # Pipeline nach zwei Wochen verschwunden - auch die ueber Zinseszins,
-    # die in fuenf Jahren noch stimmt. Ein Fehler mit Zeitzuender: er
-    # faellt erst auf, wenn der Feed sich still leert.
-    #
-    # Nebenwirkung, die genauso wichtig ist: get_feed teilt jeden Stapel in
-    # 40 Prozent news und 60 Prozent knowledge/interactive. Kaeme alles als
-    # news, bliebe die groessere Haelfte des Feeds fuer immer den
-    # Demo-Karten ueberlassen.
+    #   * Die Mischung. get_feed teilt jeden Stapel in 40 Prozent news
+    #     und 60 Prozent knowledge/interactive. Kaeme alles als news,
+    #     bliebe die groessere Haelfte des Feeds den Demo-Karten
+    #     ueberlassen. (Genau das war der Fall, solange hier fest "news"
+    #     stand.)
+    #   * Das Altern. Nachrichten verlieren im Ranking an Gewicht und
+    #     werden in der App als "NICHT AKTUELL" angeschrieben; Wissen
+    #     behaelt einen festen Wert, weil Zinseszins nicht schlechter
+    #     wird, nur weil die Karte drei Monate alt ist.
     kind = card.get("content_type") if card.get("content_type") in ("news", "knowledge") else "news"
     return {
         "content_type": kind,
@@ -104,14 +104,14 @@ def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
         "media": {"tags": card.get("tags", [])},
         "content_hash": item.hash,
         "embedding": embedding,
-        # News verrottet. Nach zwei Wochen faellt die Karte von selbst aus
-        # dem Feed, ohne Aufraeumjob. Wissen bleibt - deshalb nur hier ein
-        # Verfallsdatum.
-        "expires_at": (
-            ((item.published_at or datetime.now(timezone.utc)) + timedelta(days=14)).isoformat()
-            if kind == "news"
-            else None
-        ),
+        # Kein Verfallsdatum mehr - fuer nichts. Siehe Migration 0049:
+        # eine Nachricht von letztem Monat ist nicht wertlos, sie ist
+        # veraltet. Das ist eine Eigenschaft, die man anschreibt (die App
+        # zeigt "NICHT AKTUELL" samt Datum), kein Grund zum Verschwinden.
+        #
+        # Die Spalte bleibt fuer den Fall, dass es einmal wirklich
+        # befristete Inhalte gibt - eine Frist, eine Aktion.
+        "expires_at": None,
     }
 
 

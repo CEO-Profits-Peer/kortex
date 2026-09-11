@@ -192,9 +192,182 @@ _RAW: list[tuple[str, str, str]] = [
     ("local.ca", "en", "Canadian Charter of Rights and Freedoms"),
     ("local.ca", "en", "Healthcare in Canada"),
     ("local.ca", "en", "Registered Retirement Savings Plan"),
+
+    # =====================================================================
+    # Zweite Staffel (zu Migration 0050). Schwerpunkt Englisch: der
+    # Bestand stand 89 zu 61 zugunsten Deutsch, und das passt nicht zu
+    # einer App, die Kanada mitbedienen soll.
+    # =====================================================================
+
+    # --- Neuer Oberpunkt: Alltag & Recht ---------------------------------
+    ("life.rights", "de", "Grundrechte"),
+    ("life.rights", "de", "Datenschutz-Grundverordnung"),
+    ("life.rights", "en", "Human rights"),
+    ("life.rights", "en", "General Data Protection Regulation"),
+    ("life.housing", "de", "Mietvertrag (Deutschland)"),
+    ("life.housing", "de", "Kaution"),
+    ("life.housing", "de", "Nebenkosten"),
+    ("life.housing", "en", "Lease"),
+    ("life.housing", "en", "Security deposit"),
+    ("life.housing", "en", "Renting"),
+    ("life.mobility", "de", "Fahrerlaubnis"),
+    ("life.mobility", "de", "Öffentlicher Personennahverkehr"),
+    ("life.mobility", "en", "Driver licence"),
+    ("life.mobility", "en", "Public transport"),
+    ("life.mobility", "en", "Cycling infrastructure"),
+    ("life.consumer", "de", "Gewährleistung"),
+    ("life.consumer", "de", "Widerrufsrecht"),
+    ("life.consumer", "de", "Verbraucherschutz"),
+    ("life.consumer", "en", "Consumer protection"),
+    ("life.consumer", "en", "Warranty"),
+    ("life.consumer", "en", "Consumer Rights Directive 2011"),
+
+    # --- Neue Unterkategorien --------------------------------------------
+    ("tech.games", "de", "Spiel-Engine"),
+    ("tech.games", "en", "Game engine"),
+    ("tech.games", "en", "Procedural generation"),
+    ("tech.games", "en", "Frame rate"),
+    ("tech.web", "de", "Hypertext Transfer Protocol"),
+    ("tech.web", "de", "Domain Name System"),
+    ("tech.web", "en", "Hypertext Transfer Protocol"),
+    ("tech.web", "en", "Domain Name System"),
+    ("tech.web", "en", "HTTP cookie"),
+    ("finance.taxes", "de", "Einkommensteuer (Österreich)"),
+    ("finance.taxes", "de", "Umsatzsteuer"),
+    ("finance.taxes", "en", "Income tax"),
+    ("finance.taxes", "en", "Progressive tax"),
+    ("finance.taxes", "en", "Sales taxes in Canada"),
+    ("finance.work", "de", "Arbeitsvertrag"),
+    ("finance.work", "de", "Kollektivvertrag"),
+    ("finance.work", "en", "Employment contract"),
+    ("finance.work", "en", "Minimum wage"),
+    ("finance.work", "en", "Unemployment benefits"),
+    ("science.chem", "de", "Periodensystem"),
+    ("science.chem", "de", "Chemische Bindung"),
+    ("science.chem", "en", "Periodic table"),
+    ("science.chem", "en", "Chemical bond"),
+    ("science.chem", "en", "Acid"),
+    ("science.earth", "de", "Plattentektonik"),
+    ("science.earth", "de", "Erdbeben"),
+    ("science.earth", "en", "Plate tectonics"),
+    ("science.earth", "en", "Earthquake"),
+    ("science.earth", "en", "Ocean current"),
+    ("science.math", "de", "Wahrscheinlichkeit"),
+    ("science.math", "de", "Prozentrechnung"),
+    ("science.math", "en", "Probability"),
+    ("science.math", "en", "Exponential growth"),
+    ("science.math", "en", "Normal distribution"),
+    ("science.math", "en", "Bayesian inference"),
+    ("body.health", "de", "Impfung"),
+    ("body.health", "de", "Blutdruck"),
+    ("body.health", "en", "Vaccine"),
+    ("body.health", "en", "Blood pressure"),
+    ("body.health", "en", "Placebo"),
+    ("body.mental", "de", "Stress"),
+    ("body.mental", "de", "Depression"),
+    ("body.mental", "en", "Stress (biology)"),
+    ("body.mental", "en", "Anxiety"),
+    ("body.mental", "en", "Mindfulness"),
+    ("mind.decisions", "de", "Opportunitätskosten"),
+    ("mind.decisions", "en", "Opportunity cost"),
+    ("mind.decisions", "en", "Sunk cost"),
+    ("mind.decisions", "en", "Decision-making"),
+    ("mind.creativity", "de", "Kreativität"),
+    ("mind.creativity", "en", "Creativity"),
+    ("mind.creativity", "en", "Divergent thinking"),
+    ("mind.creativity", "en", "Lateral thinking"),
+    ("world.history", "de", "Industrielle Revolution"),
+    ("world.history", "de", "Berliner Mauer"),
+    ("world.history", "en", "Industrial Revolution"),
+    ("world.history", "en", "Cold War"),
+    ("world.history", "en", "Silk Road"),
+    ("world.culture", "de", "Sprachfamilie"),
+    ("world.culture", "en", "Language family"),
+    ("world.culture", "en", "Lingua franca"),
+    ("world.culture", "en", "Writing system"),
+    ("world.media", "de", "Pressefreiheit"),
+    ("world.media", "de", "Filterblase"),
+    ("world.media", "en", "Freedom of the press"),
+    ("world.media", "en", "Misinformation"),
+    ("world.media", "en", "Filter bubble"),
+
+    # --- Mehr Englisch in den bestehenden Kategorien ----------------------
+    ("tech.ai", "en", "Prompt engineering"),
+    ("tech.ai", "en", "Neural network (machine learning)"),
+    ("tech.code", "en", "Open-source software"),
+    ("tech.code", "en", "Binary number"),
+    ("tech.security", "en", "Password strength"),
+    ("tech.security", "en", "Encryption"),
+    ("tech.security", "en", "Social engineering (security)"),
+    ("tech.hardware", "en", "Central processing unit"),
+    ("finance.basics", "en", "Debt"),
+    ("finance.compound", "en", "Interest"),
+    ("finance.markets", "en", "Stock market index"),
+    ("finance.markets", "en", "Dividend"),
+    ("finance.macro", "en", "Interest rate"),
+    ("finance.macro", "en", "Unemployment"),
+    ("science.physics", "en", "Special relativity"),
+    ("science.physics", "en", "Quantum mechanics"),
+    ("science.physics", "en", "Thermodynamics"),
+    ("science.bio", "en", "Immune system"),
+    ("science.bio", "en", "Gene"),
+    ("science.bio", "en", "Human microbiome"),
+    ("science.bio", "en", "Evolution"),
+    ("science.neuro", "en", "Neuron"),
+    ("science.neuro", "en", "Synapse"),
+    ("science.space", "en", "Solar System"),
+    ("science.space", "en", "Gravity"),
+    ("science.space", "en", "Light-year"),
+    ("science.climate", "en", "Climate change"),
+    ("science.climate", "en", "Renewable energy"),
+    ("science.climate", "en", "Sea level rise"),
+    ("body.training", "en", "Aerobic exercise"),
+    ("body.training", "en", "Delayed onset muscle soreness"),
+    ("body.training", "en", "Progressive overload"),
+    ("body.nutrition", "en", "Vitamin D"),
+    ("body.nutrition", "en", "Carbohydrate"),
+    ("body.nutrition", "en", "Caffeine"),
+    ("body.sleep", "en", "Sleep deprivation"),
+    ("body.sleep", "en", "Melatonin"),
+    ("body.sleep", "en", "Rapid eye movement sleep"),
+    ("mind.learning", "en", "Active recall"),
+    ("mind.learning", "en", "Metacognition"),
+    ("mind.focus", "en", "Flow (psychology)"),
+    ("mind.focus", "en", "Distraction"),
+    ("mind.bias", "en", "Availability heuristic"),
+    ("mind.bias", "en", "Hindsight bias"),
+    ("mind.bias", "en", "Dunning–Kruger effect"),
+    ("world.politics", "en", "Democracy"),
+    ("world.politics", "en", "Federalism"),
+    ("world.politics", "en", "Constitution"),
+    ("world.economy", "en", "Globalization"),
+    ("world.economy", "en", "International trade"),
+    ("world.science", "en", "Replication crisis"),
+    ("world.science", "en", "Randomized controlled trial"),
+    ("local.ca", "en", "Provinces and territories of Canada"),
+    ("local.ca", "en", "Canada Pension Plan"),
 ]
 
-TOPICS: list[Topic] = [Topic(category_id=c, language=l, title=t) for c, l, t in _RAW]
+def _dedupe(raw: list[tuple[str, str, str]]) -> list[Topic]:
+    """Dasselbe Lemma nur einmal, auch wenn es in zwei Kategorien passt.
+
+    "Registered Retirement Savings Plan" stand unter finance.basics UND
+    local.ca - beides vertretbar, aber es waere zweimal dieselbe Karte
+    geworden. Die erste Nennung gewinnt; wer die Kategorie aendern will,
+    verschiebt die Zeile nach oben.
+    """
+    seen: set[tuple[str, str]] = set()
+    out: list[Topic] = []
+    for category_id, language, title in raw:
+        key = (language, title)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(Topic(category_id=category_id, language=language, title=title))
+    return out
+
+
+TOPICS: list[Topic] = _dedupe(_RAW)
 
 
 def topics_for(languages: tuple[str, ...]) -> list[Topic]:

@@ -89,3 +89,60 @@ self.addEventListener('fetch', (event) => {
     ),
   );
 });
+
+/* ===========================================================================
+ * Push
+ *
+ * Zwei Ereignisse, mehr braucht es nicht: eine Nachricht kommt an, und
+ * jemand tippt sie an.
+ *
+ * Wichtig am ersten: `event.waitUntil`. Ohne das darf der Browser den
+ * Service Worker beenden, bevor die Benachrichtigung angezeigt wurde -
+ * und dann zeigt Chrome von sich aus "Diese Website wurde im Hintergrund
+ * aktualisiert". Eine Meldung, die niemand geschrieben hat und die
+ * schlimmer ist als gar keine.
+ * ======================================================================== */
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    // Kein JSON: lieber den Rohtext zeigen als nichts.
+    payload = { title: 'ElyCic', body: event.data ? event.data.text() : '' };
+  }
+
+  const title = payload.title || 'ElyCic';
+  const options = {
+    body: payload.body || '',
+    icon: payload.icon || './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    // Gleiche Sorte ersetzt sich gegenseitig, statt sich zu stapeln: drei
+    // neue Follower sind eine Zeile wert, nicht drei Meldungen.
+    tag: payload.tag || payload.kind || 'elycic',
+    renotify: true,
+    data: { url: payload.url || '/' },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+  // Ist die App schon offen, wird das vorhandene Fenster benutzt und dorthin
+  // navigiert. Ein zweiter Tab derselben App ist fuer den Nutzer ein Fehler,
+  // kein Feature.
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          client.navigate?.(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});

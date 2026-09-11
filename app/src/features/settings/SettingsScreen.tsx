@@ -23,6 +23,7 @@ import { stopMusic } from '@/lib/music';
 import { sound } from '@/lib/sound';
 import { SUPPORTED, type Language } from '@/lib/i18n';
 import { setPref, usePrefs } from '@/lib/prefs';
+import { type PushState, disablePush, enablePush, pushState } from '@/lib/push';
 import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { signOut } from '@/lib/useSession';
@@ -105,16 +106,58 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const GOALS = [30, 60, 100, 200];
 
+/** Was unter dem Schalter steht - je nachdem, warum er so aussieht, wie er aussieht. */
+const PUSH_HINT: Record<PushState, string | null> = {
+  on: 'Du bekommst Bescheid, wenn dir jemand folgt oder eine Karte teilt.',
+  off: 'Beim Einschalten fragt der Browser einmal um Erlaubnis.',
+  denied: null, // steht als Fehlermeldung darunter, sonst zweimal dasselbe
+  unsupported: 'Dieser Browser kann keine Benachrichtigungen.',
+  'needs-install': 'Auf dem iPhone nur, wenn ElyCic vom Startbildschirm läuft.',
+};
+
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const prefs = usePrefs();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [push, setPush] = useState<PushState>('off');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   useEffect(() => {
     void api.getMyProfile().then(setProfile).catch(() => setProfile(null));
+    void pushState().then(setPush).catch(() => setPush('unsupported'));
   }, []);
+
+  /**
+   * Nicht async deklariert und ohne `await` davor aufgerufen.
+   *
+   * Die Berechtigungsfrage des Browsers braucht eine Nutzergeste, und die
+   * gilt nur so lange, wie der Klick noch "frisch" ist. Ein await vor
+   * `Notification.requestPermission()` kostet sie - dann erscheint die
+   * Frage kommentarlos nicht, und der Schalter springt einfach zurueck.
+   */
+  const togglePush = (want: boolean) => {
+    setPushBusy(true);
+    setPushError(null);
+    (want ? enablePush() : disablePush())
+      .then((next) => {
+        setPush(next);
+        if (next === 'denied') {
+          setPushError(
+            'Dein Browser hat Benachrichtigungen für diese Seite blockiert. ' +
+              'Das lässt sich nur in den Browsereinstellungen zurücknehmen.',
+          );
+        } else {
+          haptics.select();
+        }
+      })
+      .catch((e: unknown) =>
+        setPushError(e instanceof Error ? e.message : 'Hat nicht geklappt'),
+      )
+      .finally(() => setPushBusy(false));
+  };
 
   const patch = useCallback(async (p: Record<string, unknown>) => {
     setBusy(true);
@@ -348,7 +391,47 @@ export function SettingsScreen() {
               />
             }
           />
-          <Row label="" hint="Push wird ab v0.4 tatsächlich verschickt. Die Einstellung merkt sich die App schon." />
+        </Section>
+
+        {/* --- Push ------------------------------------------------------ */}
+        <Section title="Benachrichtigungen">
+          <Row
+            label="Neue Follower & geteilte Karten"
+            hint={PUSH_HINT[push] ?? undefined}
+            right={
+              push === 'unsupported' || push === 'needs-install' ? (
+                <Text style={styles.pushNote}>
+                  {push === 'needs-install' ? 'nur als App' : 'nicht möglich'}
+                </Text>
+              ) : (
+                <Switch
+                  value={push === 'on'}
+                  disabled={push === 'denied' || pushBusy}
+                  // Kein `void`: der Browser verlangt fuer die
+                  // Berechtigungsfrage eine echte Nutzergeste, und die
+                  // ueberlebt keinen zusaetzlichen Umweg.
+                  onValueChange={(v) => togglePush(v)}
+                  trackColor={{ true: color.signal.primary, false: color.ink.faint }}
+                  thumbColor={color.bg}
+                />
+              )
+            }
+          />
+          {push === 'on' ? (
+            <Row
+              label=""
+              hint="Ob du sie überhaupt bekommen willst, steht hier; wer dir was schickt, steuerst du übers Folgen."
+              right={
+                <Switch
+                  value={profile.notify_social}
+                  onValueChange={(v) => void patch({ notify_social: v })}
+                  trackColor={{ true: color.signal.primary, false: color.ink.faint }}
+                  thumbColor={color.bg}
+                />
+              }
+            />
+          ) : null}
+          {pushError ? <Row label="" hint={pushError} /> : null}
         </Section>
 
         {/* --- Dieses Gerät --------------------------------------------- */}
@@ -442,6 +525,7 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  pushNote: { ...type.meta, color: color.ink.low },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: space.xl, gap: space.lg },
 

@@ -119,3 +119,28 @@ jobs:
           AUTO_APPROVE: "true"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: python pipeline/evergreen.py
+
+      # --- Benachrichtigungen zustellen ----------------------------------
+      #
+      # Laeuft zuletzt und unabhaengig vom Rest: ob Karten erzeugt wurden,
+      # hat nichts damit zu tun, ob jemandem gefolgt wurde.
+      #
+      # Der wunde Punkt ist der Takt. Alle drei Stunden heisst: "X folgt
+      # dir" kommt im Schnitt anderthalb Stunden zu spaet. Fuer den Anfang
+      # tragbar, auf Dauer nicht - der naechste Schritt ist eine Supabase
+      # Edge Function am Datenbank-Webhook, die in Sekunden zustellt und
+      # ebenfalls im Gratiskontingent liegt.
+      #
+      # Fehlen die VAPID-Secrets, beendet sich das Skript mit einer
+      # Meldung und laesst die Nachrichten in der Tabelle liegen. Sie
+      # gehen nicht verloren, sie warten.
+      - name: Push zustellen
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: python pipeline/push.py

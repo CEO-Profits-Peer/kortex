@@ -142,6 +142,7 @@ export type Profile = {
   feed_english_pct: number;
   notify_reviews: boolean;
   notify_streak: boolean;
+  notify_social: boolean;
   onboarding_completed_at: string | null;
 };
 

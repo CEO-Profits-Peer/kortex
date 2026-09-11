@@ -55,7 +55,63 @@ export function CardTypeBadge({
   );
 }
 
+/**
+ * Ab wann eine Nachricht nicht mehr als aktuell durchgeht.
+ *
+ * Vierzehn Tage - dieselbe Frist, nach der Nachrichtenkarten frueher aus
+ * dem Feed VERSCHWUNDEN sind. Sie verschwinden nicht mehr (Migration
+ * 0049): eine Meldung von letztem Monat ist nicht wertlos, sie ist
+ * veraltet. Das ist etwas, das man anschreibt.
+ */
+const STALE_AFTER_DAYS = 14;
+
+export function isStale(contentType: ContentType, when: string | null | undefined): boolean {
+  if (contentType !== 'news' || !when) return false;
+  const age = Date.now() - new Date(when).getTime();
+  return age > STALE_AFTER_DAYS * 86400_000;
+}
+
+/**
+ * „NICHT AKTUELL" plus Datum.
+ *
+ * Bewusst in der Warnfarbe und bewusst in Grossbuchstaben: wer eine alte
+ * Meldung fuer die heutige Lage haelt, hat aus der Karte etwas Falsches
+ * gelernt. Das Datum steht daneben, weil "alt" allein nichts sagt - zwei
+ * Wochen und zwei Jahre sind ein Unterschied.
+ */
+export function StaleBadge({ when }: { when: string }) {
+  const d = new Date(when);
+  const label = Number.isNaN(d.getTime())
+    ? null
+    : d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+
+  return (
+    <View style={styles.stale}>
+      <Icon name="clock" size={12} color={color.signal.warn} />
+      <Text style={styles.staleText}>
+        NICHT AKTUELL{label ? ` · ${label}` : ''}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  stale: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: space.sm,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.signal.warn,
+  },
+  staleText: {
+    ...type.meta,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    color: color.signal.warn,
+  },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',

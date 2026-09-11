@@ -9,3 +9,4 @@ trafilatura==2.0.0        # Artikeltext aus HTML (entfernt Werbung, Navigation, 
 httpx==0.28.1             # HTTP: Feeds, Artikel, PostgREST
 google-genai==1.44.0      # Gemini: Structured Output + Embeddings
 python-dotenv==1.1.1
+pywebpush>=2.0.0
