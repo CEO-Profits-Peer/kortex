@@ -65,8 +65,22 @@ def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
     Fall, dass das Drehbuch einmal nicht abspielbar ist.
     """
     src = item.source
+
+    # Nachricht oder Wissen - und daran haengt die Haltbarkeit.
+    #
+    # Bisher stand hier fest "news", und news verfaellt nach 14 Tagen
+    # (get_feed filtert auf expires_at). Damit waere JEDE Karte aus der
+    # Pipeline nach zwei Wochen verschwunden - auch die ueber Zinseszins,
+    # die in fuenf Jahren noch stimmt. Ein Fehler mit Zeitzuender: er
+    # faellt erst auf, wenn der Feed sich still leert.
+    #
+    # Nebenwirkung, die genauso wichtig ist: get_feed teilt jeden Stapel in
+    # 40 Prozent news und 60 Prozent knowledge/interactive. Kaeme alles als
+    # news, bliebe die groessere Haelfte des Feeds fuer immer den
+    # Demo-Karten ueberlassen.
+    kind = card.get("content_type") if card.get("content_type") in ("news", "knowledge") else "news"
     return {
-        "content_type": "news",
+        "content_type": kind,
         "presentation_mode": "kinetic" if script else "text",
         "kinetic_script": script,
         "status": "approved" if approve else "pending",
@@ -91,10 +105,13 @@ def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
         "content_hash": item.hash,
         "embedding": embedding,
         # News verrottet. Nach zwei Wochen faellt die Karte von selbst aus
-        # dem Feed (get_feed filtert auf expires_at), ohne Aufraeumjob.
+        # dem Feed, ohne Aufraeumjob. Wissen bleibt - deshalb nur hier ein
+        # Verfallsdatum.
         "expires_at": (
-            (item.published_at or datetime.now(timezone.utc)) + timedelta(days=14)
-        ).isoformat(),
+            ((item.published_at or datetime.now(timezone.utc)) + timedelta(days=14)).isoformat()
+            if kind == "news"
+            else None
+        ),
     }
 
 

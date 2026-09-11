@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -176,10 +177,22 @@ def main() -> int:
         if needle not in check:
             sys.exit(f"FEHLER: '{needle}' fehlt nach dem Einfuegen.")
 
-    missing = [
-        f for f in ("manifest.json", "icons/pwa-192.png", "icons/pwa-512.png", "icons/og-image.png")
-        if not (DIST / f).exists()
-    ]
+    # Kurz nachfassen statt sofort meckern.
+    #
+    # Expo meldet "Exported" und kopiert die Dateien aus public/ teils erst
+    # danach fertig - auf Windows mit Virenscanner dauert das gern eine
+    # Sekunde laenger. Wer da sofort prueft, faellt sporadisch durch und
+    # bricht den Deploy ab, obwohl alles in Ordnung ist. Genau das ist
+    # passiert.
+    erwartet = (
+        "manifest.json", "icons/pwa-192.png", "icons/pwa-512.png", "icons/og-image.png",
+    )
+    missing: list[str] = []
+    for _ in range(10):
+        missing = [f for f in erwartet if not (DIST / f).exists()]
+        if not missing:
+            break
+        time.sleep(0.4)
     if missing:
         print("WARNUNG: fehlende Dateien im Build: " + ", ".join(missing))
         print("         Vermutlich fehlt `npm run icons`.")

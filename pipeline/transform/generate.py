@@ -127,7 +127,8 @@ def _is_transient(exc: Exception) -> bool:
 
 CARD_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "required": ["title", "deck", "body_blocks", "quiz", "category_id", "difficulty", "tags"],
+    "required": ["title", "deck", "body_blocks", "quiz", "category_id", "difficulty",
+                 "tags", "content_type"],
     "properties": {
         "title": {"type": "string"},
         "deck": {"type": "string"},
@@ -162,6 +163,7 @@ CARD_SCHEMA: dict[str, Any] = {
         "category_id": {"type": "string"},
         "difficulty": {"type": "integer", "minimum": 1, "maximum": 5},
         "tags": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string"}},
+        "content_type": {"type": "string", "enum": ["news", "knowledge"]},
         "usable": {"type": "boolean"},
     },
 }
@@ -207,6 +209,15 @@ FORM:
   einzelne praegnante Zahl (value + label), 'quote' fuer ein Zitat aus dem Text.
 - Genau 3 Antwortmoeglichkeiten. Die falschen muessen plausibel sein.
 - difficulty: 1 = Grundschule, 3 = Oberstufe, 5 = Studium.
+
+NACHRICHT ODER WISSEN - content_type:
+- "news": es geht um ein Ereignis mit Datum. Wer das in einem Jahr liest,
+  merkt, dass es veraltet ist. Beschluesse, Starts, Veroeffentlichungen,
+  Zahlen eines bestimmten Quartals.
+- "knowledge": der Sachverhalt gilt auch in fuenf Jahren noch.
+  Zusammenhaenge, Verfahren, Groessenordnungen, Erklaerungen.
+  Auch wenn der ANLASS aktuell ist: geht es um das Prinzip dahinter,
+  ist es "knowledge".
 
 KATEGORIE: waehle genau eine ID aus dieser Liste:
 {categories}
