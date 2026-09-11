@@ -180,8 +180,15 @@ REGELN, die wichtiger sind als alles andere:
   Preisverleihungen, Eigenwerbung, rein lokale Bauvorhaben, parteipolitische
   Zitate ohne pruefbaren Sachverhalt. Frage dich: Waere jemand mit 17 nach
   dieser Karte klueger als vorher? Wenn nein, "usable": false.
-- Die Quizantwort muss allein aus deinen body_blocks ableitbar sein. Wer die
-  Karte gelesen hat, muss sie beantworten koennen.
+- Die richtige Antwort muss WOERTLICH auf der Karte stehen. Nicht sinngemaess,
+  nicht umschrieben - dieselben tragenden Woerter, die auch in einem
+  body_block vorkommen. Wer die Karte gelesen hat, soll die Antwort
+  wiedererkennen, nicht herleiten muessen.
+  Schlecht: Karte sagt "Zinsen werden selbst wieder verzinst",
+            Antwort lautet "Weil sie sich multiplizieren statt zu addieren"
+  Gut:      Antwort lautet "Sie werden selbst wieder verzinst"
+- Die falschen Antworten duerfen NICHT auf der Karte stehen. Sonst gewinnt,
+  wer am schnellsten sucht, statt wer verstanden hat.
 - Die FRAGE muss aus sich heraus verstaendlich sein. Sie wird auch
   ausserhalb der Karte gezeigt - in der Tagesaufgabe und bei der
   Wiederholung. Nenne deshalb den Gegenstand in der Frage selbst.

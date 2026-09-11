@@ -84,7 +84,17 @@ LEADING = {
 # erwuenscht und bringt zwangslaeufig neue Woerter ("Beschleuniger" statt
 # "Collider"). Unter 55 Prozent hat das Modell nicht mehr zusammengefasst,
 # sondern etwas Eigenes geschrieben.
-MIN_WORD_COVERAGE = 0.55
+#:
+#: Gemessen an 46 Karten aus einem echten Lauf: Median 67 Prozent, zehntes
+#: Perzentil 48, Minimum 38. Bei 55 fielen 9 von 46 durch - also jede
+#: fuenfte, und darunter mehrere im Bereich 48 bis 54, die nur umformuliert
+#: hatten statt zu erfinden.
+#:
+#: 45 trennt sauberer: was darunter liegt, ist im Stichprobenvergleich
+#: tatsaechlich neu geschrieben und nicht zusammengefasst. Umformulieren
+#: soll erlaubt sein - es ist sogar erwuenscht, sonst waere die Karte ein
+#: Zitat.
+MIN_WORD_COVERAGE = 0.45
 
 #: Wie viel von der richtigen Antwort im Kartentext wiederauftauchen muss.
 #:
@@ -120,6 +130,44 @@ def _numbers(text: str) -> set[str]:
         # "1.500" und "1500" sollen als dieselbe Zahl gelten.
         out.add(cleaned.replace(".", "").replace(",", ""))
     return {n for n in out if n}
+
+
+def _invented_words(name: str, haystack: str) -> list[str]:
+    """Welche Woerter eines Namens stehen wirklich nicht in der Quelle?
+
+    Ein vorangestelltes Gattungswort zaehlt nicht als Erfindung. Beobachtet
+    an echten Ablehnungen:
+
+        "Namen RYE"            - RYE steht im Text, "Namen" nicht
+        "Wettbewerb Loesungen" - beides steht da, nur nicht nebeneinander
+        "Thema Dienstzeitmodell"
+
+    Das Modell stellt dem Namen erklaerend ein Wort voran. Das ist kein
+    erfundener Name, das ist ein Satz. Deshalb: fehlt AUSSCHLIESSLICH am
+    Anfang etwas und ist der Rest belegt, wird durchgelassen.
+
+    Fehlt dagegen mittendrin oder am Ende etwas, bleibt es eine Ablehnung -
+    "Physikerin Fabiola Gianotti" faellt weiter durch, weil der Name selbst
+    nicht in der Quelle steht.
+    """
+    words = [w for w in name.split() if w]
+    known = [_known_word(w, haystack) for w in words]
+
+    # Ist NICHTS belegt, ist der ganze Name erfunden. Diesen Fall zuerst -
+    # sonst schneidet die Regel unten alles weg und laesst genau das
+    # durch, was sie fangen soll ("Physikerin Fabiola Gianotti").
+    if not any(known):
+        return words
+
+    # Fuehrende unbelegte Woerter abschneiden: ein vorangestelltes
+    # Gattungswort ist kein erfundener Name, sondern ein Satz.
+    start = 0
+    while not known[start]:
+        start += 1
+
+    # Was danach kommt, muss belegt sein. Fehlt mittendrin oder am Ende
+    # etwas, ist es eine Erfindung.
+    return [w for w, k in zip(words[start:], known[start:]) if not k]
 
 
 def _known_word(word: str, haystack: str) -> bool:
@@ -241,7 +289,7 @@ def validate(card: dict[str, Any], source_text: str) -> Result:
     for name in _proper_names(claim_text(card)):
         if _norm(name) in haystack:
             continue
-        missing = [w for w in _norm(name).split() if w and not _known_word(w, haystack)]
+        missing = _invented_words(_norm(name), haystack)
         if missing:
             return Result(
                 False,

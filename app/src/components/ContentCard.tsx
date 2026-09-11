@@ -181,12 +181,28 @@ function ContentCardBase({
   const [forceSplit, setForceSplit] = useState(false);
   const pages = React.useMemo(
     () =>
-      // Eine Erklaerkarte hat genau eine Seite. Ihre Textbloecke existieren
-      // zwar (fuer Suche, Wiederholung und den Fall, dass das Drehbuch
-      // fehlt), aber sie werden hier nicht angezeigt - ein Blaetterknopf
-      // unter einem laufenden Vortrag waere nur verwirrend.
+      // Eine Erklaerkarte: der Vortrag auf Seite eins, der Text zum
+      // Nachlesen dahinter.
+      //
+      // Das Nachlesen ist nicht dasselbe wie der Vortrag. Wer zuhoert,
+      // bekommt die Sache erklaert; wer nachliest, will nachschlagen -
+      // eine Zahl, einen Namen, die Quelle. Beides auf eine Seite zu
+      // legen hiesse, eines von beiden schlecht zu machen.
+      //
+      // Die Textseiten entstehen aus derselben Aufteilung wie bei jeder
+      // anderen Karte, damit auch ein langer Text nicht ueber den Rand
+      // laeuft.
       kinetic
-        ? [{ showVisual: false, blocks: [], showInteraction: false, label: '' }]
+        ? [
+            { showVisual: false, blocks: [], showInteraction: false, label: '' },
+            ...((item.body_blocks?.length ?? 0) > 0
+              ? paginate(item, screenH, false, forceSplit).map((p, i) => ({
+                  ...p,
+                  showVisual: false,
+                  label: i === 0 ? 'Nachlesen' : 'weiter',
+                }))
+              : []),
+          ]
         : paginate(item, screenH, Boolean(interactive), forceSplit),
     [item, screenH, interactive, forceSplit, kinetic],
   );
@@ -397,7 +413,7 @@ function ContentCardBase({
         */}
       <GestureDetector gesture={doubleTap} touchAction="pan-y">
         <View style={styles.stage}>
-          {kinetic ? (
+          {kinetic && page === 0 ? (
             <Animated.View style={[styles.kinetic, contentDrift]}>
               <KineticCard item={item} accent={accent} />
             </Animated.View>

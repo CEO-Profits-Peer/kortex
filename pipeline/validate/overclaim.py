@@ -65,11 +65,24 @@ CAUSAL = [
     r"zwangsläufig", r"immer wenn", r"garantiert",
     # Englisch
     r"causes?", r"caused by", r"leads? to", r"results? in",
-    r"proves?", r"proven", r"guarantees?", r"always\b",
+    r"proves?", r"proven", r"guarantees?", r"always",
 ]
 
-HEDGE_RE = re.compile("|".join(HEDGES), re.IGNORECASE)
-CAUSAL_RE = re.compile("|".join(CAUSAL), re.IGNORECASE)
+def _word_re(patterns: list[str]) -> re.Pattern[str]:
+    """Muster nur auf Wortgrenzen.
+
+    Ohne die Grenzen trifft `causes?` mitten in "be-cause" - und lehnt
+    damit jede englische Karte ab, die einen Nebensatz mit "because"
+    enthaelt. Genau das ist im ersten Lauf passiert: eine korrekte
+    NASA-Karte flog raus, weil im Text "because" stand.
+    """
+    return re.compile(
+        "|".join(r"\b(?:" + p + r")\b" for p in patterns), re.IGNORECASE
+    )
+
+
+HEDGE_RE = _word_re(HEDGES)
+CAUSAL_RE = _word_re(CAUSAL)
 
 
 def overclaims(card_text: str, source_text: str) -> str | None:
