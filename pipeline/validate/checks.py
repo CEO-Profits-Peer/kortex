@@ -32,6 +32,8 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Any
 
+from .overclaim import overclaims
+
 NUMBER_RE = re.compile(r"\d[\d.,]*")
 
 # Zwei oder mehr grossgeschriebene Woerter in Folge. Im Deutschen wie im
@@ -84,11 +86,25 @@ LEADING = {
 # sondern etwas Eigenes geschrieben.
 MIN_WORD_COVERAGE = 0.55
 
+#: Wie viel von der richtigen Antwort im Kartentext wiederauftauchen muss.
+#:
+#: Die Pruefung soll verhindern, dass das Quiz Vorwissen abfragt statt der
+#: Karte. Sie bestraft aber auch das Umformulieren: eine Antwort, die
+#: denselben Sachverhalt mit anderen Woertern sagt, faellt durch, obwohl die
+#: Karte sie traegt. Deshalb steht der Wert bewusst niedrig - und der
+#: tatsaechliche Anteil landet bei jeder Ablehnung im Log.
+MIN_ANSWER_OVERLAP = 0.5
+
 
 @dataclass
 class Result:
     ok: bool
     reason: str = ""
+    #: Anteil der langen Inhaltswoerter, die aus der Quelle stammen.
+    #: Wird auch bei bestandener Pruefung gefuellt - nur so laesst sich
+    #: hinterher beantworten, ob die Schwelle richtig sitzt, statt darueber
+    #: zu diskutieren.
+    coverage: float | None = None
 
 
 def _norm(text: str) -> str:
@@ -236,19 +252,165 @@ def validate(card: dict[str, Any], source_text: str) -> Result:
     # --- 3. Wortdeckung ------------------------------------------------------
     long_words = {_norm(w) for w in LONG_WORD_RE.findall(text)}
     long_words = {w for w in long_words if w}
+    coverage: float | None = None
     if long_words:
         hits = sum(1 for w in long_words if w in haystack)
         coverage = hits / len(long_words)
         if coverage < MIN_WORD_COVERAGE:
-            return Result(False, f"nur {coverage:.0%} der Inhaltswoerter aus der Quelle")
+            return Result(
+                False,
+                f"nur {coverage:.0%} der Inhaltswoerter aus der Quelle",
+                coverage=coverage,
+            )
 
-    # --- 4. Beantwortbarkeit -------------------------------------------------
+    # --- 4. Nicht verschaerfen -----------------------------------------------
+    #
+    # Die haeufigste Art, eine Studie falsch wiederzugeben, ist nicht die
+    # erfundene Zahl - es ist der Sprung von "haengt zusammen mit" zu
+    # "fuehrt zu". Siehe validate/overclaim.py.
+    too_much = overclaims(text, source_text)
+    if too_much:
+        return Result(False, too_much, coverage=coverage)
+
+    # --- 5. Beantwortbarkeit -------------------------------------------------
     correct = options[quiz["correct_index"]]
     tokens = re.findall(r"\w{4,}", _norm(correct))
     if tokens:
         card_norm = _norm(text)
         hits = sum(1 for t in tokens if t in card_norm)
-        if hits / len(tokens) < 0.5:
-            return Result(False, "richtige Antwort nicht aus der Karte ableitbar")
+        share = hits / len(tokens)
+        if share < MIN_ANSWER_OVERLAP:
+            # Den Wert mitschreiben, nicht nur das Urteil. Diese Pruefung
+            # war in den ersten Laeufen fuer 14 von 24 Ablehnungen
+            # verantwortlich - mit Abstand die haerteste. Ob sie zu hart
+            # ist, laesst sich nur an der Verteilung entscheiden, und die
+            # bekommt man nur, wenn sie im Log steht.
+            return Result(
+                False,
+                f"richtige Antwort nicht aus der Karte ableitbar ({share:.0%})",
+                coverage=coverage,
+            )
+
+    return Result(True, coverage=coverage)
+
+
+# =============================================================================
+# Erklaerkarten
+#
+# Warum hier strenger geprueft wird als bei einer Textkarte:
+#
+# Eine erfundene Zahl in einem Absatz ist ein Fehler. Dieselbe Zahl in einer
+# Tabelle, die sich Zeile fuer Zeile aufbaut, waehrend eine Stimme sie
+# vorliest, ist ein ueberzeugender Fehler. Die Darstellung leiht der Zahl
+# eine Glaubwuerdigkeit, die der Satz ihr nie geben koennte - und genau
+# deshalb darf hier nichts durchrutschen, was im Quelltext nicht steht.
+#
+# Geprueft wird deshalb JEDE Zahl aus JEDEM Bild, nicht nur die im
+# gesprochenen Satz.
+# =============================================================================
+
+#: Laenger gesprochen wird ein Takt zaeh, und der Untertitel braucht dann
+#: drei Zeilen - die Buehne springt bei jedem Satzwechsel.
+MAX_SAY_CHARS = 160
+
+VALID_KINDS = {"statement", "table", "bars", "figure"}
+
+
+def _show_numbers(show: dict[str, Any]) -> list[str]:
+    """Alle Zahlen, die in einem Bild vorkommen - egal in welchem Feld."""
+    parts: list[str] = []
+    for key in ("text", "sub", "caption", "unit"):
+        value = show.get(key)
+        if isinstance(value, str):
+            parts.append(value)
+    for row in show.get("rows") or []:
+        if isinstance(row, list):
+            parts.extend(str(c) for c in row)
+    for label in show.get("labels") or []:
+        parts.append(str(label))
+    for head in show.get("head") or []:
+        parts.append(str(head))
+    out: list[str] = []
+    for p in parts:
+        out.extend(_numbers(p))
+    # Balkenwerte sind Zahlen, keine Zeichenketten - separat einsammeln.
+    for v in show.get("values") or []:
+        if isinstance(v, (int, float)):
+            text = str(int(v)) if float(v).is_integer() else str(v)
+            out.extend(_numbers(text))
+    return out
+
+
+def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
+    """Taugt dieses Drehbuch, oder wird es eine Textkarte?
+
+    Ein "nein" ist hier billig: die Karte existiert schon, sie wird dann
+    eben als Text ausgeliefert. Deshalb darf die Pruefung streng sein.
+    """
+    beats = script.get("beats")
+    if not isinstance(beats, list) or not (4 <= len(beats) <= 8):
+        return Result(False, "falsche Anzahl Takte")
+
+    source_numbers = _numbers(source_text)
+    haystack = _norm(source_text)
+    kinds_seen: list[str] = []
+
+    for i, beat in enumerate(beats, 1):
+        say = (beat or {}).get("say")
+        show = (beat or {}).get("show")
+        if not isinstance(say, str) or not say.strip():
+            return Result(False, f"Takt {i} ohne Satz")
+        if len(say) > MAX_SAY_CHARS:
+            return Result(False, f"Takt {i}: Satz zu lang ({len(say)} Zeichen)")
+        if not isinstance(show, dict) or show.get("kind") not in VALID_KINDS:
+            return Result(False, f"Takt {i}: unbekannte Bildart")
+
+        kinds_seen.append(show["kind"])
+
+        # Form der Bilder. Die App zeichnet Tabellen zweispaltig und
+        # erwartet zu jedem Balken genau einen Wert - kommt etwas anderes
+        # an, sieht die Karte kaputt aus, ohne dass irgendwo ein Fehler
+        # auftaucht. Das Schema kann die Laengen nicht erzwingen, also hier.
+        if show["kind"] == "table":
+            rows = show.get("rows")
+            if not isinstance(rows, list) or not rows:
+                return Result(False, f"Takt {i}: Tabelle ohne Zeilen")
+            if any(not isinstance(r, list) or len(r) != 2 for r in rows):
+                return Result(False, f"Takt {i}: Tabellenzeile nicht zweispaltig")
+            head = show.get("head")
+            if head is not None and (not isinstance(head, list) or len(head) != 2):
+                return Result(False, f"Takt {i}: Tabellenkopf nicht zweispaltig")
+        if show["kind"] == "bars":
+            labels, values = show.get("labels"), show.get("values")
+            if not isinstance(labels, list) or not isinstance(values, list):
+                return Result(False, f"Takt {i}: Balken ohne Beschriftung oder Werte")
+            if len(labels) != len(values) or not (2 <= len(labels) <= 4):
+                return Result(False, f"Takt {i}: {len(labels)} Beschriftungen, {len(values)} Werte")
+            if any(not isinstance(v, (int, float)) for v in values):
+                return Result(False, f"Takt {i}: Balkenwert ist keine Zahl")
+        if show["kind"] == "statement" and not (show.get("text") or "").strip():
+            return Result(False, f"Takt {i}: Aussage ohne Text")
+
+        # Zahlen - im Satz wie im Bild.
+        # list(): _numbers gibt eine Menge zurueck, _show_numbers eine
+        # Liste. Ohne die Umwandlung wirft das Pluszeichen.
+        for number in list(_numbers(say)) + _show_numbers(show):
+            if len(number) > 1 and number not in source_numbers:
+                return Result(False, f"Takt {i}: Zahl '{number}' steht nicht im Quelltext")
+
+        # Eigennamen im gesprochenen Satz, nach derselben Regel wie bei
+        # der Textkarte.
+        for name in _proper_names(say):
+            if _norm(name) in haystack:
+                continue
+            missing = [w for w in _norm(name).split() if w and not _known_word(w, haystack)]
+            if missing:
+                return Result(False, f"Takt {i}: Eigenname '{name}' nicht im Quelltext")
+
+    # Bewegung ist die Daseinsberechtigung. Ein Drehbuch, das nur aus
+    # Aussagen besteht, ist eine vorgelesene Textkarte - dafuer lohnt der
+    # Aufwand nicht, und im Feed faellt es als leeres Versprechen auf.
+    if not any(k in ("table", "bars") for k in kinds_seen):
+        return Result(False, "kein Bild, das sich aufbaut")
 
     return Result(True)

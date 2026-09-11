@@ -45,15 +45,43 @@ export function isKineticScript(value: unknown): value is KineticScript {
   if (!value || typeof value !== 'object') return false;
   const beats = (value as KineticScript).beats;
   if (!Array.isArray(beats) || beats.length === 0) return false;
-  return beats.every(
-    (b) =>
-      b &&
-      typeof b.say === 'string' &&
-      b.say.trim().length > 0 &&
-      b.show &&
-      typeof b.show === 'object' &&
-      typeof (b.show as { kind?: unknown }).kind === 'string',
-  );
+  return beats.every(isBeat);
+}
+
+function isBeat(b: unknown): boolean {
+  const beat = b as KineticBeat | null;
+  if (!beat || typeof beat.say !== 'string' || !beat.say.trim()) return false;
+  const show = beat.show as (KineticShow & Record<string, unknown>) | undefined;
+  if (!show || typeof show !== 'object') return false;
+
+  // Die Form, nicht nur die Art. Ein Takt mit dreispaltiger Tabelle
+  // erfuellt zwar "kind === 'table'", wird aber schief gezeichnet - und
+  // schief gezeichnet sieht niemand als Datenfehler, sondern als kaputte
+  // App. Die Pipeline prueft dasselbe (validate/checks.py); hier steht es
+  // trotzdem, weil Karten auch von Hand oder aus einer aelteren Fassung
+  // kommen koennen.
+  switch (show.kind) {
+    case 'statement':
+      return typeof show.text === 'string' && show.text.trim().length > 0;
+    case 'table':
+      return (
+        Array.isArray(show.rows) &&
+        show.rows.length > 0 &&
+        show.rows.every((r) => Array.isArray(r) && r.length === 2)
+      );
+    case 'bars':
+      return (
+        Array.isArray(show.labels) &&
+        Array.isArray(show.values) &&
+        show.labels.length === show.values.length &&
+        show.labels.length >= 2 &&
+        show.values.every((v) => typeof v === 'number' && Number.isFinite(v))
+      );
+    case 'figure':
+      return true;
+    default:
+      return false;
+  }
 }
 
 /**

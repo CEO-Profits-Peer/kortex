@@ -34,7 +34,8 @@ from config import Config                      # noqa: E402
 from db import Database                        # noqa: E402
 from sources.feeds import fetch_feed           # noqa: E402
 from transform.generate import Generator       # noqa: E402
-from validate.checks import validate
+from transform.kinetic import make_script
+from validate.checks import MIN_WORD_COVERAGE, validate, validate_kinetic
 from validate.relevance import is_worth_a_card           # noqa: E402
 
 logging.basicConfig(
@@ -51,12 +52,18 @@ log = logging.getLogger("pipeline")
 AUTO_APPROVE_MIN_TRUST = 80
 
 
-def build_row(item, card, *, embedding, approve: bool) -> dict:
-    """Aus Rohartikel + Gemini-Karte eine Zeile fuer content_items."""
+def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
+    """Aus Rohartikel + Gemini-Karte eine Zeile fuer content_items.
+
+    Mit Drehbuch wird daraus eine Erklaerkarte. Die Textbloecke bleiben
+    trotzdem gefuellt: sie tragen die Suche, die Wiederholung - und den
+    Fall, dass das Drehbuch einmal nicht abspielbar ist.
+    """
     src = item.source
     return {
         "content_type": "news",
-        "presentation_mode": "text",
+        "presentation_mode": "kinetic" if script else "text",
+        "kinetic_script": script,
         "status": "approved" if approve else "pending",
         "title": card["title"],
         "deck": card.get("deck"),
@@ -114,6 +121,10 @@ def main() -> int:
 
     stats: Counter[str] = Counter()
     rows: list[dict] = []
+    # Wortdeckung ALLER Karten, auch der bestandenen. Nur damit laesst sich
+    # sagen, ob die Schwelle von 55 Prozent richtig sitzt - eine Schwelle,
+    # von der man nur die Ablehnungen kennt, kann man nicht beurteilen.
+    coverages: list[float] = []
 
     for src in sources:
         if stats["seen"] >= cfg.max_items_per_run:
@@ -179,6 +190,8 @@ def main() -> int:
             check = validate(card, item.text)
             if not check.ok:
                 stats["rejected"] += 1
+                if check.coverage is not None:
+                    coverages.append(check.coverage)
                 log.info("  abgelehnt: %s  (%s)", item.title[:52], check.reason)
                 continue
 
@@ -199,9 +212,37 @@ def main() -> int:
             approve = cfg.auto_approve and src.trust_score >= AUTO_APPROVE_MIN_TRUST
             if cfg.auto_approve and not approve:
                 stats["held_for_review"] += 1
-            rows.append(build_row(item, card, embedding=embedding, approve=approve))
+            # --- Erklaerkarte versuchen ---------------------------------
+            #
+            # Erst NACH der Pruefung: ein Drehbuch fuer eine Karte zu
+            # schreiben, die gleich abgelehnt wird, waere ein verschenkter
+            # Modellaufruf. Scheitert es, bleibt es eine Textkarte - die
+            # ist an dieser Stelle schon fertig und geprueft.
+            script = None
+            if gen.calls < cfg.max_gemini_calls_per_run:
+                script = make_script(
+                    gen,
+                    text=item.text,
+                    title=card["title"],
+                    category=card["category_id"],
+                    language=src.default_language,
+                )
+                if script:
+                    kcheck = validate_kinetic(script, item.text)
+                    if kcheck.ok:
+                        stats["kinetic"] += 1
+                    else:
+                        log.info("    Drehbuch verworfen: %s", kcheck.reason)
+                        stats["kinetic_rejected"] += 1
+                        script = None
+
+            rows.append(
+                build_row(item, card, embedding=embedding, approve=approve, script=script)
+            )
             stats["accepted"] += 1
-            log.info("  ✓ %s", card["title"])
+            if check.coverage is not None:
+                coverages.append(check.coverage)
+            log.info("  ✓ %s%s", card["title"], "  [Erklaerkarte]" if script else "")
 
         if not dry:
             db.mark_fetched(src.id)
@@ -221,12 +262,30 @@ def main() -> int:
     log.info(
         "Fertig · gesehen %d · bekannt %d · Lizenz uebersprungen %d · "
         "ohne Lernwert %d · unbrauchbar %d · abgelehnt %d · angenommen %d · "
+        "Erklaerkarten %d (%d verworfen) · "
         "geschrieben %d · Gemini-Aufrufe %d · Wiederholungen %d · Modell %s",
         stats["seen"], stats["already_known"], stats["skipped_license"],
         stats["irrelevant"], stats["gemini_unusable"], stats["rejected"],
-        stats["accepted"], stats["held_for_review"], written, gen.calls, gen.retries,
-        gen.model,
+        stats["accepted"], stats["held_for_review"],
+        stats["kinetic"], stats["kinetic_rejected"],
+        written, gen.calls, gen.retries, gen.model,
     )
+
+    # Verteilung der Wortdeckung - damit die Schwelle in
+    # validate/checks.py an Zahlen justiert wird und nicht an Gefuehl.
+    if coverages:
+        ordered = sorted(coverages)
+
+        def q(p: float) -> float:
+            return ordered[min(len(ordered) - 1, int(len(ordered) * p))]
+
+        log.info(
+            "Wortdeckung: min %.0f%% · 10%% %.0f%% · Median %.0f%% · max %.0f%% "
+            "(Schwelle %.0f%%, darunter %d von %d)",
+            ordered[0] * 100, q(0.1) * 100, q(0.5) * 100, ordered[-1] * 100,
+            MIN_WORD_COVERAGE * 100,
+            sum(1 for c in ordered if c < MIN_WORD_COVERAGE), len(ordered),
+        )
 
     # Ein Ausweichmodell ist kein Fehler, aber es sollte nicht unbemerkt zur
     # Dauerloesung werden.

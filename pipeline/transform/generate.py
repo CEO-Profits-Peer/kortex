@@ -395,6 +395,22 @@ class Generator:
         self.last_reject = None
         return card
 
+    def generate_raw(self, prompt: str, config: "types.GenerateContentConfig"):
+        """Ein Aufruf mit eigener Konfiguration, aber derselben Geduld.
+
+        Damit kann kinetic.py die Wiederholungen, die Ausweichmodelle und
+        das abgeschaltete Nachdenken mitbenutzen, ohne dass dieselbe Logik
+        ein zweites Mal existiert - und ohne dass sie beim naechsten
+        Modellwechsel an zwei Stellen angepasst werden muss.
+        """
+        if config.thinking_config is None:
+            config = config.model_copy(update={
+                "thinking_config": types.ThinkingConfig(thinking_budget=THINKING_BUDGET)
+            })
+        response = self._generate(prompt, config)
+        self.calls += 1
+        return response
+
     def embed(self, text: str, model: str) -> list[float] | None:
         """Embedding fuer die Duplikaterkennung.
 
