@@ -45,6 +45,12 @@ logging.basicConfig(
 log = logging.getLogger("pipeline")
 
 
+#: Ab welchem Vertrauenswert eine Quelle ohne menschlichen Blick live geht.
+#: 80 trennt die Institutionen und Forschungseinrichtungen (80-90) von den
+#: Pressestellen und Agenturen mit Eigeninteresse (50-75).
+AUTO_APPROVE_MIN_TRUST = 80
+
+
 def build_row(item, card, *, embedding, approve: bool) -> dict:
     """Aus Rohartikel + Gemini-Karte eine Zeile fuer content_items."""
     src = item.source
@@ -177,7 +183,23 @@ def main() -> int:
                 continue
 
             embedding = gen.embed(item.text, cfg.embedding_model)
-            rows.append(build_row(item, card, embedding=embedding, approve=cfg.auto_approve))
+            # Freigabe nicht pauschal, sondern nach Vertrauen in die Quelle.
+            #
+            # AUTO_APPROVE=true heisst nicht "alles durchwinken". Die
+            # deterministische Pruefung hat gerade bestanden, aber sie faengt
+            # nur Erfundenes mit Zahlen und Namen - eine plausibel klingende
+            # falsche Aussage rutscht durch. Wie schlimm das ist, haengt an
+            # der Quelle: bei einer Forschungseinrichtung steht im Quelltext
+            # meist schon die richtige Aussage, bei einer Pressestelle mit
+            # Eigeninteresse nicht unbedingt.
+            #
+            # Deshalb: hohe Vertrauenswerte gehen live, der Rest wartet auf
+            # einen Blick. Das kostet nichts und haelt die Tuer zu fuer
+            # genau den Fall, den die Pruefung nicht abdeckt.
+            approve = cfg.auto_approve and src.trust_score >= AUTO_APPROVE_MIN_TRUST
+            if cfg.auto_approve and not approve:
+                stats["held_for_review"] += 1
+            rows.append(build_row(item, card, embedding=embedding, approve=approve))
             stats["accepted"] += 1
             log.info("  ✓ %s", card["title"])
 
@@ -202,7 +224,8 @@ def main() -> int:
         "geschrieben %d · Gemini-Aufrufe %d · Wiederholungen %d · Modell %s",
         stats["seen"], stats["already_known"], stats["skipped_license"],
         stats["irrelevant"], stats["gemini_unusable"], stats["rejected"],
-        stats["accepted"], written, gen.calls, gen.retries, gen.model,
+        stats["accepted"], stats["held_for_review"], written, gen.calls, gen.retries,
+        gen.model,
     )
 
     # Ein Ausweichmodell ist kein Fehler, aber es sollte nicht unbemerkt zur
@@ -212,6 +235,14 @@ def main() -> int:
             'Gelaufen ist am Ende %s statt %s. Wenn das oefter vorkommt, '
             'trag es fest in pipeline/.env unter GEMINI_MODEL ein.',
             gen.model, gen.models[0],
+        )
+
+    if cfg.auto_approve and stats["held_for_review"]:
+        log.info(
+            "%d Karten warten trotz AUTO_APPROVE auf einen Blick "
+            "(Quelle unter Vertrauenswert %d). Freigeben mit:  "
+            "update public.content_items set status='approved' where status='pending';",
+            stats["held_for_review"], AUTO_APPROVE_MIN_TRUST,
         )
 
     if not cfg.auto_approve and written:

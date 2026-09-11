@@ -130,6 +130,8 @@ export type Profile = {
   follower_count: number;
   following_count: number;
   daily_goal_cards: number;
+  /** Anteil englischer Inhalte im Feed. 0 = nur Deutsch, 100 = nur Englisch. */
+  feed_english_pct: number;
   notify_reviews: boolean;
   notify_streak: boolean;
   onboarding_completed_at: string | null;

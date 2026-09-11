@@ -19,6 +19,7 @@ robuster, als das Framework zu etwas zu ueberreden.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -61,6 +62,32 @@ HEAD = f"""
       /* Eine App markiert keinen Text beim langen Druecken. */
       * {{ -webkit-user-select: none; user-select: none; }}
       input, textarea {{ -webkit-user-select: text; user-select: text; }}
+
+      /*
+       * Nie mehr als eine Karte pro Wischer.
+       *
+       * `scroll-snap-type: y mandatory` sorgt dafuer, dass IMMER an einem
+       * Rastpunkt gestoppt wird - aber nicht am naechsten. Ein kraeftiger
+       * Wischer fliegt ueber zwei, drei Karten hinweg und rastet erst dort
+       * ein. Fuer einen Feed ist das falsch: man ueberspringt Inhalt, den
+       * man nie gesehen hat.
+       *
+       * `scroll-snap-stop: always` zwingt den Browser, an JEDEM Rastpunkt
+       * anzuhalten. Egal wie schnell gewischt wird, es geht genau eine
+       * Karte weiter.
+       *
+       * Warum die Regel auf `*` steht statt auf einer Klasse: die Klassen
+       * der Feed-Zellen erzeugt react-native-web selbst (r-cpa5s6 und
+       * dergleichen) und sichert sie nicht zu - beim naechsten
+       * Versionssprung heissen sie anders und die Regel waere still
+       * wirkungslos.
+       *
+       * Breit ist das trotzdem nicht: `scroll-snap-stop` gilt
+       * ausschliesslich fuer Elemente, die ueberhaupt Rastpunkte sind, also
+       * solche mit `scroll-snap-align`. Auf allem anderen tut die
+       * Eigenschaft nichts.
+       */
+      * {{ scroll-snap-stop: always; }}
     </style>
 """
 
@@ -71,6 +98,54 @@ VIEWPORT_NEW = (
     '<meta name="viewport" content="width=device-width, initial-scale=1, '
     'maximum-scale=1, viewport-fit=cover, user-scalable=no" />'
 )
+
+
+SW_REGISTER = "\n".join([
+    "    <script>",
+    "      // Erst nach dem Laden anmelden: die Registrierung soll nicht mit",
+    "      // dem ersten Bildaufbau um Bandbreite streiten.",
+    "      if ('serviceWorker' in navigator) {",
+    "        window.addEventListener(\'load\', function () {",
+    "          navigator.serviceWorker.register(\'./sw.js\').catch(function () {});",
+    "        });",
+    "      }",
+    "    </script>",
+    "",
+])
+
+SW_TEMPLATE = ROOT / "scripts" / "sw.template.js"
+SW_OUT_NAME = "sw.js"
+
+
+def add_service_worker(html: str) -> str:
+    """dist/sw.js aus der Vorlage erzeugen und in index.html anmelden.
+
+    Warum ueberhaupt - siehe scripts/sw.template.js. Kurz: ohne Service
+    Worker bietet Chrome das Installieren nicht an, und der Knopf "Als App
+    benutzen" bliebe auf Android unsichtbar.
+
+    Die Version kommt aus dem Dateinamen des Bundles. Das ist kein Zufall:
+    der Name enthaelt einen Hash des Inhalts, also bekommt jede tatsaechlich
+    geaenderte Auslieferung einen neuen Cache und raeumt den alten weg.
+    """
+    if not SW_TEMPLATE.exists():
+        print("WARNUNG: scripts/sw.template.js fehlt - kein Service Worker.")
+        return html
+
+    entries = sorted((DIST / "_expo" / "static" / "js" / "web").glob("entry-*.js"))
+    entry = entries[0] if entries else None
+    version = entry.stem.replace("entry-", "")[:12] if entry else "dev"
+
+    shell = ["./", "manifest.json", "icons/pwa-192.png", "icons/pwa-512.png"]
+    if entry:
+        shell.append("_expo/static/js/web/" + entry.name)
+
+    worker = SW_TEMPLATE.read_text(encoding="utf-8")
+    worker = worker.replace("__VERSION__", version)
+    worker = worker.replace("__SHELL__", json.dumps(shell, indent=2))
+    (DIST / SW_OUT_NAME).write_text(worker, encoding="utf-8")
+
+    return html.replace("</body>", SW_REGISTER + "  </body>", 1)
 
 
 def main() -> int:
@@ -92,6 +167,7 @@ def main() -> int:
         sys.exit("Kein </head> in index.html - Expo hat die Vorlage geaendert.")
     html = html.replace("</head>", HEAD + "  </head>", 1)
 
+    html = add_service_worker(html)
     INDEX.write_text(html, encoding="utf-8")
 
     # Nachpruefen statt hoffen.

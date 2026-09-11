@@ -65,8 +65,16 @@ jobs:
           # verbrennen, bevor jemand es merkt.
           MAX_ITEMS_PER_RUN: "120"
           MAX_GEMINI_CALLS_PER_RUN: "300"
-          # Nichts geht ungeprueft live, solange das auf false steht.
-          AUTO_APPROVE: "false"
+          # Karten gehen live, OHNE dass jemand draufschaut - aber nur von
+          # Quellen mit hohem Vertrauenswert (>= 80: Institutionen,
+          # Forschungseinrichtungen). Alles darunter landet weiter auf
+          # 'pending' und wartet. Die Grenze steht in pipeline/run.py.
+          #
+          # Was das NICHT heisst: dass geprueft wird. Die deterministische
+          # Pruefung faengt erfundene Zahlen und Namen, aber keine plausibel
+          # klingende falsche Aussage. Wer das nicht will, stellt hier
+          # wieder "false" ein und gibt von Hand frei.
+          AUTO_APPROVE: "true"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: |
           python pipeline/run.py ${{ inputs.source && format('--source {0}', inputs.source) || '' }}

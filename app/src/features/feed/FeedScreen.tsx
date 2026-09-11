@@ -323,6 +323,12 @@ export function FeedScreen({
          * pagingEnabled - jetzt, wo die Karte exakt so hoch ist wie die
          * sichtbare Flaeche.
          *
+         * Im Browser kommt `scroll-snap-stop: always` dazu, eingespritzt in
+         * scripts/finish_web.py. Ohne das raestet ein kraeftiger Wischer
+         * zwar ein, aber erst zwei oder drei Karten weiter - man
+         * ueberspringt Inhalt, den man nie gesehen hat. Auf dem Handy
+         * begrenzt pagingEnabled das von sich aus auf eine Seite.
+         *
          * Beim letzten Versuch war das die Fehlerquelle: pagingEnabled rastet
          * auf die Hoehe der LISTE ein, snapToInterval auf die berechnete
          * KARTEN-hoehe - und die Rechnung lag auf jedem Geraet ein paar Pixel

@@ -17,6 +17,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { Icon, type IconName } from '@/components/Icon';
 import { KnowledgeRadar } from '@/components/KnowledgeRadar';
 import { haptics } from '@/lib/haptics';
+import { InstallBanner } from '@/components/InstallBanner';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { MySocial, Stats } from '@/lib/types.db';
@@ -205,6 +206,10 @@ export function ProfileScreen() {
             onPress={() => router.push('/leaderboard')}
           />
         </View>
+
+        {/* Verschwindet von selbst, sobald die App installiert ist - und
+            ist auf dem Handy und im installierten Fenster nie da. */}
+        <InstallBanner />
 
         {/* --- Eigene Inhalte ---------------------------------------------- */}
         <View style={styles.tabs}>

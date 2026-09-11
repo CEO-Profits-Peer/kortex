@@ -6,6 +6,17 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { RewardLayer } from '@/components/RewardLayer';
+/**
+ * Nur wegen der Nebenwirkung geladen, und die ist wichtig: das Modul
+ * haengt sich an `beforeinstallprompt`. Chrome meldet die
+ * Installierbarkeit einmalig und kurz nach dem Start - wer da noch nicht
+ * zuhoert, bekommt keinen zweiten Versuch, und der Knopf "Als App
+ * benutzen" bliebe fuer immer aus.
+ *
+ * Wuerde das Modul erst beim Oeffnen des Profils geladen, waere genau das
+ * der Normalfall.
+ */
+import '@/lib/install';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { GridBackground } from '@/components/GridBackground';

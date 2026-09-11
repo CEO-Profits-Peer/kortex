@@ -41,6 +41,29 @@ import { color, radius, space, type } from '@/theme/tokens';
  * zwar in der App erreichbar, nicht per Mail an den Betreiber.
  */
 
+/**
+ * Die Stufen des Sprachreglers.
+ *
+ * DE und EN als Beschriftung, dazwischen das Mischungsverhältnis. Wer
+ * "DE" wählt, bekommt ausschließlich deutsche Karten - auch wenn dadurch
+ * weniger nachkommt. Das ist der Sinn der Einstellung: vorher entschied
+ * das die App selbst, sobald der Vorrat dünn wurde.
+ */
+const LANGUAGE_STEPS = [
+  { pct: 0,   label: 'DE',    hint: 'Nur deutsche Inhalte' },
+  { pct: 25,  label: '¾ DE',  hint: 'Überwiegend Deutsch, etwas Englisch' },
+  { pct: 50,  label: '½',     hint: 'Deutsch und Englisch gemischt' },
+  { pct: 75,  label: '¾ EN',  hint: 'Überwiegend Englisch, etwas Deutsch' },
+  { pct: 100, label: 'EN',    hint: 'Nur englische Inhalte' },
+] as const;
+
+/** Alte oder von Hand gesetzte Werte auf die nächste Stufe abbilden. */
+function nearestStep(pct: number): number {
+  return LANGUAGE_STEPS.reduce((best, s) =>
+    Math.abs(s.pct - pct) < Math.abs(best - pct) ? s.pct : best,
+  LANGUAGE_STEPS[0].pct as number);
+}
+
 function Row({
   label,
   hint,
@@ -217,6 +240,39 @@ export function SettingsScreen() {
             label="Region"
             hint="Lokale Themen und deine Rangliste"
             right={<Text style={styles.value}>{region?.label ?? country?.label ?? '—'}</Text>}
+          />
+
+          {/**
+            * Sprachmischung.
+            *
+            * Fünf Stufen statt eines stufenlosen Reglers: "ein bisschen
+            * mehr Englisch" ist keine Absicht, die jemand hat. Die Enden
+            * sind die beiden klaren Fälle, die Mitte ist die Mischung -
+            * und alles davon ist mit einem Tipp erreichbar statt mit
+            * einer Zielübung.
+            */}
+          <Row
+            label="Sprache der Inhalte"
+            hint={LANGUAGE_STEPS.find((s2) => s2.pct === nearestStep(profile.feed_english_pct))?.hint}
+            right={
+              <View style={styles.choices}>
+                {LANGUAGE_STEPS.map((step) => {
+                  const on = nearestStep(profile.feed_english_pct) === step.pct;
+                  return (
+                    <Pressable
+                      key={step.pct}
+                      onPress={() => void patch({ feed_english_pct: step.pct })}
+                      style={[styles.choice, on && styles.choiceOn]}
+                      accessibilityLabel={step.hint}
+                    >
+                      <Text style={[styles.choiceText, on && { color: color.signal.primary }]}>
+                        {step.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            }
           />
 
           <Row label="Genug für heute" hint="Ab dieser Zahl bietet die App das Aufhören an" right={
