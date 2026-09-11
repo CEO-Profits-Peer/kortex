@@ -3,69 +3,72 @@ import React, { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
+import { type AvatarDesign, PALETTE, decodeAvatar } from '@/lib/avatarDesign';
 import { api } from '@/lib/supabase';
 import { color, radius } from '@/theme/tokens';
 
 /**
  * Profilbild.
  *
- * Ohne hochgeladenes Bild wird eins gezeichnet — deterministisch aus
- * avatar_seed. Damit hat jedes Konto vom ersten Moment an ein eigenes
- * Erkennungszeichen, ohne dass jemand etwas hochladen muss.
+ * Ohne hochgeladenes Bild wird eins gezeichnet — aus avatar_seed. Damit hat
+ * jedes Konto vom ersten Moment an ein eigenes Erkennungszeichen, ohne dass
+ * jemand etwas hochladen muss.
  *
  * Das Muster ist derselbe Blaupausen-Gedanke wie überall: ein Raster-
  * ausschnitt mit gesetzten Knoten. Kein Comic-Gesicht, kein Farbklecks mit
  * Initiale — beides sähe nach Baukasten aus.
+ *
+ * Der Seed kann seit avatarDesign.ts zweierlei sein: eine Zufalls-ID, die
+ * gehasht wird wie immer, oder ein selbst entworfenes Muster. Das Zeichnen
+ * kennt den Unterschied nicht — es bekommt in beiden Faellen dieselbe
+ * Beschreibung.
  */
 
-function rng(seed: string) {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  let a = h >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const PALETTE = ['#00F0FF', '#7CFF6B', '#B78BFF', '#FFD84D', '#FF9F45', '#FF6BA8'];
-
-function GeneratedAvatar({ seed, size }: { seed: string; size: number }) {
-  const art = useMemo(() => {
-    const r = rng(seed);
-    const tint = PALETTE[Math.floor(r() * PALETTE.length)];
-    // 4x4-Raster, gespiegelt: symmetrische Muster wirken wie ein Zeichen,
-    // zufällige wie Rauschen.
-    const half: boolean[][] = Array.from({ length: 4 }, () =>
-      Array.from({ length: 2 }, () => r() > 0.45),
-    );
-    return { tint, half };
-  }, [seed]);
-
+/** Das reine Bild, ohne Rahmen und ohne Foto-Logik. Auch der Editor zeichnet damit. */
+export function AvatarArt({ design, size }: { design: AvatarDesign; size: number }) {
   const cell = size / 4;
+  const tint = PALETTE[design.tint] ?? PALETTE[0];
 
   return (
     <Svg width={size} height={size}>
       <Rect width={size} height={size} fill={color.bgSunken} rx={size * 0.28} />
       {[0, 1, 2, 3].map((row) =>
         [0, 1, 2, 3].map((col) => {
+          // Gespiegelt: symmetrische Muster wirken wie ein Zeichen,
+          // zufaellige wie Rauschen.
           const mirrored = col < 2 ? col : 3 - col;
-          if (!art.half[row][mirrored]) return null;
+          if (!design.cells[row]?.[mirrored]) return null;
+          const key = `${row}-${col}`;
+          const x = col * cell;
+          const y = row * cell;
+
+          if (design.shape === 'dots') {
+            return (
+              <Circle
+                key={key}
+                cx={x + cell / 2}
+                cy={y + cell / 2}
+                r={cell * 0.34}
+                fill={tint}
+                opacity={0.9}
+              />
+            );
+          }
+          if (design.shape === 'bars') {
+            return (
+              <Rect
+                key={key}
+                x={x}
+                y={y + cell * 0.28}
+                width={cell}
+                height={cell * 0.44}
+                fill={tint}
+                opacity={0.9}
+              />
+            );
+          }
           return (
-            <Rect
-              key={`${row}-${col}`}
-              x={col * cell}
-              y={row * cell}
-              width={cell}
-              height={cell}
-              fill={art.tint}
-              opacity={0.9}
-            />
+            <Rect key={key} x={x} y={y} width={cell} height={cell} fill={tint} opacity={0.9} />
           );
         }),
       )}
@@ -76,9 +79,16 @@ function GeneratedAvatar({ seed, size }: { seed: string; size: number }) {
           <Line x1={0} y1={i * cell} x2={size} y2={i * cell} stroke={color.bg} strokeWidth={1} />
         </React.Fragment>
       ))}
-      <Circle cx={size / 2} cy={size / 2} r={size * 0.07} fill={color.bg} />
+      {design.core ? (
+        <Circle cx={size / 2} cy={size / 2} r={size * 0.07} fill={color.bg} />
+      ) : null}
     </Svg>
   );
+}
+
+function GeneratedAvatar({ seed, size }: { seed: string; size: number }) {
+  const design = useMemo(() => decodeAvatar(seed), [seed]);
+  return <AvatarArt design={design} size={size} />;
 }
 
 function AvatarBase({
@@ -110,7 +120,9 @@ function AvatarBase({
           contentFit="cover"
           transition={160}
           // Ein Avatar ändert sich selten - lokal zwischenspeichern spart
-          // bei einer Liste mit 50 Zeilen 50 Anfragen.
+          // bei einer Liste mit 50 Zeilen 50 Anfragen. Dass ein NEUES Bild
+          // trotzdem sofort erscheint, liegt am Pfad: jeder Upload bekommt
+          // einen eigenen Dateinamen (siehe api.uploadAvatar).
           cachePolicy="memory-disk"
         />
       ) : (

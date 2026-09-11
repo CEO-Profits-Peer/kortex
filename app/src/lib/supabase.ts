@@ -1,4 +1,10 @@
 import 'react-native-url-polyfill/auto';
+/**
+ * Muss VOR createClient stehen: das Modul liest die Fehlerwerte, die
+ * Google in die Adresse schreibt, und supabase-js raeumt die Adresse auf,
+ * sobald der Client existiert. Wer danach nachsieht, findet nichts mehr.
+ */
+import './oauthReturn';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
@@ -455,15 +461,49 @@ export const api = {
     return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
   },
 
-  async uploadAvatar(userId: string, blob: ArrayBuffer, ext: 'jpg' | 'png'): Promise<string> {
-    // Fester Dateiname pro Nutzer: ein Bild, kein Wildwuchs im Bucket.
-    // upsert überschreibt das alte.
-    const path = `${userId}/avatar.${ext}`;
+  /**
+   * Profilbild hochladen.
+   *
+   * Jeder Upload bekommt einen EIGENEN Dateinamen, und der alte wird danach
+   * geloescht. Frueher war es ein fester Name mit `upsert` - sparsam, aber
+   * falsch: die Adresse blieb dieselbe, also zeigten Browser-Cache, CDN und
+   * die App weiter das alte Bild. Wer ein neues hochlud, sah sein altes und
+   * hielt das Hochladen fuer kaputt.
+   *
+   * Ein Name, der sich aendert, macht jede Zwischenspeicherung von selbst
+   * richtig - ueberall, auch auf den Geraeten anderer Leute.
+   */
+  async uploadAvatar(
+    userId: string,
+    blob: ArrayBuffer,
+    ext: 'jpg' | 'png',
+    previousPath?: string | null,
+  ): Promise<string> {
+    const path = `${userId}/${Date.now().toString(36)}.${ext}`;
     const { error } = await supabase.storage
       .from('avatars')
-      .upload(path, blob, { upsert: true, contentType: `image/${ext === 'jpg' ? 'jpeg' : 'png'}` });
+      .upload(path, blob, { contentType: `image/${ext === 'jpg' ? 'jpeg' : 'png'}` });
     if (error) throw error;
+
+    // Aufraeumen erst NACH dem Erfolg, und ein Fehlschlag hier darf den
+    // Upload nicht zurueckmelden: eine verwaiste Datei ist ein Schoenheits-
+    // fehler, ein verlorenes Profilbild nicht.
+    if (previousPath && previousPath !== path) {
+      await supabase.storage.from('avatars').remove([previousPath]).catch(() => {});
+    }
     return path;
+  },
+
+  /**
+   * Ein Profilbild wegwerfen.
+   *
+   * Gehoert zu jedem Loeschen des Verweises dazu: ein Bild, das niemand
+   * mehr anzeigt, aber jeder abrufen kann, ist genau die Art Datenrest, die
+   * man spaeter nicht mehr findet.
+   */
+  async deleteAvatar(path: string | null | undefined): Promise<void> {
+    if (!path) return;
+    await supabase.storage.from('avatars').remove([path]);
   },
 
   async listCategories(): Promise<Category[]> {

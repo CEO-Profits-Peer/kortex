@@ -9,6 +9,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { EmailAuthForm } from '@/features/auth/EmailAuthForm';
 import { GoogleButton } from '@/features/auth/GoogleButton';
 import { BRAND } from '@/lib/brand';
+import { takeOAuthError } from '@/lib/oauthReturn';
 import { signInAnonymously } from '@/lib/useSession';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -24,8 +25,14 @@ import { color, radius, space, type } from '@/theme/tokens';
 export function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
-  const [signin, setSignin] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kommt man von einer gescheiterten Google-Anmeldung zurueck, wurde das
+  // bisher verschluckt: dieselbe Startseite, kein Hinweis, und der naechste
+  // Versuch scheiterte genauso. Jetzt steht es da.
+  const [oauthError] = useState(() => takeOAuthError());
+  // Gehoert das Google-Konto schon jemandem, ist "anmelden" der Ausweg -
+  // also gleich dorthin aufmachen.
+  const [signin, setSignin] = useState(Boolean(oauthError?.alreadyLinked));
 
   const start = async () => {
     setBusy(true);
@@ -57,9 +64,10 @@ export function WelcomeScreen() {
         </View>
 
         <View style={styles.actions}>
+          {oauthError ? <Text style={styles.oauthError}>{oauthError.message}</Text> : null}
           {signin ? (
             <>
-              <GoogleButton label="Anmelden mit Google" />
+              <GoogleButton label="Anmelden mit Google" forceNew />
               <View style={styles.orRow}>
                 <View style={styles.orLine} />
                 <Text style={styles.orText}>oder</Text>
@@ -134,6 +142,7 @@ const styles = StyleSheet.create({
   ctaPressed: { opacity: 0.82 },
   ctaLabel: { ...type.label, fontSize: 17, color: color.bg },
   error: { ...type.meta, color: color.signal.error, lineHeight: 18 },
+  oauthError: { ...type.body, fontSize: 14, lineHeight: 20, color: color.signal.error },
   legal: { ...type.meta, color: color.ink.low, textAlign: 'center', lineHeight: 16 },
   switchMode: { ...type.label, color: color.signal.primary, textAlign: 'center', paddingVertical: space.sm },
 });

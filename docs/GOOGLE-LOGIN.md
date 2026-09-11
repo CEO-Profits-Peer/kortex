@@ -44,20 +44,58 @@ Dann rechts oben **Client-ID** und **Client-Schlüssel** kopieren.
 
 **Fertig.** Der Knopf in der App funktioniert ab diesem Moment.
 
-### 3. Nur wenn du eigene Adressen benutzt
+### 3. Pflicht, nicht optional: die Rückkehr-Adressen
 
-`Authentication` → `URL Configuration` → **Redirect URLs**. Dort gehören alle
-Adressen hinein, unter denen die App läuft:
+Hier stand vorher „nur wenn du eigene Adressen benutzt". Das war falsch und
+hat genau den Fehler verursacht, der als *„Google Account has some problems
+getting you to the right side back"* gemeldet wurde.
+
+`Authentication` → `URL Configuration`:
+
+| Feld | Wert |
+|---|---|
+| **Site URL** | `https://elycic.pages.dev` |
+| **Redirect URLs** | die Liste unten |
 
 ```
-http://localhost:8081/**
 https://elycic.pages.dev/**
+http://localhost:8081/**
 https://<deine-domain>/**
 elycic://**
 ```
 
+Warum der Platzhalter `/**` nötig ist: Seit der Behebung schickt die App
+Google auf **die Seite zurück, auf der der Knopf stand** — wer sein Konto
+unter „Konto" verknüpft, kommt auch dort wieder heraus und sieht sofort, ob
+es geklappt hat. Vorher landete jeder im Feed und musste sich
+zurückklicken. Damit gibt es aber nicht mehr eine einzige Rückkehr-Adresse,
+sondern eine pro Bildschirm.
+
+Steht eine Adresse nicht in der Liste, lehnt Supabase sie nicht etwa ab —
+es nimmt **stillschweigend die Site URL**. Ist die noch `localhost`, landet
+jeder nach dem Anmelden auf einer toten Seite. Genau das meldet die App
+jetzt im Klartext (`app/src/lib/oauthReturn.ts`), statt wortlos auf den
+Startbildschirm zurückzufallen.
+
 Das `elycic://` ist für die spätere App auf dem Handy — im Browser wird es
 nicht gebraucht.
+
+### 4. Wenn E-Mail benutzt wird: eigener Mailversand
+
+Das gehört streng genommen nicht zu Google, steht aber im selben
+Dashboard-Bereich und fällt sonst erst im Betrieb auf.
+
+Der eingebaute Mailversand von Supabase ist **auf wenige Mails pro Stunde
+begrenzt** und ausdrücklich nur zum Ausprobieren gedacht. Beim Testen
+kommt nach dem dritten Versuch:
+
+```
+over_email_send_rate_limit
+```
+
+Für echte Nutzer: `Project Settings` → `Authentication` → **SMTP Settings**
+und einen eigenen Absender eintragen (Resend, Postmark, Brevo — alle haben
+ein kostenloses Kontingent, das für den Anfang reicht).
 
 ---
 

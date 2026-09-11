@@ -30,12 +30,30 @@ export type GoogleResult =
   | { kind: 'cancelled' }
   | { kind: 'error'; message: string };
 
-/** Wohin Google zurueckschickt. Muss in Supabase als Redirect-URL erlaubt sein. */
+/**
+ * Wohin Google zurueckschickt.
+ *
+ * Im Web auf GENAU DIE SEITE, auf der der Knopf stand - frueher immer auf
+ * `/`. Wer sein Konto unter "Konto" verknuepft hat, landete danach im Feed
+ * und musste sich zurueckklicken, um zu sehen, ob es geklappt hatte. Das
+ * war die Haelfte von "getting you to the right side back".
+ *
+ * Die andere Haelfte liegt nicht im Code: jede Adresse, die hier
+ * herauskommen kann, muss in Supabase unter Authentication → URL
+ * Configuration → Redirect URLs stehen. Ein Platzhalter reicht:
+ *
+ *     https://elycic.pages.dev/**
+ *
+ * Fehlt er, ignoriert Supabase das Ziel und nimmt die Site URL - steht dort
+ * noch localhost, kommt man nach dem Anmelden auf einer toten Seite heraus.
+ * Genau diesen Fall meldet oauthReturn.ts jetzt im Klartext.
+ *
+ * Der Anhang in der Adresse wird abgeschnitten: eine Rueckkehr-Adresse mit
+ * `?code=` von letztem Mal darin waere beim naechsten Anlauf Muell.
+ */
 function redirectTo(): string {
   if (Platform.OS === 'web') {
-    // Zurueck auf die Seite, auf der man war - ohne Query-Anhaengsel, sonst
-    // sammelt sich bei jedem Anlauf mehr Muell in der Adresse.
-    return `${window.location.origin}/`;
+    return `${window.location.origin}${window.location.pathname}`;
   }
   return Linking.createURL('/auth/callback');
 }
@@ -55,9 +73,16 @@ async function isAnonymous(): Promise<boolean> {
   return !user.email && (user.identities?.length ?? 0) === 0;
 }
 
-export async function signInWithGoogle(): Promise<GoogleResult> {
+/**
+ * @param forceNew  Nicht anhaengen, sondern normal anmelden. Der Ausweg,
+ *                  wenn das Google-Konto schon zu einem Profil gehoert -
+ *                  dann scheitert das Anhaengen jedes Mal aufs Neue.
+ */
+export async function signInWithGoogle(
+  { forceNew = false }: { forceNew?: boolean } = {},
+): Promise<GoogleResult> {
   const to = redirectTo();
-  const anonymous = await isAnonymous();
+  const anonymous = !forceNew && (await isAnonymous());
 
   // --- Weg 1: an das bestehende Konto anhaengen ---------------------------
   if (anonymous) {

@@ -1,5 +1,3 @@
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -20,6 +18,7 @@ import { Icon } from '@/components/Icon';
 import { EmailAuthForm } from '@/features/auth/EmailAuthForm';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
+import { takeOAuthError } from '@/lib/oauthReturn';
 import { api, supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -32,8 +31,6 @@ import { color, radius, space, type } from '@/theme/tokens';
  * steht auch so da, statt es hinter „Konto verknüpfen" zu verstecken.
  */
 
-const AVATAR_SIZE = 512;
-
 export function AccountScreen() {
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -43,6 +40,10 @@ export function AccountScreen() {
   const [bio, setBio] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [setPassword, setSetPassword] = useState(false);
+  // Kommt man gerade von einer gescheiterten Google-Anmeldung zurueck? Nur
+  // einmal abholen - danach ist der Wert verbraucht.
+  const [oauthError] = useState(() => takeOAuthError());
 
   const load = useCallback(async () => {
     const [p, { data: auth }] = await Promise.all([
@@ -76,44 +77,18 @@ export function AccountScreen() {
     }
   };
 
-  const pickAvatar = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      setNote('Ohne Zugriff auf die Fotos geht es leider nicht.');
-      return;
-    }
-
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-    if (res.canceled || !res.assets[0] || !profile) return;
-
-    setBusy(true);
-    try {
-      // Vor dem Hochladen verkleinern. Ein Handyfoto hat 4 MB und wird nie
-      // grösser als 72 px angezeigt - ungefragt Freikontingent zu verbrennen
-      // waere schlicht schlampig.
-      const shrunk = await ImageManipulator.manipulateAsync(
-        res.assets[0].uri,
-        [{ resize: { width: AVATAR_SIZE, height: AVATAR_SIZE } }],
-        { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG },
-      );
-
-      const bytes = await (await fetch(shrunk.uri)).arrayBuffer();
-      const path = await api.uploadAvatar(profile.id, bytes, 'jpg');
-      // Zeitstempel anhaengen, sonst zeigt der Cache das alte Bild.
-      setProfile(await api.updateSettings({ avatar_path: path }));
-      setNote('Profilbild aktualisiert');
-      haptics.success();
-      setTimeout(() => setNote(null), 2000);
-    } catch (e) {
-      setNote(e instanceof Error ? e.message : 'Hochladen fehlgeschlagen');
-    } finally {
-      setBusy(false);
-    }
+  /**
+   * Das Bild wird nicht mehr hier ausgesucht.
+   *
+   * Frueher stand an dieser Stelle der ganze Ablauf: Berechtigung abfragen,
+   * Auswahldialog, verkleinern, hochladen. Im Browser ist er nie
+   * angekommen (siehe lib/pickImage.web.ts), und inzwischen gibt es ohnehin
+   * mehr zu entscheiden als nur "welche Datei" - deshalb ein eigener
+   * Bildschirm.
+   */
+  const openAvatarStudio = () => {
+    haptics.light();
+    router.push('/avatar');
   };
 
   if (!profile) {
@@ -143,19 +118,18 @@ export function AccountScreen() {
 
         <Text style={styles.pageTitle}>Konto</Text>
         {note ? <Text style={styles.note}>{note}</Text> : null}
+        {oauthError ? <Text style={styles.oauthError}>{oauthError.message}</Text> : null}
 
         {/* --- Profilbild ------------------------------------------------ */}
         <View style={styles.avatarRow}>
-          <Pressable onPress={pickAvatar} disabled={busy}>
+          <Pressable onPress={openAvatarStudio}>
             <Avatar seed={profile.avatar_seed} path={profile.avatar_path} size={72} />
           </Pressable>
           <View style={styles.avatarText}>
             <Text style={styles.handle} numberOfLines={1}>{personName(profile)}</Text>
             <Text style={styles.handleSub}>@{profile.handle}</Text>
-            <Pressable onPress={pickAvatar} disabled={busy} hitSlop={6}>
-              <Text style={styles.link}>
-                {profile.avatar_path ? 'Bild ändern' : 'Bild wählen'}
-              </Text>
+            <Pressable onPress={openAvatarStudio} hitSlop={6}>
+              <Text style={styles.link}>Profilbild gestalten</Text>
             </Pressable>
           </View>
         </View>
@@ -205,10 +179,28 @@ export function AccountScreen() {
               <EmailAuthForm mode="upgrade" onDone={() => void load()} />
             </>
           ) : (
-            <View style={styles.emailRow}>
-              <Icon name="check" size={16} color={color.signal.success} />
-              <Text style={styles.emailText}>{email}</Text>
-            </View>
+            <>
+              <View style={styles.emailRow}>
+                <Icon name="check" size={16} color={color.signal.success} />
+                <Text style={styles.emailText}>{email}</Text>
+              </View>
+              {/* Erst hier ist ein Passwort ueberhaupt moeglich: bei einem
+                  Konto ohne bestaetigte Adresse lehnt Supabase es ab. */}
+              {setPassword ? (
+                <EmailAuthForm
+                  mode="password"
+                  onDone={() => {
+                    setSetPassword(false);
+                    setNote('Passwort gesetzt');
+                    setTimeout(() => setNote(null), 2000);
+                  }}
+                />
+              ) : (
+                <Pressable onPress={() => setSetPassword(true)} hitSlop={6}>
+                  <Text style={styles.link}>Passwort setzen oder ändern</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
@@ -224,6 +216,7 @@ const styles = StyleSheet.create({
   backText: { ...type.meta, color: color.ink.mid },
   pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   note: { ...type.body, fontSize: 14, color: color.signal.primary },
+  oauthError: { ...type.body, fontSize: 14, lineHeight: 20, color: color.signal.error },
 
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   avatarText: { gap: 4 },

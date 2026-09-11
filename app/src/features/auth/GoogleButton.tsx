@@ -42,9 +42,16 @@ function GoogleMark({ size = 18 }: { size?: number }) {
 export function GoogleButton({
   label = 'Weiter mit Google',
   onDone,
+  /**
+   * Anmelden statt anhaengen. Wird gesetzt, wenn die Rueckkehr von Google
+   * gemeldet hat, dass dieses Konto schon vergeben ist - dann waere ein
+   * weiterer Versuch mit linkIdentity nur derselbe Fehler nochmal.
+   */
+  forceNew = false,
 }: {
   label?: string;
   onDone?: () => void;
+  forceNew?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +60,7 @@ export function GoogleButton({
     setBusy(true);
     setError(null);
     haptics.medium();
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle({ forceNew });
 
     switch (result.kind) {
       case 'redirecting':
