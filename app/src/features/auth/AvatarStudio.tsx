@@ -170,6 +170,13 @@ export function AvatarStudio() {
             ) : null}
           </View>
           <View style={styles.grid}>
+            {/* Die Spiegelachse. Sie ersetzt die Abdunklung, die vorher auf
+                der rechten Haelfte lag: die hat die gespiegelten Felder in
+                einer anderen Farbe gezeigt, und damit sah das Raster
+                genau nicht nach zwei gleichen Haelften aus - gemeldet als
+                "sides not mirroring". Gespiegelt war es die ganze Zeit,
+                man konnte es nur nicht sehen. */}
+            <View pointerEvents="none" style={styles.axis} />
             {[0, 1, 2, 3].map((row) => (
               <View key={row} style={styles.gridRow}>
                 {[0, 1, 2, 3].map((col) => {
@@ -181,7 +188,6 @@ export function AvatarStudio() {
                       onPress={() => toggleCell(row, col)}
                       style={[
                         styles.gridCell,
-                        col > 1 && styles.gridCellMirror,
                         on ? { backgroundColor: PALETTE[design.tint] } : null,
                       ]}
                       accessibilityRole="button"
@@ -316,6 +322,15 @@ const styles = StyleSheet.create({
   liveLabel: { ...type.meta, fontSize: 10, color: color.ink.low },
   grid: { borderRadius: radius.sm, overflow: 'hidden' },
   gridRow: { flexDirection: 'row' },
+  axis: {
+    position: 'absolute',
+    left: CELL * 2 - 1,
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: color.bg,
+    zIndex: 1,
+  },
   gridCell: {
     width: CELL,
     height: CELL,
@@ -323,7 +338,6 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
   },
-  gridCellMirror: { opacity: 0.55 },
 
   group: { gap: space.sm },
   sectionTitle: {
