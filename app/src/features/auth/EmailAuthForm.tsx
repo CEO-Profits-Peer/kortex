@@ -257,6 +257,25 @@ function translate(msg: string): string {
   if (m.includes('anonymous user')) {
     return 'Bestätige zuerst die E-Mail — danach kannst du ein Passwort setzen.';
   }
+  // Der Mailversand selbst ist kaputt, nicht die Eingabe.
+  //
+  // GoTrue meldet das als "Error sending confirmation email" (bzw. recovery,
+  // magic link, email change) — bisher fiel das durch bis in die letzte
+  // Zeile und der Nutzer bekam rohes Englisch zu lesen. Das ist die
+  // schlechteste Stelle dafür: er hat gerade seine Adresse eingetippt und
+  // denkt, er hätte sie falsch geschrieben.
+  //
+  // Der wichtigste Teil der Meldung ist der zweite Satz. Wer hier steht,
+  // benutzt die App längst mit einem anonymen Konto — und genau dieses
+  // Konto ist unberührt. Es geht nichts verloren, es lässt sich nur gerade
+  // nicht sichern.
+  if (m.includes('error sending') || m.includes('smtp')) {
+    return (
+      'Die Mail konnte gerade nicht verschickt werden — das liegt nicht an ' +
+      'dir. Dein Fortschritt bleibt auf diesem Gerät erhalten; versuch es ' +
+      'später nochmal.'
+    );
+  }
   return msg;
 }
 

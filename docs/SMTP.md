@@ -10,6 +10,24 @@ ausdrücklich nur zum Ausprobieren gedacht — beim Testen bin ich selbst in
 > über den eingebauten Versand, denn der ist damit abgeschaltet. Halb
 > eingerichtet ist schlechter als gar nicht. Entweder fertig machen oder
 > den Schalter zurück auf aus.
+>
+> **Wenn du gerade keine zehn Minuten hast: schalt ihn aus.** Der
+> eingebaute Versand ist zwar auf wenige Mails pro Stunde begrenzt, aber
+> er funktioniert — und bei einer App, die noch keine hundert Nutzer hat,
+> reicht das. Brevo kann warten, bis es jemanden stört.
+
+> 🔍 **Von aussen nicht prüfbar.** GoTrue antwortet auf eine Anfrage zu
+> einer unbekannten Adresse mit HTTP 200 und leerem Körper, ohne SMTP
+> überhaupt anzufassen — Absicht, damit niemand durchprobieren kann,
+> welche Adressen ein Konto haben. Nachgemessen:
+>
+> ```
+> POST /auth/v1/recover  {"email": "...@example.com"}  ->  200  {}
+> ```
+>
+> Heisst: Es gibt keinen Test, der einem den kaputten Mailversand meldet.
+> Man merkt ihn erst, wenn jemand keine Mail bekommt. Deshalb steht dieser
+> Punkt so weit oben.
 
 ---
 

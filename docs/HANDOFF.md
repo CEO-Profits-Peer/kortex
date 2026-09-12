@@ -195,8 +195,20 @@ Two things worth knowing before the next change here:
 
 ## Open items for the user (not you)
 
-- SMTP: custom SMTP is switched **on** in Supabase with empty fields, which
-  means *no* auth mail goes out at all. Either fill it in (see
-  `docs/SMTP.md`, Brevo) or switch it back off.
+- **SMTP** — the one thing nobody but you can do. If "Enable custom SMTP" is
+  on with empty fields, *no* auth mail goes out at all, not even through the
+  built-in sender. Two options: fill it in (`docs/SMTP.md`, Brevo, ~10 min)
+  or switch it back off, which immediately restores the built-in sender —
+  rate-limited, but working. Off beats half-configured.
+  It also cannot be tested from outside: GoTrue answers a request for an
+  unknown address with HTTP 200 and an empty body without touching SMTP at
+  all (anti-enumeration). A real mail only exists for a real account.
 - Push notifications work end-to-end but have never been confirmed against a
   real browser — automation browsers refuse the permission.
+
+**Google login is fine** — verified 2026-09-12 with `pipeline/check_auth.py`:
+provider on, 302 to accounts.google.com, client_id set, `redirect_uri`
+pointing at `/auth/v1/callback`. The reported `Gateway Timeout` was a
+transient Supabase hiccup, not a misconfiguration. Run that script before
+changing any auth setting — it answers in five seconds what a screenshot
+cannot.
