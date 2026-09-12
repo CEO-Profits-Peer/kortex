@@ -35,7 +35,7 @@ from db import Database                        # noqa: E402
 from sources.feeds import fetch_feed           # noqa: E402
 from transform.generate import Generator       # noqa: E402
 from transform.kinetic import make_script
-from validate.checks import MIN_WORD_COVERAGE, validate, validate_kinetic
+from validate.checks import MIN_WORD_COVERAGE, validate
 from validate.relevance import is_worth_a_card           # noqa: E402
 
 logging.basicConfig(
@@ -279,21 +279,19 @@ def main() -> int:
             # ist an dieser Stelle schon fertig und geprueft.
             script = None
             if gen.calls < cfg.max_gemini_calls_per_run:
-                script = make_script(
+                attempt = make_script(
                     gen,
                     text=item.text,
                     title=card["title"],
                     category=card["category_id"],
                     language=src.default_language,
                 )
-                if script:
-                    kcheck = validate_kinetic(script, item.text)
-                    if kcheck.ok:
-                        stats["kinetic"] += 1
-                    else:
-                        log.info("    Drehbuch verworfen: %s", kcheck.reason)
-                        stats["kinetic_rejected"] += 1
-                        script = None
+                script = attempt.script
+                stats[f"kinetic_{attempt.outcome}"] += 1
+                if attempt.outcome == "ok":
+                    stats["kinetic"] += 1
+                elif attempt.detail:
+                    log.info("    Drehbuch verworfen: %s", attempt.detail)
 
             rows.append(
                 build_row(item, card, embedding=embedding, approve=approve, script=script)
@@ -352,7 +350,14 @@ def main() -> int:
         ("Pruefung abgelehnt", stats["rejected"]),
         ("angenommen", stats["accepted"]),
         ("davon Erklaerkarten", stats["kinetic"]),
-        ("Drehbuch verworfen", stats["kinetic_rejected"]),
+        # Aufgeschluesselt, weil "Drehbuch verworfen" allein nichts sagt.
+        # Ob das Modell den Text fuer ungeeignet haelt oder ob die Pruefung
+        # eine Form bemaengelt, sind zwei voellig verschiedene Baustellen -
+        # die erste liegt im Prompt, die zweite im Schema.
+        ("  Vorfilter", stats["kinetic_vorfilter"]),
+        ("  Modell: ungeeignet", stats["kinetic_ungeeignet"]),
+        ("  Antwort unbrauchbar", stats["kinetic_unbrauchbar"]),
+        ("  Pruefung abgelehnt", stats["kinetic_abgelehnt"]),
         ("wartet auf Freigabe", stats["held_for_review"]),
         ("geschrieben", written),
         ("Gemini-Aufrufe", gen.calls),

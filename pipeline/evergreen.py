@@ -54,7 +54,7 @@ from sources.wikipedia import fetch_article     # noqa: E402
 from topics import topics_for                   # noqa: E402
 from transform.generate import Generator        # noqa: E402
 from transform.kinetic import make_script       # noqa: E402
-from validate.checks import validate, validate_kinetic  # noqa: E402
+from validate.checks import validate                    # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -193,15 +193,14 @@ def main() -> int:
 
                 script = None
                 if gen.calls < cfg.max_gemini_calls_per_run:
-                    script = make_script(
+                    attempt = make_script(
                         gen, text=item.text, title=card["title"],
                         category=card["category_id"], language=topic.language,
                     )
-                    if script and validate_kinetic(script, item.text).ok:
+                    script = attempt.script
+                    stats[f"kinetic_{attempt.outcome}"] += 1
+                    if attempt.outcome == "ok":
                         stats["kinetic"] += 1
-                    elif script:
-                        stats["kinetic_rejected"] += 1
-                        script = None
 
                 row = build_row(item, card, embedding=embedding, approve=approve, script=script)
                 # Wikipedia ist nie eine Nachricht. Das Modell darf hier
@@ -232,7 +231,14 @@ def main() -> int:
         ("Dublette", stats["duplicate"]),
         ("angenommen", stats["accepted"]),
         ("davon Erklaerkarten", stats["kinetic"]),
-        ("Drehbuch verworfen", stats["kinetic_rejected"]),
+        # Aufgeschluesselt: "verworfen" allein sagt nicht, wo es klemmt.
+        # Modellabsage heisst Prompt, Pruefung heisst Schema - zwei
+        # verschiedene Baustellen, und genau diese Unterscheidung hat
+        # gefehlt, als die Quote bei achtzehn Prozent haengenblieb.
+        ("  Vorfilter", stats["kinetic_vorfilter"]),
+        ("  Modell: ungeeignet", stats["kinetic_ungeeignet"]),
+        ("  Antwort unbrauchbar", stats["kinetic_unbrauchbar"]),
+        ("  Pruefung abgelehnt", stats["kinetic_abgelehnt"]),
         ("wartet auf Freigabe", stats["held_for_review"]),
         ("geschrieben", written),
         ("Gemini-Aufrufe", gen.calls),

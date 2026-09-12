@@ -3,25 +3,38 @@
 Was eine Erklaerkarte ist und wie sie abgespielt wird, steht in
 supabase/migrations/0027_kinetic_cards.sql und
 app/src/features/kinetic/. Hier geht es nur darum, das Drehbuch zu
-schreiben - und vor allem darum, WANN man es besser laesst.
+schreiben - und darum, WANN man es besser laesst.
 
-Die Auswahl ist der schwierige Teil
------------------------------------
-Ziel sind rund fuenfzig Prozent Erklaerkarten. Die Versuchung ist gross,
-das durch Zwang zu erreichen: aus jedem Artikel eins machen. Das Ergebnis
-waeren Erklaerkarten, die nichts erklaeren - sieben Takte, die
-nacheinander denselben Satz anders formulieren, mit einer Grafik ohne
-Inhalt.
+Wo die Quote wirklich verloren ging - nachgemessen
+--------------------------------------------------
+Hier stand frueher, der Engpass sei die Quellenauswahl, und davor ein
+harter Vorfilter: mindestens drei mehrstellige Zahlen im Quelltext, sonst
+wird gar nicht erst gefragt. Beides war falsch. Gemessen an sechzig
+Wikipedia-Artikeln und zwanzig echten Modellaufrufen:
 
-Deshalb eine harte Vorbedingung, bevor ueberhaupt ein Modell gefragt wird:
-im Quelltext muessen genug Zahlen stehen, aus denen sich ein Verlauf oder
-ein Vergleich bauen laesst. Ohne Zahlen keine wachsende Tabelle und keine
-Balken - und ohne die ist eine Erklaerkarte nur eine Textkarte, die
-langsamer liest.
+    Vorfilter abgelehnt            2 von 60   (3 %)
+    Modell: "suitable": false     12 von 20   (60 %)
+    kaputtes/abgeschnittenes JSON  3 von 20
+    Pruefung abgelehnt             3 von 20
+    brauchbar                      2 von 20   (10 %)
 
-Wo die Quote wirklich herkommt, ist also die QUELLENAUSWAHL, nicht der
-Prompt. Forschungsmeldungen und Statistiken ergeben Erklaerkarten,
-Terminankuendigungen nicht.
+Der Vorfilter kostete also fast nichts und brachte fast nichts. Der
+Verlust lag beim Modell - und zwar mit gutem Grund: abgelehnt wurden
+"Wissenschaftliche Methode", "Peer-Review", "Turing-Test", "Evolution",
+"Impfung", "Plattentektonik", "Treibhauseffekt", "Filterblase". Das sind
+keine schlechten Themen, das sind die BESTEN - nur haben sie keine
+Zahlenreihe. Der Prompt bot Tabelle und Balken an, sonst nichts, und fuer
+einen Vorgang ist beides das falsche Bild.
+
+Deshalb jetzt sieben Bildarten statt vier. Neu sind:
+
+    timeline   Punkte auf einer massstaeblichen Zeitachse
+    quantity   Kaestchenraster fuer Anteile an einem Ganzen
+    steps      ein Ablauf - die einzige Bildart OHNE Zahlen
+
+Die Regel bleibt trotzdem: lieber eine gute Textkarte als eine
+Erklaerkarte, in der sich nichts aendert. Was sich geaendert hat, ist nur
+die Auffassung davon, was sich aendern KANN.
 """
 
 from __future__ import annotations
@@ -29,16 +42,14 @@ from __future__ import annotations
 import json
 import logging
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from google.genai import types
 
-log = logging.getLogger(__name__)
+from validate.checks import validate_kinetic
 
-#: Wie viele verschiedene mehrstellige Zahlen im Quelltext stehen muessen,
-#: damit sich ein Drehbuch lohnt. Drei ist das Minimum fuer eine Aussage
-#: der Form "von X ueber Y auf Z" oder einen Vergleich mit Bezugsgroesse.
-MIN_NUMBERS = 3
+log = logging.getLogger(__name__)
 
 #: Grenzen des Drehbuchs. Unter vier Takten ist es keine Erklaerung,
 #: ueber acht haelt im Feed niemand durch - das sind schon ueber vierzig
@@ -46,8 +57,95 @@ MIN_NUMBERS = 3
 MIN_BEATS = 4
 MAX_BEATS = 8
 
+#: Wie viele verschiedene mehrstellige Zahlen den Vorfilter allein
+#: bestehen lassen. Siehe Kopf: der Filter ist nicht mehr die Huerde,
+#: fuer die er gehalten wurde, sondern nur noch die Notbremse gegen
+#: offensichtlich leere Texte.
+MIN_NUMBERS = 3
+
 NUMBER_RE = re.compile(r"\d[\d.,]*")
 
+#: Woerter, an denen ein Ablauf zu erkennen ist. Ein Text ohne jede Zahl,
+#: aber mit "zuerst ... dann ... schliesslich" traegt eine steps-Karte -
+#: genau die Faelle, die vorher am Zahlenfilter gestorben sind.
+PROCESS_RE = re.compile(
+    r"\b("
+    r"zuerst|zunaechst|zunächst|danach|anschliessend|anschließend|"
+    r"schliesslich|schließlich|daraufhin|Schritt|Phase|Stufe|Verfahren|"
+    r"Vorgang|Prozess|Ablauf|Zyklus|besteht aus|gliedert sich|erfolgt|"
+    r"first|then|next|afterwards|finally|subsequently|step|phase|stage|"
+    r"process|procedure|cycle|consists of|is divided|results in|leads to"
+    r")\b",
+    re.IGNORECASE,
+)
+
+#: Eine Jahreszahl. Zwei verschiedene reichen fuer einen Zeitstrahl.
+YEAR_RE = re.compile(r"\b(1[0-9]{3}|20[0-9]{2})\b")
+
+#: Grenzen der neuen Bildarten. Sie stehen hier und nicht nur im Prompt,
+#: weil die Pruefung sie durchsetzen muss - an Zahlenangaben im Fliesstext
+#: haelt sich ein Modell nur ungefaehr.
+MAX_POINTS = 6      # Zeitstrahl: mehr passt nicht auf die Karte
+MAX_STEPS = 6       # Ablauf: desgleichen
+
+_SHOW_PROPERTIES: dict[str, Any] = {
+    "kind": {
+        "type": "string",
+        "enum": ["statement", "table", "bars", "timeline", "quantity", "steps", "figure"],
+    },
+    "id": {"type": "string"},
+    "text": {"type": "string"},
+    "sub": {"type": "string"},
+    "head": {"type": "array", "items": {"type": "string"}},
+    "rows": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}},
+    "labels": {"type": "array", "items": {"type": "string"}},
+    "values": {"type": "array", "items": {"type": "number"}},
+    "unit": {"type": "string"},
+    "caption": {"type": "string"},
+    "points": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["at", "label"],
+            "properties": {
+                "at": {"type": "number"},
+                "label": {"type": "string"},
+                "note": {"type": "string"},
+            },
+        },
+    },
+    "total": {"type": "number"},
+    "groups": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["label", "value"],
+            "properties": {
+                "label": {"type": "string"},
+                "value": {"type": "number"},
+            },
+        },
+    },
+    "steps": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["label"],
+            "properties": {
+                "label": {"type": "string"},
+                "note": {"type": "string"},
+            },
+        },
+    },
+}
+
+# Das Schema kann nur ausdruecken, WELCHE Felder es geben darf - nicht
+# "bei kind=bars muessen labels und values dabei sein". Dafuer braeuchte
+# es oneOf, und das nimmt die API in response_schema nicht an. Genau
+# daran sind in der Messung zwei von zwanzig Versuchen gescheitert
+# (Balken ohne Werte). Die Bedingung steht deshalb im Prompt UND in
+# validate_kinetic - und wird sie trotzdem verletzt, gibt es einen
+# Verbesserungsversuch statt eines Abbruchs.
 KINETIC_SCHEMA: dict[str, Any] = {
     "type": "object",
     "required": ["suitable", "beats"],
@@ -65,24 +163,7 @@ KINETIC_SCHEMA: dict[str, Any] = {
                     "show": {
                         "type": "object",
                         "required": ["kind"],
-                        "properties": {
-                            "kind": {
-                                "type": "string",
-                                "enum": ["statement", "table", "bars", "figure"],
-                            },
-                            "id": {"type": "string"},
-                            "text": {"type": "string"},
-                            "sub": {"type": "string"},
-                            "head": {"type": "array", "items": {"type": "string"}},
-                            "rows": {
-                                "type": "array",
-                                "items": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "labels": {"type": "array", "items": {"type": "string"}},
-                            "values": {"type": "array", "items": {"type": "number"}},
-                            "unit": {"type": "string"},
-                            "caption": {"type": "string"},
-                        },
+                        "properties": _SHOW_PROPERTIES,
                     },
                 },
             },
@@ -98,9 +179,67 @@ WAS EINE ERKLAERKARTE IST
 Eine Folge von Takten. Jeder Takt ist EIN gesprochener Satz und EIN Bild.
 Die Stimme liest den Satz vor, das Bild baut sich dabei auf. Der Reiz
 entsteht dadurch, dass sich von Takt zu Takt etwas SICHTBAR aendert -
-eine Tabellenzeile kommt dazu, ein Balken waechst.
+eine Tabellenzeile kommt dazu, ein Balken waechst, ein Schritt kommt hinzu.
 
-WAS IN EINE TABELLE ODER AUF BALKEN GEHOERT
+DIE SIEBEN BILDARTEN - waehle die, die zum Text passt
+
+1. statement - eine grosse Zahl oder Aussage.
+   {{"kind":"statement","text":"1.000 EUR","sub":"Startkapital"}}
+   Fuer den ersten und den letzten Takt.
+
+2. table - Zeilen, die nacheinander erscheinen.
+   {{"kind":"table","id":"t","head":["Jahr","Guthaben"],
+     "rows":[["1","1.060 EUR"],["2","1.124 EUR"]]}}
+   Fuer Wertepaare. Jeder Takt wiederholt alle bisherigen Zeilen und
+   haengt die neue an.
+
+3. bars - Balken, die auf ihren Wert wachsen.
+   {{"kind":"bars","id":"b","unit":"%","labels":["vorher","nachher"],
+     "values":[35,68]}}
+   Fuer zwei bis vier Groessen nebeneinander. "labels" und "values"
+   muessen beide da und gleich lang sein - ein Balken ohne Wert wird
+   verworfen.
+
+4. timeline - Punkte auf einer Zeitachse.
+   {{"kind":"timeline","id":"tl","points":[
+     {{"at":1943,"label":"Erstes kuenstliches Neuron"}},
+     {{"at":1957,"label":"Perzeptron"}}]}}
+   Fuer Jahreszahlen. Die Abstaende werden MASSSTAEBLICH gezeichnet:
+   zwischen 1943 und 1957 liegt sichtbar mehr Platz als zwischen 2018 und
+   2020. Sobald die linke Spalte einer Tabelle Jahre enthaelt, nimm
+   timeline statt table - die Tabelle macht vierzehn Jahre und zwei Jahre
+   gleich hoch und wirft damit die Aussage weg.
+   Hoechstens {max_points} Punkte, aufsteigend.
+
+5. quantity - ein Raster aus Kaestchen, das sich fuellt.
+   {{"kind":"quantity","id":"q","total":100,"unit":"%","groups":[
+     {{"label":"Miete","value":38}},{{"label":"Essen","value":22}}]}}
+   Fuer die Aufteilung EINER Groesse. Balken stellen zwei Dinge
+   nebeneinander, hier geht es darum, wie sich ein Ganzes aufteilt.
+   Jeder Takt wiederholt alle bisherigen Gruppen und haengt eine an.
+   Die Summe der Gruppen darf "total" nicht ueberschreiten.
+
+6. steps - ein Ablauf, Schritt fuer Schritt.
+   {{"kind":"steps","id":"s","steps":[
+     {{"label":"Antrag einbringen","note":"beim AMS"}},
+     {{"label":"Frist laeuft","note":"vier Wochen"}}]}}
+   Fuer Vorgaenge, Verfahren, Mechanismen, Kreislaeufe. DIESE BILDART
+   BRAUCHT KEINE ZAHLEN. Wenn der Text erklaert, wie etwas ablaeuft oder
+   funktioniert, ist das hier die richtige Wahl - und meistens die beste
+   Karte. Jeder Takt wiederholt alle bisherigen Schritte und haengt einen
+   an. Hoechstens {max_steps} Schritte.
+   Jeder Schritt muss im Quelltext stehen. Nichts dazuerfinden, was
+   plausibel klingt.
+   Alle Schritte gehoeren zu EINEM Ablauf. Eine Gegenueberstellung ist
+   kein Schritt: "aktive Impfung" und "passive Impfung" sind zwei Wege,
+   nicht Schritt drei und vier desselben Wegs. Nimm dafuer den
+   Schlusstakt, nicht die Kette.
+
+7. figure - eine abstrakte Grafik ohne eigene Zahlen.
+   {{"kind":"figure","caption":"..."}}
+   Nur fuer einen Schlusstakt.
+
+WAS IN EINE TABELLE, AUF BALKEN ODER INS RASTER GEHOERT
 Nur GROESSEN, die man vergleichen kann: Betraege, Jahre, Anteile,
 Entfernungen, Mengen, Zeiten.
 
@@ -115,47 +254,30 @@ addieren, und aus ihnen wird nichts sichtbar.
   Das ist eine Aktenliste. Sie erklaert nichts, sie belegt nur, dass es
   Akten gibt.
 
-  Gut:       JAHR | GUTHABEN
-             1    | 1.060 EUR
-             2    | 1.124 EUR
-  Hier sieht man beim Wachsen zu.
-
-Die Probe: Wuerde jemand beim Zusehen "ah, deshalb" denken? Oder nur
-"aha, Nummern"? Beim zweiten setze "suitable": false.
-
 WANN DU ABLEHNEN MUSST
 Setze "suitable": false und gib keine Takte zurueck, wenn eines zutrifft:
-- Der Text enthaelt keinen Verlauf, keinen Vergleich und keine Groessen,
-  die man nebeneinander stellen kann.
+- Der Text beschreibt WEDER eine Abfolge von Ereignissen, NOCH einen
+  Vorgang oder Mechanismus, NOCH vergleichbare Groessen, NOCH die
+  Aufteilung eines Ganzen. Erst wenn nichts davon da ist, ist es keine
+  Erklaerkarte.
 - Die einzigen Zahlen im Text sind Kennungen (siehe oben).
-- Das Drehbuch waere nur der Fliesstext in Haeppchen. Wenn sich das Bild
-  von Takt zu Takt nicht aendert, ist es keine Erklaerkarte.
-- Die Zahlen im Text reichen nicht fuer mindestens eine Tabelle oder
-  Balkengrafik.
-Ablehnen ist ein gutes Ergebnis. Eine schlechte Erklaerkarte ist schlimmer
-als eine gute Textkarte.
+- Das Bild aendert sich von Takt zu Takt nicht. Dann ist es der
+  Fliesstext in Haeppchen, und das kann eine Textkarte besser.
+Ablehnen bleibt ein gutes Ergebnis - aber pruefe vorher ALLE sieben
+Bildarten. Ein Text ohne Zahlenreihe ist kein Grund zur Ablehnung,
+solange er einen Ablauf beschreibt.
 
 REGELN FUER DIE TAKTE
 - {min_beats} bis {max_beats} Takte.
+- Bleib bei EINEM bewegten Bild pro Drehbuch: ein Takt statement zum
+  Einstieg, dann vier bis sechs Takte auf demselben Bild (dieselbe "id"),
+  zum Schluss statement oder figure. Zwischen Bildarten hin- und
+  herzuspringen zerstoert den Aufbau.
 - "say": genau EIN Satz, hoechstens 140 Zeichen, gesprochene Sprache.
   Zahlen ausschreiben, wo man sie sprechen wuerde ("sechs Prozent").
 - JEDE Zahl in Bild und Text muss im Quelltext stehen. Nichts hochrechnen,
   nichts runden, nichts ergaenzen. Keine Beispielwerte.
-- Der erste Takt fuehrt die Groesse ein, der letzte sagt, was daraus folgt.
-
-DIE VIER BILDARTEN
-- statement: {{"kind":"statement","text":"1.000 €","sub":"Startkapital"}}
-  Eine grosse Zahl oder Aussage. Fuer Anfang und Schluss.
-- table: {{"kind":"table","id":"t","head":["Jahr","Guthaben"],
-           "rows":[["1","1.060 €"],["2","1.124 €"]]}}
-  Zeilen, die nacheinander erscheinen. WICHTIG: jeder Takt wiederholt alle
-  bisherigen Zeilen und haengt die neue an. Dieselbe "id" ueber alle Takte,
-  die dieselbe Tabelle meinen.
-- bars: {{"kind":"bars","id":"b","unit":"%","labels":["vorher","nachher"],
-          "values":[35,68]}}
-  Balken fuer Groessenverhaeltnisse. "values" sind blanke Zahlen.
-- figure: {{"kind":"figure","caption":"..."}}
-  Nur fuer einen Schlusstakt ohne eigene Zahlen.
+- Der erste Takt fuehrt ein, der letzte sagt, was daraus folgt.
 
 KATEGORIE-HINWEIS: die Karte gehoert zu {category}.
 
@@ -165,18 +287,65 @@ QUELLTEXT:
 {text}
 """
 
+#: Angehaengt an den zweiten Anlauf, wenn die Pruefung etwas Konkretes
+#: bemaengelt hat. Ein zweiter Aufruf kostet Kontingent - aber weniger als
+#: ein weggeworfener Artikel, fuer den Abruf, Karte und Einbettung schon
+#: bezahlt sind.
+REPAIR = """
 
-def enough_numbers(text: str) -> bool:
-    """Genug Zahlen fuer einen Verlauf oder Vergleich?
+ACHTUNG: Dein vorheriges Drehbuch wurde aus diesem Grund verworfen:
+  {reason}
+Schreibe es neu und behebe genau diesen Punkt. Alles andere darf bleiben.
+"""
 
-    Der kostenlose Vorfilter. Einstellige Zahlen zaehlen nicht mit - das
-    sind meistens Aufzaehlungen ("drei Gruende"), keine Groessen.
+
+@dataclass(frozen=True)
+class Attempt:
+    """Ergebnis eines Versuchs - samt Grund, wenn keiner daraus wurde.
+
+    Frueher gab diese Datei nur `dict | None` zurueck. Damit liess sich
+    hinterher nicht beantworten, WO die Quote verloren geht: Vorfilter,
+    Modellabsage und kaputtes JSON sahen alle gleich aus. Genau diese
+    Frage musste dann mit einem Wegwerfskript beantwortet werden - und
+    ihre Antwort hat die Richtung dieser Datei geaendert (siehe Kopf).
+    """
+
+    script: dict[str, Any] | None
+    #: vorfilter · modellfehler · unbrauchbar · ungeeignet · abgelehnt · ok
+    outcome: str
+    detail: str = ""
+
+
+def worth_trying(text: str) -> bool:
+    """Lohnt sich ueberhaupt ein Modellaufruf?
+
+    Die Notbremse, nicht die Auswahl. Durchgelassen wird, was genug
+    Zahlen fuer einen Vergleich hat ODER zwei Jahreszahlen fuer einen
+    Zeitstrahl ODER Woerter, an denen ein Ablauf erkennbar ist.
+
+    Gemessen an sechzig Wikipedia-Artikeln hat der alte Filter - drei
+    mehrstellige Zahlen, sonst nichts - genau zwei aufgehalten. Er war
+    nie die Huerde, fuer die er gehalten wurde. Er bleibt trotzdem, weil
+    ein Begriffsklaerungsstummel sonst einen Aufruf kostet.
+    """
+    if _distinct_numbers(text) >= MIN_NUMBERS:
+        return True
+    if len(set(YEAR_RE.findall(text))) >= 2:
+        return True
+    return len({m.lower() for m in PROCESS_RE.findall(text)}) >= 2
+
+
+def _distinct_numbers(text: str) -> int:
+    """Verschiedene mehrstellige Zahlen.
+
+    Einstellige zaehlen nicht mit - das sind meistens Aufzaehlungen
+    ("drei Gruende"), keine Groessen.
     """
     found = {
         n.rstrip(".,").replace(".", "").replace(",", "")
         for n in NUMBER_RE.findall(text)
     }
-    return len({n for n in found if len(n) > 1}) >= MIN_NUMBERS
+    return len({n for n in found if len(n) > 1})
 
 
 def make_script(
@@ -186,25 +355,48 @@ def make_script(
     title: str,
     category: str,
     language: str,
-) -> dict[str, Any] | None:
-    """Drehbuch erzeugen - oder None, wenn der Text keins hergibt.
+    repair: bool = True,
+) -> Attempt:
+    """Drehbuch erzeugen, pruefen, notfalls einmal nachbessern lassen.
 
     `gen` ist der Generator aus generate.py; er bringt Wiederholung,
     Ausweichmodelle und das abgeschaltete Nachdenken schon mit. Hier
     nochmal dieselbe Logik zu bauen, hiesse sie zweimal pflegen.
-    """
-    if not enough_numbers(text):
-        return None
 
-    prompt = PROMPT.format(
+    Die Pruefung liegt jetzt HIER und nicht mehr beim Aufrufer: nur so
+    kennt der zweite Anlauf den Ablehnungsgrund, und nur so koennen
+    run.py und evergreen.py nicht auseinanderlaufen.
+    """
+    if not worth_trying(text):
+        return Attempt(None, "vorfilter")
+
+    base = PROMPT.format(
         language="Deutsch" if language == "de" else "English",
         min_beats=MIN_BEATS,
         max_beats=MAX_BEATS,
+        max_points=MAX_POINTS,
+        max_steps=MAX_STEPS,
         category=category,
         title=title,
         text=text,
     )
 
+    attempt = _one_round(gen, base, text)
+    if attempt.outcome == "ok" or not repair:
+        return attempt
+
+    # Nachbessern lohnt nur bei einem konkreten Formfehler. Sagt das
+    # Modell "ungeeignet", meint es das - ein zweites Nachfragen erzwingt
+    # bloss ein schlechtes Drehbuch, und genau davor warnt der Kopf
+    # dieser Datei.
+    if attempt.outcome != "abgelehnt":
+        return attempt
+
+    second = _one_round(gen, base + REPAIR.format(reason=attempt.detail), text)
+    return second if second.outcome == "ok" else attempt
+
+
+def _one_round(gen: Any, prompt: str, source_text: str) -> Attempt:
     try:
         response = gen.generate_raw(
             prompt,
@@ -215,26 +407,102 @@ def make_script(
                 # Saetze darf lebendiger sein. Die Zahlen sind durch die
                 # Pruefung danach ohnehin gebunden.
                 temperature=0.5,
-                max_output_tokens=3000,
+                # Grosszuegig, und das ist teuer erkauft: jeder Takt
+                # wiederholt sein Bild vollstaendig, eine sechszeilige
+                # Tabelle ueber sechs Takte sind ueber zwanzigtausend
+                # Zeichen. Bei 3000 Tokens war das abgeschnitten - drei von
+                # zwanzig Versuchen kamen als kaputtes JSON zurueck.
+                max_output_tokens=8000,
             ),
         )
     except Exception as exc:  # noqa: BLE001
         log.debug("Drehbuch fehlgeschlagen: %s", exc)
-        return None
+        return Attempt(None, "modellfehler", type(exc).__name__)
 
     raw = (response.text or "").strip()
     if not raw:
-        return None
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
+        return Attempt(None, "unbrauchbar", "leere Antwort")
+
+    data = _parse(raw)
+    if data is None:
+        return Attempt(None, "unbrauchbar", "kaputtes JSON")
 
     if not data.get("suitable"):
-        return None
+        return Attempt(None, "ungeeignet")
 
     beats = data.get("beats")
     if not isinstance(beats, list) or not (MIN_BEATS <= len(beats) <= MAX_BEATS):
+        return Attempt(
+            None, "abgelehnt", f"{len(beats or [])} Takte statt {MIN_BEATS} bis {MAX_BEATS}"
+        )
+
+    script = {"beats": beats}
+    check = validate_kinetic(script, source_text)
+    if not check.ok:
+        return Attempt(None, "abgelehnt", check.reason)
+    return Attempt(script, "ok")
+
+
+def _parse(raw: str) -> dict[str, Any] | None:
+    """JSON lesen - und abgeschnittenes JSON retten, statt es wegzuwerfen.
+
+    Ein abgeschnittenes Drehbuch ist fast immer ein vollstaendiges bis zum
+    vorletzten Takt plus einem halben. Die Takte davor sind in Ordnung -
+    jeder beschreibt sein Bild ja vollstaendig (Migration 0027), keiner
+    haengt vom naechsten ab. Sie wegzuwerfen hiesse, den ganzen Artikel
+    wegzuwerfen, obwohl das Ergebnis fertig dasteht.
+
+    Gerettet wird nur die Struktur, ergaenzt wird nichts: geschlossen wird
+    dort, wo der letzte vollstaendige Takt endet. Reichen die geretteten
+    Takte nicht fuer ein Drehbuch, lehnt die Pruefung danach ohnehin ab.
+    """
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+
+    start = raw.find('"beats"')
+    if start < 0:
+        return None
+    open_bracket = raw.find("[", start)
+    if open_bracket < 0:
         return None
 
-    return {"beats": beats}
+    # Zeichenweise durch das Feld und sich merken, wo ein Takt endet - also
+    # wo die Verschachtelung wieder auf eins faellt. Klammern INNERHALB von
+    # Zeichenketten muessen dabei uebersprungen werden, sonst endet ein
+    # Takt mitten in einem Satz mit eckiger Klammer.
+    depth = 0
+    in_string = False
+    escaped = False
+    ends: list[int] = []
+    for i in range(open_bracket, len(raw)):
+        ch = raw[i]
+        if escaped:
+            escaped = False
+            continue
+        if ch == "\\":
+            escaped = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in "[{":
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+            if depth == 1:
+                ends.append(i)
+            elif depth == 0:
+                break
+
+    if not ends:
+        return None
+    try:
+        beats = json.loads(raw[open_bracket : ends[-1] + 1] + "]")
+    except json.JSONDecodeError:
+        return None
+    log.info("Drehbuch war abgeschnitten, %d vollstaendige Takte gerettet", len(beats))
+    return {"suitable": True, "beats": beats}

@@ -379,7 +379,21 @@ def validate(card: dict[str, Any], source_text: str) -> Result:
 #: drei Zeilen - die Buehne springt bei jedem Satzwechsel.
 MAX_SAY_CHARS = 160
 
-VALID_KINDS = {"statement", "table", "bars", "figure"}
+VALID_KINDS = {"statement", "table", "bars", "timeline", "quantity", "steps", "figure"}
+
+#: Bildarten, in denen von Takt zu Takt etwas dazukommt. Mindestens eine
+#: davon muss vorkommen - siehe das Ende von validate_kinetic.
+BUILDING_KINDS = {"table", "bars", "timeline", "quantity", "steps"}
+
+#: Grenzen der neuen Bildarten, gespiegelt aus transform/kinetic.py. Dort
+#: stehen sie im Prompt, hier werden sie durchgesetzt - ein Modell haelt
+#: sich an eine Zahl im Fliesstext nur ungefaehr.
+MAX_POINTS = 6
+MAX_STEPS = 6
+# Eine Obergrenze fuer die Kaestchenzahl steht hier bewusst NICHT: "total"
+# darf jede Groesse sein ("3,4 von 8,9 Millionen"), die Anzeige rechnet sie
+# auf hundert Kaestchen herunter. Geprueft wird nur, dass die Anteile das
+# Ganze nicht ueberschreiten.
 
 
 def _show_numbers(show: dict[str, Any]) -> list[str]:
@@ -396,16 +410,61 @@ def _show_numbers(show: dict[str, Any]) -> list[str]:
         parts.append(str(label))
     for head in show.get("head") or []:
         parts.append(str(head))
+    for point in show.get("points") or []:
+        if isinstance(point, dict):
+            parts.append(str(point.get("label") or ""))
+            parts.append(str(point.get("note") or ""))
+    for group in show.get("groups") or []:
+        if isinstance(group, dict):
+            parts.append(str(group.get("label") or ""))
+    for step in show.get("steps") or []:
+        if isinstance(step, dict):
+            parts.append(str(step.get("label") or ""))
+            parts.append(str(step.get("note") or ""))
     out: list[str] = []
     for p in parts:
         out.extend(_numbers(p))
-    # Balkenwerte sind Zahlen, keine Zeichenketten - separat einsammeln.
-    for v in show.get("values") or []:
-        if isinstance(v, (int, float)):
-            text = str(int(v)) if float(v).is_integer() else str(v)
-            out.extend(_numbers(text))
+
+    # Zahlen, die als Zahl und nicht als Zeichenkette ankommen: Balkenwerte,
+    # Punkte auf der Zeitachse, Gruppenanteile, die Bezugsgroesse.
+    numeric: list[float] = []
+    numeric.extend(v for v in (show.get("values") or []) if isinstance(v, (int, float)))
+    numeric.extend(
+        p.get("at") for p in (show.get("points") or [])
+        if isinstance(p, dict) and isinstance(p.get("at"), (int, float))
+    )
+    numeric.extend(
+        g.get("value") for g in (show.get("groups") or [])
+        if isinstance(g, dict) and isinstance(g.get("value"), (int, float))
+    )
+    if isinstance(show.get("total"), (int, float)):
+        numeric.append(show["total"])
+    for v in numeric:
+        text = str(int(v)) if float(v).is_integer() else str(v)
+        out.extend(_numbers(text))
     return out
 
+
+
+def _picture_text(show: dict[str, Any]) -> str:
+    """Der freie Text eines Bildes - der ohne Zahl daneben.
+
+    Absichtlich NUR die neuen Bildarten. Tabellenzeilen und
+    Balkenbeschriftungen haengen an einer Zahl, und die Zahlenpruefung
+    bindet sie schon an die Quelle. Sie hier mitzunehmen hiesse, jede
+    umformulierte Kopfzeile ("Guthaben" statt "Kontostand") zur Ablehnung
+    zu machen - dieselbe Karte, die vorher durchging.
+    """
+    parts: list[str] = []
+    for key in ("points", "steps"):
+        for entry in show.get(key) or []:
+            if isinstance(entry, dict):
+                parts.append(str(entry.get("label") or ""))
+                parts.append(str(entry.get("note") or ""))
+    for group in show.get("groups") or []:
+        if isinstance(group, dict):
+            parts.append(str(group.get("label") or ""))
+    return " ".join(p for p in parts if p)
 
 
 #: Sieht aus wie ein Aktenzeichen: Grossbuchstaben, Bindestrich, Ziffern.
@@ -455,6 +514,11 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
     source_numbers = _numbers(source_text)
     haystack = _norm(source_text)
     kinds_seen: list[str] = []
+    #: Wie gross ein Bild je (Art, id) im besten Takt geworden ist. Damit
+    #: laesst sich am Ende beantworten, ob ueberhaupt etwas GEWACHSEN ist.
+    grew: dict[tuple[str, Any], int] = {}
+    #: Lange Woerter aus dem freien Bildtext, ueber alle Takte gesammelt.
+    picture_words: set[str] = set()
 
     for i, beat in enumerate(beats, 1):
         say = (beat or {}).get("say")
@@ -483,6 +547,9 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
                 return Result(False, f"Takt {i}: Tabellenkopf nicht zweispaltig")
             if _looks_like_ids(rows):
                 return Result(False, f"Takt {i}: Tabelle aus Kennungen statt Groessen")
+            grew[("table", show.get("id"))] = max(
+                grew.get(("table", show.get("id")), 0), len(rows)
+            )
         if show["kind"] == "bars":
             labels, values = show.get("labels"), show.get("values")
             if not isinstance(labels, list) or not isinstance(values, list):
@@ -491,8 +558,75 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
                 return Result(False, f"Takt {i}: {len(labels)} Beschriftungen, {len(values)} Werte")
             if any(not isinstance(v, (int, float)) for v in values):
                 return Result(False, f"Takt {i}: Balkenwert ist keine Zahl")
+            grew[("bars", show.get("id"))] = max(
+                grew.get(("bars", show.get("id")), 0), len(values)
+            )
+        if show["kind"] == "timeline":
+            points = show.get("points")
+            if not isinstance(points, list) or not (1 <= len(points) <= MAX_POINTS):
+                return Result(False, f"Takt {i}: Zeitstrahl mit {len(points or [])} Punkten")
+            ats: list[float] = []
+            for p in points:
+                if not isinstance(p, dict) or not isinstance(p.get("at"), (int, float)):
+                    return Result(False, f"Takt {i}: Punkt ohne Wert auf der Achse")
+                if not str(p.get("label") or "").strip():
+                    return Result(False, f"Takt {i}: Punkt ohne Beschriftung")
+                ats.append(float(p["at"]))
+            # Aufsteigend, weil die Achse von oben nach unten laeuft. Eine
+            # unsortierte Liste sieht nicht falsch aus, sie sieht nur
+            # zufaellig aus - und die Abstaende, die ganze Aussage dieser
+            # Bildart, waeren Unsinn.
+            if ats != sorted(ats):
+                return Result(False, f"Takt {i}: Zeitstrahl nicht aufsteigend")
+            grew[("timeline", show.get("id"))] = max(
+                grew.get(("timeline", show.get("id")), 0), len(points)
+            )
+
+        if show["kind"] == "quantity":
+            total, groups = show.get("total"), show.get("groups")
+            # Mindestens zwei, nicht bloss groesser als null: ein Raster
+            # aus einem Kaestchen ist kein Bild. Dieselbe Grenze steht in
+            # app/src/features/kinetic/types.ts - laufen die beiden
+            # auseinander, bleibt die Karte in der App leer.
+            if not isinstance(total, (int, float)) or total < 2:
+                return Result(False, f"Takt {i}: Raster ohne Bezugsgroesse")
+            if not isinstance(groups, list) or not (1 <= len(groups) <= 4):
+                return Result(False, f"Takt {i}: {len(groups or [])} Gruppen im Raster")
+            total_value = 0.0
+            for g in groups:
+                if not isinstance(g, dict) or not isinstance(g.get("value"), (int, float)):
+                    return Result(False, f"Takt {i}: Gruppe ohne Wert")
+                if not str(g.get("label") or "").strip():
+                    return Result(False, f"Takt {i}: Gruppe ohne Beschriftung")
+                total_value += float(g["value"])
+            # Mehr Anteile als Ganzes: das Raster liefe ueber, und die
+            # Aussage waere schlicht falsch. Kleine Toleranz, weil sich
+            # gerundete Prozentangaben auf 100,2 summieren duerfen.
+            if total_value > float(total) * 1.02:
+                return Result(False, f"Takt {i}: Anteile ergeben mehr als das Ganze")
+            grew[("quantity", show.get("id"))] = max(
+                grew.get(("quantity", show.get("id")), 0), len(groups)
+            )
+
+        if show["kind"] == "steps":
+            steps = show.get("steps")
+            if not isinstance(steps, list) or not (1 <= len(steps) <= MAX_STEPS):
+                return Result(False, f"Takt {i}: Ablauf mit {len(steps or [])} Schritten")
+            for s in steps:
+                if not isinstance(s, dict) or not str(s.get("label") or "").strip():
+                    return Result(False, f"Takt {i}: Schritt ohne Beschriftung")
+            grew[("steps", show.get("id"))] = max(
+                grew.get(("steps", show.get("id")), 0), len(steps)
+            )
+
         if show["kind"] == "statement" and not (show.get("text") or "").strip():
             return Result(False, f"Takt {i}: Aussage ohne Text")
+
+        # Freier Text IM BILD wird gesammelt und erst nach der Schleife
+        # geprueft - siehe unten, warum nicht je Takt.
+        picture_words.update(
+            w for w in (_norm(w) for w in LONG_WORD_RE.findall(_picture_text(show))) if w
+        )
 
         # Zahlen - im Satz wie im Bild.
         # list(): _numbers gibt eine Menge zurueck, _show_numbers eine
@@ -513,7 +647,39 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
     # Bewegung ist die Daseinsberechtigung. Ein Drehbuch, das nur aus
     # Aussagen besteht, ist eine vorgelesene Textkarte - dafuer lohnt der
     # Aufwand nicht, und im Feed faellt es als leeres Versprechen auf.
-    if not any(k in ("table", "bars") for k in kinds_seen):
+    if not any(k in BUILDING_KINDS for k in kinds_seen):
         return Result(False, "kein Bild, das sich aufbaut")
+
+    # ... und es muss auch tatsaechlich mehr als ein Eintrag werden. Eine
+    # Tabelle mit einer einzigen Zeile ueber sechs Takte erfuellt die Regel
+    # darueber, ist aber ein Standbild mit Vortrag.
+    if max(grew.values(), default=0) < 2:
+        return Result(False, "Bild bleibt bei einem einzigen Eintrag")
+
+    # Freier Text IM BILD - Schritte, Punkte, Gruppen.
+    #
+    # Bei Tabelle und Balken war das nie noetig: dort steht neben jeder
+    # Beschriftung eine Zahl, und die Zahlenpruefung oben haelt beides
+    # zusammen. Ein Ablauf hat keine Zahlen. Ohne diese Pruefung waere
+    # `steps` genau die Luecke, durch die ein erfundener Vorgang spazieren
+    # koennte - und "nie aus dem Modellgedaechtnis" ist die erste Regel des
+    # ganzen Projekts.
+    #
+    # Ueber das GANZE Drehbuch und nicht je Takt: ein einzelner Schritt
+    # traegt oft nur ein langes Wort, und dann ist die Quote entweder null
+    # oder eins. Der erste Versuch je Takt hat prompt "Antrag einbringen"
+    # abgelehnt, weil in der Quelle "eingebracht" steht - der Stammvergleich
+    # ueber fuenf Zeichen kommt an einer deutschen Vorsilbe nicht vorbei.
+    # Ueber alle Takte gemittelt faellt das nicht mehr ins Gewicht, und was
+    # die Pruefung fangen soll - ein frei erfundener Ablauf - hat gar keine
+    # Treffer.
+    if picture_words:
+        hits = sum(1 for w in picture_words if _known_word(w, haystack))
+        if hits / len(picture_words) < MIN_WORD_COVERAGE:
+            return Result(
+                False,
+                f"Bildtext steht so nicht in der Quelle "
+                f"({hits}/{len(picture_words)} Woerter)",
+            )
 
     return Result(True)

@@ -1,0 +1,77 @@
+-- =============================================================================
+-- 0058_kinetic_more_kinds.sql  ·  Drei weitere Bildarten fuer Erklaerkarten
+--
+-- Warum ueberhaupt eine Migration
+-- --------------------------------
+-- Es aendert sich kein Schema. `kinetic_script` ist jsonb, die Bedingung
+-- aus 0027 prueft nur, dass Drehbuch und presentation_mode zusammenpassen,
+-- und neue Bildarten passen ohne Aenderung hinein.
+--
+-- Trotzdem steht es hier, weil das FORMAT hier dokumentiert ist: wer
+-- 0027 liest, um zu erfahren, was ein Drehbuch enthalten darf, soll nicht
+-- eine unvollstaendige Liste finden. Die Migrationsdateien sind in diesem
+-- Projekt die Formatdokumentation.
+--
+-- Was der Anlass war
+-- ------------------
+-- Der Anteil an Erklaerkarten sollte von 18 auf 50 Prozent. Die Annahme
+-- war, der Engpass sei der Vorfilter in transform/kinetic.py (mindestens
+-- drei mehrstellige Zahlen im Quelltext). Nachgemessen an 60 Artikeln
+-- hielt der genau 2 auf. Der Verlust lag woanders: 12 von 20 Versuchen
+-- endeten damit, dass das Modell den Text fuer ungeeignet erklaerte.
+--
+-- Und es hatte recht. Abgelehnt wurden "Wissenschaftliche Methode",
+-- "Peer-Review", "Turing-Test", "Evolution", "Impfung", "Plattentektonik",
+-- "Treibhauseffekt". Das sind keine schlechten Themen - es sind die
+-- besten. Nur haben sie keine Zahlenreihe, und angeboten waren bis dahin
+-- Tabelle und Balken. Fuer einen VORGANG ist beides das falsche Bild.
+--
+-- Die drei neuen Bildarten
+-- ------------------------
+--   timeline   Punkte auf einer Zeitachse. Die Abstaende werden
+--              massstaeblich gezeichnet - zwischen 1943 und 1957 liegt
+--              sichtbar mehr Platz als zwischen 2018 und 2020. Genau das
+--              wirft eine Tabelle weg, die beide Zeilen gleich hoch macht.
+--
+--                {"kind":"timeline","id":"tl","points":[
+--                  {"at":1943,"label":"Erstes kuenstliches Neuron"},
+--                  {"at":1957,"label":"Perzeptron"}]}
+--
+--   quantity   Ein Raster aus Kaestchen, das sich fuellt. Fuer die
+--              Aufteilung EINER Groesse - Balken vergleichen zwei Dinge
+--              nebeneinander, hier geht es um Anteile an einem Ganzen.
+--
+--                {"kind":"quantity","id":"q","total":100,"unit":"EUR",
+--                 "groups":[{"label":"Wohnen","value":38}]}
+--
+--   steps      Ein Ablauf, Schritt fuer Schritt. Die einzige Bildart OHNE
+--              Zahlen, und der eigentliche Grund fuer diese Migration:
+--              damit wird aus "wie wird aus einem Antrag ein Bescheid"
+--              eine Erklaerkarte statt einer Ablehnung.
+--
+--                {"kind":"steps","id":"s","steps":[
+--                  {"label":"Antrag einbringen","note":"beim AMS"}]}
+--
+-- Die Regel von 0027 gilt unveraendert: jeder Takt beschreibt sein Bild
+-- VOLLSTAENDIG. Ein timeline-Takt wiederholt alle bisherigen Punkte und
+-- haengt einen an, genau wie eine Tabelle ihre Zeilen. Die Abspielung
+-- erkennt an der gleichen "id", dass zwei Takte dasselbe Bild meinen -
+-- und nur deshalb kann der Punkt von 1943 nach oben WANDERN, wenn 2020
+-- dazukommt, statt neu aufzublenden.
+--
+-- Grenzen, die nicht im Schema stehen koennen
+-- -------------------------------------------
+-- Hoechstens 6 Punkte, hoechstens 6 Schritte, hoechstens 100 Kaestchen.
+-- Das sind Anzeigegrenzen, keine Datengrenzen: darueber ueberlappen die
+-- Beschriftungen auf einer Telefonbreite. Durchgesetzt werden sie an zwei
+-- Stellen - pipeline/validate/checks.py beim Erzeugen und
+-- app/src/features/kinetic/types.ts beim Abspielen. Beide MUESSEN gleich
+-- streng sein: waere die App strenger, ergaebe ein von der Pipeline
+-- freigegebenes Drehbuch eine leere Karte statt einer Textkarte.
+-- =============================================================================
+
+comment on column public.content_items.kinetic_script is
+  'Drehbuch fuer presentation_mode=kinetic: {"beats":[{"say":..., "show":{...}}]}. '
+  'Bildarten: statement, table, bars, timeline, quantity, steps, figure. '
+  'Siehe 0027 (Format), 0058 (die drei spaeteren Bildarten) und '
+  'app/src/features/kinetic/.';
