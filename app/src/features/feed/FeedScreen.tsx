@@ -1,3 +1,4 @@
+import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -16,6 +17,8 @@ import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { activeCardId, setActiveCard } from '@/lib/activeCard';
 import { hydrateContentState } from '@/lib/contentState';
 import { eventBuffer } from '@/lib/eventBuffer';
+import { stopMusic } from '@/lib/music';
+import { stopSpeech } from '@/lib/speech';
 import { api, configError, supabase } from '@/lib/supabase';
 import type { Category, ContentItem, Source } from '@/lib/types.db';
 import { color, space, type } from '@/theme/tokens';
@@ -111,7 +114,34 @@ export function FeedScreen({
     analytics.cardRead(item.primary_category_id, item.dwell_target_ms, item.difficulty);
   }, []);
 
-  const { onViewableItemsChanged, closeAll } = useDwellTracking(onValidated);
+  const { onViewableItemsChanged, closeAll, pause, resume } = useDwellTracking(onValidated);
+
+  /**
+   * Tab gewechselt: Stimme aus, Flaeche aus, Uhr an.
+   *
+   * Die Tabs bleiben eingehaengt - wer vom Feed auf "Kurse" wechselt,
+   * unmountet den Feed nicht. Eine Erklaerkarte hat deshalb weitergeredet,
+   * waehrend man in einem anderen Bildschirm stand, und der Knopf zum
+   * Anhalten war nicht mehr zu sehen.
+   *
+   * Bewusst KEINE Einstellung dafuer. Eine App, die aus einem Bildschirm
+   * heraus spricht, den man verlassen hat, ist nicht wahlweise so, sondern
+   * kaputt. (Vorlesen im Hintergrund - Bildschirm aus, App hoert weiter - ist
+   * eine eigene Sache und braucht mehr als das hier.)
+   */
+  useFocusEffect(
+    useCallback(() => {
+      resume();
+      return () => {
+        stopSpeech();
+        stopMusic();
+        pause();
+        // Gemessene Zeit rausschicken, solange die App noch laeuft. Wer den
+        // Feed verlaesst, schliesst als naechstes oft die App.
+        void eventBuffer.flush();
+      };
+    }, [pause, resume]),
+  );
 
   /**
    * Scroll-Position auf dem UI-Thread. Jede Karte leitet daraus ihre eigene

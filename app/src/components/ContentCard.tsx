@@ -27,7 +27,8 @@ import { Icon } from '@/components/Icon';
 import { paginate } from '@/components/paginate';
 import { SourceBadge } from '@/components/SourceBadge';
 import { Interaction, isInteractionBuilt } from '@/features/interactions';
-import { track } from '@/lib/eventBuffer';
+import { reportSeenNow } from '@/features/feed/useDwellTracking';
+import { eventBuffer, track } from '@/lib/eventBuffer';
 import { haptics } from '@/lib/haptics';
 import { sound } from '@/lib/sound';
 import { onSpeechChange, speakingCardId, toggleSpeech } from '@/lib/speech';
@@ -288,6 +289,18 @@ function ContentCardBase({
     setContentState(item.id, { reposted: next });
     haptics.medium();
     try {
+      // Erst melden, wie lange diese Karte schon zu sehen ist, DANN
+      // empfehlen.
+      //
+      // Der Server laesst nur durch, was in `user_content_state` steht, und
+      // dort stand bisher nichts: gemeldet wurde die Lesezeit ausschliesslich
+      // beim Wegwischen, und der Puffer schickt ohnehin erst ab zehn
+      // Ereignissen. Wer eine Karte ansieht und empfehlen will, hat damit
+      // garantiert null gemeldete Millisekunden - der Knopf ging nie, egal
+      // wie lange man wartete.
+      //
+      // Nur beim Einschalten: das Zuruecknehmen prueft der Server nicht.
+      if (next && reportSeenNow(item.id)) await eventBuffer.flush();
       await api.setRepost(item.id, next);
       setShareNote(next ? 'Empfohlen — steht jetzt auf deinem Profil' : 'Empfehlung zurückgenommen');
     } catch (e) {
