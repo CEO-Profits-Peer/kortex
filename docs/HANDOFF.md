@@ -76,18 +76,24 @@ an area.
 - **specials / kinetic** — animated, narrated cards built from a beat script
   (`kinetic_script`). These are the best thing in the feed. Seven picture
   kinds: `statement`, `table`, `bars`, `timeline`, `quantity`, `steps`,
-  `figure` — see migration 0027 (format) and 0058 (the three later ones).
+  `compare`, `scale`, `guess`, `figure` — see migration 0027 (format), 0058
+  and 0061 (the six later ones).
   A special loops: after the last beat it pauses a second and starts over.
 
 ## Current state
 
 | | |
 |---|---|
-| Approved cards | 147 (78 de / 69 en) |
-| Specials (kinetic) | 74 = **50 %** (de 34/78, en 40/69) |
-| From Wikipedia (evergreen) | 49 |
-| Active sources | 26 |
+| Approved cards | 229 (119 de / 110 en) |
+| Specials (kinetic) | 114 = **50 %** (de 55/119 = 46 %, en 59/110 = 54 %) |
+| Leaf categories with no card | 10 of 45 (was 20 before the scarcity ordering) |
+| Evergreen topics | 382, all lemmas API-verified; ~280 never attempted |
+| Active sources | 31 with a feed, 21 of them full-text |
 | Categories | 53 (8 top-level) |
+
+Measure it, don't trust this table — it ages with every scheduled run:
+`db.presentation_counts()` for the share, `db.card_counts()` for the
+per-category/per-language distribution.
 
 ## Hard rules
 
@@ -132,6 +138,20 @@ when something didn't work or when a previous decision was wrong.
   `exlimit`; only intros can be batched.
 - `expo-image-picker` on web loses the user gesture before opening the file
   dialog — the web path uses a hand-rolled `<input type=file>`.
+- **`maxItems` in a `response_schema` can kill every model at once.** With
+  `maxItems: 8` on the beats array, all eight models answered
+  400 INVALID_ARGUMENT — `minItems` alone is fine, and `CARD_SCHEMA` carries
+  `maxItems` in three places without trouble. The API builds a decoding
+  grammar from the schema and has to unroll the beat object eight times;
+  with ten picture kinds that is too large. Upper bounds belong in the
+  prompt and in our own validation, not in the schema.
+- **`speechSynthesis.cancel()` immediately followed by `speak()`** hands you
+  back your own utterance as `error: interrupted` after 7–22 ms. Everything
+  that speaks goes through `stopThenSpeak()` in `lib/speech.ts`, which puts
+  60 ms between the two.
+- A card-generation error text that only reports `type(exc).__name__` is
+  worse than no error line at all: an exhausted quota and a rejected request
+  look identical and mean the opposite (wait vs. fix).
 
 ## What was just done (specials, 18 % → 50 %)
 
@@ -171,15 +191,41 @@ from the top, like a short video. There is no "Nochmal" button any more.
 It is not linked anywhere and exists to look at the picture kinds without
 waiting for the pipeline.
 
-Two things worth knowing before the next change here:
+### Why the picture kinds were so lopsided (and what actually fixed it)
 
-- `quantity` has **not been chosen by the model even once** in production yet
-  (134 `steps` beats, 43 `timeline`, 0 `quantity`). It works — the demo route
-  plays it — the model just never picks it for a Wikipedia article. Budget
-  and share topics are where it should turn up.
+Measured over all 114 specials: `steps` in 55 cards, `table` 32,
+`timeline` 27, `compare` 5, `bars` 4 — and `quantity`, `scale`, `guess` in
+**none**. Two wrong guesses preceded the answer, both mine:
+
+1. "The prompt is too weak." It wasn't. Checked against 40 articles from
+   the topic list without a single model call: two contain percentages that
+   add up to a whole, none contain values spanning a factor of 1000. **The
+   material was missing, not the instruction.** A Wikipedia intro about
+   photosynthesis describes a process, not a split — so `steps` wins, and
+   another line of prompt would have been another plea.
+2. `guess` was forbidden by a rule of my own: "stay on ONE moving picture
+   per script, one `statement` beat to open". A `guess` opener *is* a second
+   picture. The kind was in the prompt and disallowed at the same time.
+
+What followed: 29 topics chosen for their data *shape* (Erdatmosphäre,
+Blut, Wasserverbrauch, Umsatzsteuer for shares; Lichtjahr, Zehnerpotenz,
+Byte for magnitudes), an explicit exception for a `guess` opening pair, and
+two of our own checks relaxed — `total: 100` no longer has to appear
+verbatim in the source (it is the definition of percent, not a claim), and
+a raster may hold six groups instead of four (verified in the renderer at
+375×812, not assumed). The first ever `quantity` card came right after.
+
+`scale` still fails validation when the source writes "9,46 Billionen km"
+and the model writes `9460000000000`: the digit string is not in the text.
+Deliberately not relaxed — checking only the mantissa would make
+"9.46 million" and "9.46 trillion" indistinguishable.
+
 - 32 of the remaining text cards can never be converted: the article URL is
   gone or returns too little text (`Quelle nicht mehr da`). The share only
   moves further through *new* cards.
+- The share is a quota over the **stock**, so every new text card lowers it.
+  `kinetic_backfill.py` therefore runs inside the scheduled workflow (last
+  step, once a day at 06:17 UTC, on whatever daily quota is left).
 
 ## Backlog after that
 
@@ -195,6 +241,17 @@ Two things worth knowing before the next change here:
 
 ## Open items for the user (not you)
 
+- **Two migrations are written but not applied.** There is no Supabase CLI
+  and no psql in this environment, so DDL has to be pasted into the SQL
+  editor by hand:
+  - `0060_fresh_beats_repeat.sql` — unseen content beats a repeat, whatever
+    the category interest. Until it runs, an unfillable news quota still
+    sends the gap to `repeats` while fresh knowledge cards sit unused.
+  - `0062_english_from_the_start.sql` — `handle_new_user()` never set
+    `feed_english_pct`, so every account created after 0029 got the column
+    default regardless of its language. Seven of 28 accounts run the UI in
+    English and get a feed that is three quarters German.
+  (`0061` needs nothing — it is a `comment on column` and documentation.)
 - **SMTP** — the one thing nobody but you can do. If "Enable custom SMTP" is
   on with empty fields, *no* auth mail goes out at all, not even through the
   built-in sender. Two options: fill it in (`docs/SMTP.md`, Brevo, ~10 min)
