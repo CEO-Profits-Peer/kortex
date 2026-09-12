@@ -157,11 +157,10 @@ function Karte({
         ))}
       </View>
 
-      {/* Das Schriftfeld, wie im Feed: Herkunft links, Urteil rechts,
-          Haarlinien dazwischen und darueber. */}
+      {/* Fusszeile wie im Feed: Herkunft links, Urteil rechts, keine
+          Linien - siehe die Begruendung in ContentCard.tsx. */}
       <View style={styles.schriftfeld}>
-        <Text style={styles.quelle}>QUELLE · atelier.example.org</Text>
-        <View style={styles.trenner} />
+        <Text style={styles.quelle}>atelier.example.org</Text>
         <View style={styles.urteil}>
           {['zu leicht', 'zu schwer'].map((t) => (
             <View key={t} style={styles.urteilChip}>
@@ -325,11 +324,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: color.ink.faint,
   },
   quelle: { ...type.meta, color: color.ink.low, flex: 1 },
-  trenner: { width: StyleSheet.hairlineWidth, height: 18, backgroundColor: color.ink.faint },
   urteil: { flexDirection: 'row', gap: 6 },
   urteilChip: {
     paddingHorizontal: space.sm,

@@ -566,21 +566,18 @@ function ContentCardBase({
         </View>
       ) : null}
 
-      {/* Das Schriftfeld.
+      {/* Die Fusszeile bleibt OHNE Linien.
           *
-          * In einer technischen Zeichnung steht unten am Blattrand ein
-          * abgeteiltes Feld: woher das Blatt kommt, in welchem Massstab,
-          * von wem. Genau das ist diese Zeile - Quelle links, Urteil
-          * rechts, dazwischen eine senkrechte Haarlinie, darueber eine
-          * waagrechte.
+          * Hier standen kurz eine Haarlinie darueber und eine senkrechte
+          * dazwischen - ein "Schriftfeld" wie am Blattrand einer
+          * technischen Zeichnung. Die Begruendung war stimmig, das
+          * Ergebnis nicht: zurueckgenommen, weil es vorher besser war.
           *
-          * Vorher war es dieselbe Zeile ohne Linien: zwei Elemente, die
-          * unten am Rand herumstanden. Die Linien kosten zwei Pixel und
-          * machen aus "da unten steht noch was" einen Teil der Zeichnung.
-          *
-          * Kein Rahmen um die ganze Karte - der ist vergeben: er
-          * kennzeichnet Aufgabenkarten (siehe testFrame oben). Ein
-          * zweites Mal verwendet, hiesse er nichts mehr. */}
+          * Der Grund, im Nachhinein: die Karte hat mit dem Blatt im
+          * Hintergrund schon eine Zeichnung. Noch ein Feld mit Linien
+          * macht daraus zwei Zeichnungen uebereinander, und die untere
+          * gewinnt, weil sie schaerfer ist. Weniger Linien heisst hier
+          * nicht weniger Gestaltung. */}
       <View style={styles.footer}>
         <View style={styles.footerLeft}>
           <SourceBadge contentId={item.id} sources={sources} />
@@ -590,7 +587,6 @@ function ContentCardBase({
             </Animated.Text>
           ) : null}
         </View>
-        <View style={styles.footerDivider} />
         <View style={styles.rating}>
           {(['too_easy', 'too_hard'] as const).map((kind) => (
             <Pressable
@@ -702,18 +698,8 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingBottom: space.xxl,
     paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: color.ink.faint,
   },
   footerLeft: { flex: 1, gap: 4 },
-  // Die senkrechte Trennung zwischen Herkunft und Urteil. Ihre Hoehe ist
-  // fest: an der Zeile ausgerichtet waere sie mal hoeher, mal niedriger -
-  // je nachdem, ob gerade ein Hinweis eingeblendet ist.
-  footerDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 18,
-    backgroundColor: color.ink.faint,
-  },
   shareNote: { ...type.meta, color: color.signal.primary },
 
   rating: { flexDirection: 'row', gap: 6 },
