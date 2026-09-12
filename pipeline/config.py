@@ -63,7 +63,7 @@ class Config:
             gemini_api_keys=_keys(),
             gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip(),
             embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001").strip(),
-            max_items_per_run=_int("MAX_ITEMS_PER_RUN", 120),
+            max_items_per_run=_int("MAX_ITEMS_PER_RUN", 250),
             max_gemini_calls_per_run=_int("MAX_GEMINI_CALLS_PER_RUN", 400),
             dry_run=_bool("DRY_RUN"),
             languages=tuple(

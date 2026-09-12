@@ -85,7 +85,19 @@ jobs:
           INGEST_LANGUAGES: de,en
           # Sicherheitsnetz: eine Schleife darf nicht das ganze Kontingent
           # verbrennen, bevor jemand es merkt.
-          MAX_ITEMS_PER_RUN: "120"
+          #
+          # 120 waren richtig, solange zwoelf Quellen Volltext liefern
+          # durften. Mit 0059 sind es einundzwanzig, also rund 22 Feeds mal
+          # 8 Eintraege - nach Abzug der Artikel, die sich nicht sauber
+          # extrahieren lassen, etwa 144. Der Deckel haette also jeden Lauf
+          # die letzten zwei, drei Quellen abgeschnitten, und zwar immer
+          # dieselben: die Reihenfolge kommt unsortiert aus der Datenbank.
+          #
+          # 250 laesst Luft fuer weitere Quellen und kostet nichts: der
+          # bindende Deckel ist das Gemini-Tageskontingent
+          # (MAX_GEMINI_CALLS_PER_RUN und die 20 Anfragen pro Modell und
+          # Tag), nicht die Zahl der angesehenen Artikel.
+          MAX_ITEMS_PER_RUN: "250"
           MAX_GEMINI_CALLS_PER_RUN: "300"
           # Karten gehen live, OHNE dass jemand draufschaut - aber nur von
           # Quellen mit hohem Vertrauenswert (>= 80: Institutionen,
