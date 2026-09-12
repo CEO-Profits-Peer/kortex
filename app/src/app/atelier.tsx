@@ -9,6 +9,7 @@ import { CardTypeBadge } from '@/components/CardTypeBadge';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SectionTitle } from '@/components/SectionTitle';
+import { AdminOverview, type AdminData } from '@/features/admin/AdminOverview';
 import type { BodyBlock, ContentItem } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -173,8 +174,89 @@ function Karte({
   );
 }
 
+/**
+ * Erfundene Zahlen fuer das Kontrollzentrum.
+ *
+ * Sie sehen den echten aehnlich (gezogen am 2026-09-12), sind aber von
+ * Hand gesetzt: die Werkstatt darf nicht ans Netz und schon gar nicht an
+ * Nutzungsdaten.
+ */
+const KONTROLLE: AdminData = {
+  betrieb: {
+    quellen_aktiv: 31,
+    quellen_mit_fehler: [
+      { id: 'arxiv-lg', fehler: 'erreichbar, aber 0 Eintraege', zuletzt: '2026-09-12T04:17:00Z' },
+    ],
+    quelle_am_laengsten_still: { id: 'wikinews-de', zuletzt: '2026-09-11T18:17:00Z' },
+    wartet_auf_freigabe: 14,
+    karten_24h: 31,
+    karten_7t: 188,
+    datenbank_bytes: 38_100_000,
+  },
+  bestand: {
+    freigegeben: 289,
+    wartend: 14,
+    abgelehnt: 41,
+    erklaerkarten: 158,
+    je_sprache: [
+      { sprache: 'de', karten: 149, erklaerkarten: 78 },
+      { sprache: 'en', karten: 140, erklaerkarten: 80 },
+    ],
+    kategorien_leer: ['mind.creativity', 'world.history', 'world.media'],
+    kategorien_gross: [
+      { id: 'world.science', karten: 31 },
+      { id: 'science.space', karten: 28 },
+      { id: 'science.bio', karten: 24 },
+    ],
+  },
+  nutzung: {
+    aktiv_15min: 1,
+    aktiv_24h: 5,
+    aktiv_7t: 12,
+    aktiv_30t: 12,
+    konten: 28,
+    konten_neu_7t: 28,
+    ereignisse_7t: [
+      { art: 'impression', anzahl: 1114 },
+      { art: 'skip', anzahl: 862 },
+      { art: 'like', anzahl: 393 },
+      { art: 'dwell', anzahl: 231 },
+      { art: 'unlike', anzahl: 85 },
+      { art: 'source_open', anzahl: 9 },
+    ],
+  },
+  aufmerksamkeit: {
+    paare: 363,
+    gelesen: 132,
+    geskippt: 309,
+    geliked: 179,
+    verweildauer_median_ms: 7000,
+    verweildauer_p90_ms: 86000,
+  },
+  inhalt: {
+    beliebt: [
+      { titel: 'Inflation frisst leise', likes: 5, kategorie: 'finance.macro' },
+      { titel: 'Was Zinseszins wirklich macht', likes: 4, kategorie: 'finance.compound' },
+      { titel: 'Wie alt das Licht ist, das du siehst', likes: 4, kategorie: 'science.space' },
+    ],
+    weggewischt: [
+      { titel: 'Vier Behauptungen ueber Schlaf', anzahl: 6, kategorie: 'body.sleep' },
+      { titel: 'Ein Ring von 27 Kilometern', anzahl: 6, kategorie: 'science.physics' },
+    ],
+    lesequote_je_kategorie: [
+      { id: 'world.science', gesehen: 55, gelesen: 18 },
+      { id: 'science.space', gesehen: 49, gelesen: 13 },
+      { id: 'finance.compound', gesehen: 38, gelesen: 14 },
+      { id: 'tech.code', gesehen: 24, gelesen: 12 },
+    ],
+    zu_leicht: 5,
+    zu_schwer: 2,
+  },
+  stand: '2026-09-12T12:00:00Z',
+};
+
 export default function Atelier() {
-  const [reiter, setReiter] = useState<'karten' | 'kopfzeile' | 'bausteine'>('karten');
+  const [reiter, setReiter] = useState<'karten' | 'kopfzeile' | 'bausteine' | 'kontrolle'>('karten');
   const { height } = useWindowDimensions();
   const scrollY = useSharedValue(0);
   const kartenHoehe = Math.min(560, height - 160);
@@ -182,7 +264,7 @@ export default function Atelier() {
   return (
     <GridBackground>
       <View style={styles.reiter}>
-        {(['karten', 'kopfzeile', 'bausteine'] as const).map((k) => (
+        {(['karten', 'kopfzeile', 'bausteine', 'kontrolle'] as const).map((k) => (
           <Pressable
             key={k}
             onPress={() => setReiter(k)}
@@ -232,6 +314,12 @@ export default function Atelier() {
             ))}
           </ScrollView>
         </View>
+      ) : null}
+
+      {reiter === 'kontrolle' ? (
+        <ScrollView contentContainerStyle={styles.bahn}>
+          <AdminOverview data={KONTROLLE} />
+        </ScrollView>
       ) : null}
 
       {reiter === 'bausteine' ? (

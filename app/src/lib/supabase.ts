@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
+import type { AdminData } from '@/features/admin/AdminOverview';
 import type {
   Category,
   CategoryDetail,
@@ -383,6 +384,23 @@ export const api = {
     const { data, error } = await supabase.rpc('get_my_content_state', { p_ids: ids });
     if (error) throw error;
     return (data ?? {}) as Record<string, { liked: boolean; reposted: boolean }>;
+  },
+
+  // --- Kontrollzentrum --------------------------------------------------
+
+  /**
+   * Die Uebersicht fuer das Kontrollzentrum.
+   *
+   * Die PIN geht mit, wird aber nirgends gespeichert. Die Absicherung
+   * steckt vollstaendig in der Funktion (Migration 0064): sie prueft Konto
+   * UND PIN und meldet fuer jeden Fehlschlag dasselbe. Hier gibt es nichts
+   * zu pruefen, was sich nicht umgehen liesse - dieser Code laeuft auf
+   * einem fremden Geraet.
+   */
+  async adminOverview(pin: string): Promise<AdminData> {
+    const { data, error } = await supabase.rpc('admin_overview', { p_pin: pin });
+    if (error) throw error;
+    return data as AdminData;
   },
 
   // --- Kommentare ------------------------------------------------------
