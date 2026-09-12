@@ -48,13 +48,94 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      # v5/v6 statt v4/v5: die aelteren laufen auf Node 20, und das meldet
+      # GitHub seit September 2025 als veraltet. Es ist nur eine Warnung -
+      # aber eine, die bei jedem Lauf in den Annotationen steht und damit
+      # den Blick auf die echte Fehlermeldung verstellt.
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: pipeline/requirements.txt
+
+      # --- Vorpruefung ---------------------------------------------------
+      #
+      # Der Anlass: sechs Laeufe in Folge endeten mit "Process completed
+      # with exit code 1" nach 18 bis 28 Sekunden. Das ist alles, was in
+      # den Annotationen steht - welcher Schritt gestorben ist und woran,
+      # steht dort nicht. Man muss den Lauf aufklappen, den richtigen
+      # Schritt finden und lesen.
+      #
+      # Genau das soll dieser Schritt ueberfluessig machen. Er laeuft VOR
+      # pip install, kostet zwei Sekunden und beantwortet die beiden
+      # Fragen, die bei einem frisch eingerichteten Repo fast immer die
+      # Ursache sind: ist das Secret ueberhaupt gesetzt, und funktioniert
+      # es?
+      #
+      # Ausgegeben werden nur NAMEN und Statuscodes, nie ein Wert. GitHub
+      # wuerde einen Secret-Wert zwar maskieren, aber darauf verlaesst man
+      # sich nicht - der Wert wird hier gar nicht erst angefasst.
+      - name: Vorpruefung
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: |
+          echo "Python: $(python -V)"
+          echo
+
+          fehlt=""
+          echo "Pflicht-Secrets:"
+          for name in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY GEMINI_API_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "  FEHLT    $name"
+              fehlt="$fehlt $name"
+            else
+              echo "  gesetzt  $name"
+            fi
+          done
+
+          echo
+          echo "Optional (jeder weitere Gemini-Schluessel ist ein weiteres Tageskontingent):"
+          for name in GEMINI_API_KEY_2 GEMINI_API_KEY_3 GEMINI_API_KEY_4 \
+                      GEMINI_API_KEY_5 VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY \
+                      VAPID_SUBJECT; do
+            if [ -z "${!name}" ]; then echo "  -        $name"; else echo "  gesetzt  $name"; fi
+          done
+
+          if [ -n "$fehlt" ]; then
+            echo
+            echo "::error::Diese Secrets fehlen:$fehlt"
+            echo "Eintragen unter: Settings -> Secrets and variables -> Actions."
+            echo "Ohne sie bricht pipeline/run.py sofort ab - genau das war"
+            echo "die Ursache, wenn ein Lauf nach rund 20 Sekunden rot wird."
+            exit 1
+          fi
+
+          # Gesetzt heisst nicht gueltig. Ein abgelaufener oder falsch
+          # kopierter Schluessel sieht bis hierher aus wie ein richtiger,
+          # und der Lauf stirbt erst zwei Minuten spaeter mitten im Ingest.
+          echo
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+                 -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+                 -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+                 "$SUPABASE_URL/rest/v1/sources?select=id&limit=1" || echo "000")
+          echo "Supabase antwortet: HTTP $code"
+          case "$code" in
+            200) echo "  Datenbank erreichbar, Schluessel gilt." ;;
+            401|403) echo "::error::Supabase weist den Schluessel ab (HTTP $code). Ist es wirklich der service_role Key?"; exit 1 ;;
+            000) echo "::error::Supabase gar nicht erreichbar. Stimmt SUPABASE_URL?"; exit 1 ;;
+            *)   echo "::warning::Unerwartete Antwort HTTP $code - der Lauf geht trotzdem weiter." ;;
+          esac
 
       - name: Abhaengigkeiten
         run: pip install -r pipeline/requirements.txt
@@ -111,7 +192,12 @@ jobs:
           AUTO_APPROVE: "true"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: |
-          python pipeline/run.py ${{ inputs.source && format('--source {0}', inputs.source) || '' }}
+          # pipefail, sonst schluckt tee den Rueckgabewert von python und
+          # ein abgestuerzter Lauf sieht gruen aus. Das ist die
+          # klassische Falle an dieser Stelle.
+          set -o pipefail
+          python pipeline/run.py ${{ inputs.source && format('--source {0}', inputs.source) || '' }} \
+            2>&1 | tee -a "$RUNNER_TEMP/ingest.log"
 
       # --- Evergreen ----------------------------------------------------
       #
@@ -139,7 +225,9 @@ jobs:
           MAX_GEMINI_CALLS_PER_RUN: "300"
           AUTO_APPROVE: "true"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
-        run: python pipeline/evergreen.py
+        run: |
+          set -o pipefail
+          python pipeline/evergreen.py 2>&1 | tee -a "$RUNNER_TEMP/evergreen.log"
 
       # --- Benachrichtigungen zustellen ----------------------------------
       #
@@ -163,3 +251,33 @@ jobs:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
         run: python pipeline/push.py
+
+      # --- Was ist rausgekommen? -----------------------------------------
+      #
+      # Die Uebersichtsseite eines Laufs zeigt von sich aus nur "ingest,
+      # 23s" und die Annotationen. Ob zwanzig Karten entstanden sind oder
+      # keine, steht dort nicht - dafuer muss man den Lauf aufklappen und
+      # das Log lesen.
+      #
+      # Die Schlussbilanz beider Skripte ist aber genau die Information,
+      # die man sehen will, und sie ist vier Zeilen entfernt. `always()`,
+      # weil sie bei einem Fehlschlag noch mehr wert ist als bei Erfolg.
+      - name: Bilanz in die Uebersicht
+        if: always()
+        run: |
+          for datei in ingest evergreen; do
+            pfad="$RUNNER_TEMP/$datei.log"
+            [ -f "$pfad" ] || continue
+            echo "## $datei" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            # Ab der letzten "Fertig."-Zeile steht die Bilanz. Gibt es
+            # keine, ist der Lauf vorher gestorben - dann sind die letzten
+            # Zeilen genau das, was man sehen will.
+            if grep -q "Fertig\." "$pfad"; then
+              sed -n '/Fertig\./,$p' "$pfad" | tail -n 30 >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "(kein Abschluss - abgebrochen, letzte Zeilen:)" >> "$GITHUB_STEP_SUMMARY"
+              tail -n 15 "$pfad" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          done
