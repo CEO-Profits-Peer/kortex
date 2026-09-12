@@ -23,6 +23,7 @@ import { api, configError, supabase } from '@/lib/supabase';
 import type { Category, ContentItem, Source } from '@/lib/types.db';
 import { color, space, type } from '@/theme/tokens';
 
+import { FeedTutorial, useFeedTutorial } from './FeedTutorial';
 import { appendArranged, arrangeBatch } from './arrange';
 import { VIEWABILITY_CONFIG, useDwellTracking } from './useDwellTracking';
 
@@ -115,6 +116,11 @@ export function FeedScreen({
   }, []);
 
   const { onViewableItemsChanged, closeAll, pause, resume } = useDwellTracking(onValidated);
+
+  // Nur im Hauptfeed. Wer ueber eine Kategorie oder ein fremdes Profil
+  // hereinkommt, bekommt keine Bedienungsanleitung vorgesetzt - er ist einem
+  // Link gefolgt und will die Karte sehen.
+  const tutorial = useFeedTutorial();
 
   /**
    * Tab gewechselt: Stimme aus, Flaeche aus, Uhr an.
@@ -437,6 +443,10 @@ export function FeedScreen({
           index,
         })}
       />
+
+      {tutorial.an && !loader && !checkpoint ? (
+        <FeedTutorial onDone={tutorial.fertig} />
+      ) : null}
       </View>
     </GridBackground>
   );

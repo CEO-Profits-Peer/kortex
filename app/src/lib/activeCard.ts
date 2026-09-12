@@ -26,6 +26,27 @@ export function activeCardId(): string | null {
   return activeId;
 }
 
+/**
+ * Welche Karte gerade dran ist - fuer alles, was nicht zu einer bestimmten
+ * Karte gehoert.
+ *
+ * useIsActiveCard beantwortet "bin ICH dran" und rendert genau eine Karte
+ * neu. Das Tutorial fragt dagegen "welche ist dran", weil es am Wechsel
+ * erkennt, dass jemand gewischt hat - und es haengt ueber dem Feed, nicht
+ * in einer Karte.
+ */
+export function useActiveCardId(): string | null {
+  const [id, setId] = useState<string | null>(activeId);
+  useEffect(() => {
+    listeners.add(setId);
+    setId(activeId);
+    return () => {
+      listeners.delete(setId);
+    };
+  }, []);
+  return id;
+}
+
 /** true, solange genau diese Karte im Bild ist. */
 export function useIsActiveCard(id: string): boolean {
   const [active, setActive] = useState(() => activeId === id);

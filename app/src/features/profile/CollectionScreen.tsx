@@ -77,7 +77,7 @@ export function CollectionScreen({ kind }: { kind: 'reposts' | 'likes' }) {
       <View style={{ paddingTop: insets.top }}>
         <ScreenHeader
           title={titel}
-          eyebrow={items ? `${items.length}${mehr ? '+' : ''}` : undefined}
+          eyebrow={items && items.length > 0 ? `${items.length}${mehr ? '+' : ''}` : undefined}
           scrollY={scrollY}
           onBack={() => router.back()}
         />

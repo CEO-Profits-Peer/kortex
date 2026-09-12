@@ -22,6 +22,7 @@ import { Icon } from '@/components/Icon';
 import { COUNTRIES } from '@/features/onboarding/regions';
 import { BRAND } from '@/lib/brand';
 import { haptics } from '@/lib/haptics';
+import { resetFeedTutorial } from '@/features/feed/FeedTutorial';
 import { stopMusic } from '@/lib/music';
 import { sound } from '@/lib/sound';
 import { SUPPORTED, type Language } from '@/lib/i18n';
@@ -129,6 +130,9 @@ export function SettingsScreen() {
   const [push, setPush] = useState<PushState>('off');
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  // Nur die Beschriftung. Ob das Tutorial wirklich laeuft, entscheidet der
+  // Feed beim naechsten Oeffnen - hier steht nur, dass die Merkung weg ist.
+  const [tutorialWieder, setTutorialWieder] = useState(false);
 
   useEffect(() => {
     void api.getMyProfile().then(setProfile).catch(() => setProfile(null));
@@ -499,6 +503,14 @@ export function SettingsScreen() {
                 thumbColor={color.bg}
               />
             }
+          />
+          <Row
+            label={tutorialWieder ? 'Tutorial kommt beim nächsten Feed' : 'Tutorial nochmal zeigen'}
+            hint="Die drei Schritte über der ersten Karte"
+            onPress={() => {
+              void resetFeedTutorial();
+              setTutorialWieder(true);
+            }}
           />
         </Section>
 
