@@ -292,10 +292,13 @@ function ContentCardBase({
       setShareNote(next ? 'Empfohlen — steht jetzt auf deinem Profil' : 'Empfehlung zurückgenommen');
     } catch (e) {
       setContentState(item.id, { reposted: !next });
-      // Der Server laesst nur reposten, was gelesen wurde (0016).
+      // Der Server laesst nur reposten, was man wirklich angesehen hat -
+      // seit 0063 sind das fuenf Sekunden statt der vollen Lesezeit. Der
+      // alte Text ("Lies die Karte erst zu Ende") verlangte damit etwas,
+      // was gar nicht mehr gefordert ist.
       const msg = e instanceof Error ? e.message : '';
       setShareNote(
-        msg.includes('not read') ? 'Lies die Karte erst zu Ende' : 'Hat nicht geklappt',
+        msg.includes('not read') ? 'Schau sie dir kurz an' : 'Hat nicht geklappt',
       );
     }
     setTimeout(() => setShareNote(null), 2600);
@@ -344,6 +347,7 @@ function ContentCardBase({
 
   const beat = (delay: number) =>
     reduceMotion ? undefined : FadeInDown.duration(BEAT_DURATION).delay(delay);
+
 
   return (
     <Animated.View style={[styles.card, { height }, shell]}>
