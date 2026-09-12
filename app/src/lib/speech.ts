@@ -62,8 +62,45 @@ function voiceLanguage(language: string | null | undefined): string {
   return language === 'en' ? 'en-US' : 'de-DE';
 }
 
+/**
+ * Wie lange zwischen Abbrechen und Sprechen gewartet wird.
+ *
+ * Im Browser ist `Speech.stop()` nichts anderes als
+ * `speechSynthesis.cancel()`, und cancel() raeumt die Warteschlange
+ * NACHTRAEGLICH auf: wer im selben Tick danach speak() aufruft, bekommt
+ * seine eigene, gerade eingereihte Aeusserung mit abgeraeumt - zurueck
+ * kommt `error: interrupted`, gemessen nach 7 bis 22 Millisekunden.
+ *
+ * Fuer eine Erklaerkarte heisst das: "fertig gesprochen" nach zehn
+ * Millisekunden, naechster Takt, wieder abbrechen, wieder Fehler. Die
+ * ganze Karte lief in einer Zehntelsekunde durch und in der Schleife
+ * endlos weiter - zu sehen war nur ein Flackern. Beim Vorlesen einer
+ * gewoehnlichen Karte sprang die Taste sofort zurueck und es blieb still.
+ *
+ * Sechzig Millisekunden hoert niemand und liegen sicher hinter cancel().
+ */
+const SPEAK_GAP_MS = 60;
+
 let speakingId: string | null = null;
 const listeners = new Set<(id: string | null) => void>();
+
+/** Ein angefangener, noch nicht ausgesprochener Sprechauftrag. */
+let pending: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Abbrechen, einen Tick warten, sprechen.
+ *
+ * Der einzige Ort, an dem `Speech.speak` aufgerufen wird - sonst steht die
+ * Begruendung oben an einer Stelle und der Fehler an zwei.
+ */
+function stopThenSpeak(text: string, options: Parameters<typeof Speech.speak>[1]): void {
+  if (pending) clearTimeout(pending);
+  Speech.stop();
+  pending = setTimeout(() => {
+    pending = null;
+    Speech.speak(text, options);
+  }, SPEAK_GAP_MS);
+}
 
 function announce(id: string | null) {
   speakingId = id;
@@ -95,11 +132,10 @@ export function toggleSpeech(item: ContentItem) {
     return;
   }
 
-  Speech.stop();
   const text = cardToSpeech(item);
   announce(item.id);
 
-  Speech.speak(text, {
+  stopThenSpeak(text, {
     language: voiceLanguage(item.language),
     // Etwas langsamer als der Standard. Es geht um Verstehen, nicht um
     // Durchkommen - und Fachbegriffe brauchen einen Moment.
@@ -134,6 +170,16 @@ export function speakSentence(opts: {
   text: string;
   language: string | null | undefined;
   onDone: () => void;
+  /**
+   * Die Stimme hat wirklich angefangen.
+   *
+   * Der Abspieler braucht das, um seine Notbremse zu setzen: solange
+   * ungewiss ist, ob ueberhaupt gesprochen wird, muss er nach der
+   * geschaetzten Lesezeit weiterschalten. Kommt diese Meldung, spricht
+   * jemand - dann darf er auf das Satzende warten, auch wenn die Stimme
+   * langsamer ist als die Schaetzung.
+   */
+  onStart?: () => void;
 }): () => void {
   let settled = false;
   const finish = () => {
@@ -142,13 +188,13 @@ export function speakSentence(opts: {
     opts.onDone();
   };
 
-  Speech.stop();
   announce(opts.cardId);
 
-  Speech.speak(opts.text, {
+  stopThenSpeak(opts.text, {
     language: voiceLanguage(opts.language),
     rate: 0.98,
     pitch: 1.0,
+    onStart: opts.onStart,
     onDone: finish,
     onStopped: finish,
     onError: finish,
@@ -158,11 +204,21 @@ export function speakSentence(opts: {
   // nicht weiterschaltet, waehrend er gerade angehalten wird.
   return () => {
     settled = true;
+    if (pending) {
+      clearTimeout(pending);
+      pending = null;
+    }
     Speech.stop();
   };
 }
 
 export function stopSpeech() {
+  // Auch den Auftrag, der noch in der Wartezeit steckt. Ohne das faengt
+  // die Stimme sechzig Millisekunden NACH dem Anhalten an zu reden.
+  if (pending) {
+    clearTimeout(pending);
+    pending = null;
+  }
   Speech.stop();
   announce(null);
 }

@@ -72,6 +72,25 @@ const NO_BEATS: KineticBeat[] = [];
  */
 const LOOP_PAUSE_MS = 1100;
 
+/**
+ * Ab wann eine Fertigmeldung zu schnell kam, um echt zu sein.
+ *
+ * Kein Satz ist in einer Dreiviertelsekunde gesprochen. Kommt die Meldung
+ * trotzdem, wurde nicht gesprochen, sondern abgebrochen: im Browser ist die
+ * Sprachausgabe ohne Nutzergeste gesperrt, und je nach Browser meldet sie
+ * dann sofort "fertig" oder "Fehler". Beides sah von hier aus gleich aus wie
+ * "Satz zu Ende" - und die Karte schaltete alle Takte in Millisekunden
+ * durch.
+ *
+ * Der eigentliche Auslöser ist in lib/speech.ts behoben (abbrechen und
+ * sprechen im selben Tick). Diese Grenze bleibt trotzdem: sie deckt jeden
+ * anderen Grund ab, aus dem eine Stimme sofort zurueckmeldet - fehlende
+ * Systemstimme, stummgeschaltete Seite, ein Browser, der es einfach anders
+ * macht. Wer der Meldung blind glaubt, hat genau den Fehler, den niemand
+ * als Tonproblem erkennt: die Karte rast, und man versteht nichts.
+ */
+const TOO_FAST_MS = 750;
+
 export function KineticCard({
   item,
   accent,
@@ -161,9 +180,34 @@ export function KineticCard({
     if (speaking.current === beat) return;
     speaking.current = beat;
 
+    const expected = estimateBeatMs(current.say);
+
+    /**
+     * Einen Zeitgeber setzen und den vorherigen dabei WIRKLICH loeschen.
+     *
+     * Genau das hat gefehlt: in `next` stand `timer.current = null`. Die
+     * Referenz war weg, der Zeitgeber lief weiter. Jeder Takt liess so ein
+     * Sicherheitsnetz zurueck, das Sekunden spaeter mit einem VERALTETEN
+     * Taktindex feuerte und die Karte vorwaerts riss - und weil sie jetzt
+     * in der Schleife laeuft, kam pro Runde ein Faden dazu. Nach drei
+     * Runden schalteten vier Faeden gleichzeitig. Gemessen: Takte im
+     * Abstand von zehn Millisekunden.
+     */
+    const arm = (ms: number, fn: () => void) => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(fn, ms);
+    };
+
+    /** Jeder Takt schaltet genau einmal weiter - und nur der aktuelle. */
+    let used = false;
     const next = () => {
+      if (used || speaking.current !== beat) return;
+      used = true;
       cancel.current = null;
-      timer.current = null;
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
       if (beat + 1 < beats.length) {
         speaking.current = null;
         setBeat(beat + 1);
@@ -189,19 +233,47 @@ export function KineticCard({
     };
 
     if (getPrefs().audioEnabled) {
+      const start = Date.now();
+      // Sicherheitsnetz ZUERST spannen: meldet die Sprachausgabe noch im
+      // selben Tick einen Fehler, laeuft `onDone` bevor die Rueckgabe von
+      // speakSentence zugewiesen ist - und ein danach gesetzter Zeitgeber
+      // haengt frei, ohne dass ihn jemand loeschen kann.
+      arm(expected + 1800, next);
       cancel.current = speakSentence({
         cardId: item.id,
         text: current.say,
         language: item.language,
-        onDone: next,
+        // Die Stimme hat angefangen: ab jetzt wartet der Takt auf ihr
+        // Satzende und nicht mehr auf die Uhr.
+        //
+        // Vorher galt auch dann `geschaetzt + 1800`. Die Schaetzung
+        // rechnet mit 14 Zeichen je Sekunde, eine langsam eingestellte
+        // Systemstimme braucht mehr - und dann faellt die Notbremse
+        // mitten im Satz. Wer schon einmal eine Vorlesestimme auf 0,8
+        // gestellt hat, kennt den Effekt.
+        //
+        // Nachgemessen ist das NICHT: der Browser, in dem geprueft wurde,
+        // meldet `speaking: true`, feuert aber kein einziges Ereignis und
+        // gibt keinen Ton aus - kein Audiogeraet. Dort greift weiter die
+        // Notbremse, und das ist genau richtig so. Diese Zeile kostet
+        // nichts, wenn die Meldung nie kommt, und verhindert einen
+        // abgeschnittenen Satz, wenn sie kommt.
+        onStart: () => arm(expected * 2.2 + 4000, next),
+        onDone: () => {
+          const elapsed = Date.now() - start;
+          if (elapsed < TOO_FAST_MS) {
+            // Nicht gesprochen, nur abgebrochen. Der Takt laeuft dann auf
+            // Lesezeit weiter, als waere der Ton aus - das ist er faktisch
+            // auch.
+            cancel.current = null;
+            arm(Math.max(expected - elapsed, 600), next);
+            return;
+          }
+          next();
+        },
       });
-      // Sicherheitsnetz: meldet die Sprachausgabe nie zurueck - im Browser
-      // passiert das, wenn sie ohne Nutzergeste blockiert wird -, laeuft
-      // die Karte nach der geschaetzten Zeit trotzdem weiter. Ohne das
-      // bliebe sie beim ersten Satz stehen, und zwar stumm.
-      timer.current = setTimeout(next, estimateBeatMs(current.say) + 1800);
     } else {
-      timer.current = setTimeout(next, estimateBeatMs(current.say));
+      arm(expected, next);
     }
 
     // Kein Aufraeumen beim erneuten Durchlauf: das Aufraeumen erledigen
