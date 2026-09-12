@@ -64,6 +64,55 @@ export type KineticShow =
    * eine Lern-App erklaeren soll.
    */
   | { kind: 'steps'; id?: string; steps: { label: string; note?: string }[] }
+  /**
+   * Zwei Spalten, die nebeneinander wachsen. Fuer Gegenueberstellungen.
+   *
+   * Der Anlass war ein Drehbuch ueber Impfungen, das "aktive" und "passive
+   * Impfung" in EINE steps-Kette gepresst hat - weil es nichts Besseres
+   * gab. Eine Gegenueberstellung ist aber kein Ablauf: die beiden Seiten
+   * passieren nicht nacheinander, sie stehen nebeneinander.
+   *
+   * Auch nicht dasselbe wie `bars`: Balken vergleichen EINE Groesse
+   * zwischen zwei Dingen. Hier werden mehrere Eigenschaften verglichen.
+   */
+  | {
+      kind: 'compare';
+      id?: string;
+      /** Die beiden Spaltenkoepfe, z.B. "Miete" und "Eigentum". */
+      left: string;
+      right: string;
+      /** Nicht `rows` - der Name ist bei der Tabelle mit einem anderen
+       *  Typ belegt, und das Antwortschema erlaubt pro Feldname nur einen. */
+      pairs: { label: string; left: string; right: string }[];
+    }
+  /**
+   * Groessenordnungen auf logarithmischer Achse.
+   *
+   * Weil Balken genau dort aufhoeren zu funktionieren, wo es interessant
+   * wird: ein Bakterium neben einem Blauwal ist linear ein unsichtbarer
+   * Strich neben einem vollen Balken. Auf der Zehnerpotenz-Achse sieht man
+   * stattdessen, WIE VIELE Nullen dazwischenliegen - und genau das ist die
+   * Aussage.
+   */
+  | {
+      kind: 'scale';
+      id?: string;
+      unit?: string;
+      /** Aufsteigend. Alle Werte muessen groesser als null sein. */
+      items: { label: string; value: number }[];
+    }
+  /**
+   * Fragen, warten, aufloesen.
+   *
+   * Die einzige Bildart, die nicht zeigt, sondern zurueckhaelt. Ein Takt
+   * stellt die Frage und laesst die Antwort offen, der naechste loest sie
+   * auf - dieselbe "wait for it"-Mechanik, von der kurze Videos leben.
+   *
+   * In einer Lern-App ist das nicht nur Effekt: eine Zahl, die man vorher
+   * selbst geschaetzt hat, bleibt haengen. Eine, die man vorgelesen
+   * bekommt, nicht.
+   */
+  | { kind: 'guess'; id?: string; question: string; answer?: string; sub?: string }
   /** Die generative Blaupausen-Grafik. Fuer Takte ohne eigene Zahlen. */
   | { kind: 'figure'; seed?: string; caption?: string };
 
@@ -166,6 +215,38 @@ function isBeat(b: unknown): boolean {
           (s) => s && typeof s.label === 'string' && s.label.trim().length > 0,
         )
       );
+    case 'compare':
+      return (
+        typeof show.left === 'string' &&
+        typeof show.right === 'string' &&
+        Array.isArray(show.pairs) &&
+        show.pairs.length >= 1 &&
+        show.pairs.every(
+          (r) =>
+            r &&
+            typeof r.label === 'string' &&
+            typeof r.left === 'string' &&
+            typeof r.right === 'string',
+        )
+      );
+    case 'scale':
+      return (
+        Array.isArray(show.items) &&
+        show.items.length >= 2 &&
+        show.items.every(
+          (i) =>
+            i &&
+            typeof i.value === 'number' &&
+            Number.isFinite(i.value) &&
+            // Null und negativ haben auf einer logarithmischen Achse
+            // keinen Platz - log(0) ist minus unendlich.
+            i.value > 0 &&
+            typeof i.label === 'string' &&
+            i.label.trim().length > 0,
+        )
+      );
+    case 'guess':
+      return typeof show.question === 'string' && show.question.trim().length > 0;
     case 'figure':
       return true;
     default:

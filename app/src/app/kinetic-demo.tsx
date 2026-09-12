@@ -184,6 +184,136 @@ const SCRIPTS: Record<string, { title: string; beats: unknown[] }> = {
       },
     ],
   },
+  compare: {
+    title: 'Gegenueberstellung',
+    beats: [
+      {
+        say: 'Miete oder Eigentum — was kostet wirklich mehr?',
+        show: { kind: 'statement', text: 'Miete oder Eigentum', sub: 'zwei Wege, ein Dach' },
+      },
+      {
+        say: 'Beim Einstieg zahlst du bei Eigentum zwanzig Prozent Anzahlung.',
+        show: {
+          kind: 'compare', id: 'c', left: 'Miete', right: 'Eigentum',
+          pairs: [{ label: 'Einstieg', left: '0 €', right: '20 % Anzahlung' }],
+        },
+      },
+      {
+        say: 'Monatlich sind es neunhundert gegen elfhundert Euro.',
+        show: {
+          kind: 'compare', id: 'c', left: 'Miete', right: 'Eigentum',
+          pairs: [
+            { label: 'Einstieg', left: '0 €', right: '20 % Anzahlung' },
+            { label: 'Monatlich', left: '900 €', right: '1.100 €' },
+          ],
+        },
+      },
+      {
+        say: 'Und wer umziehen will, braucht einmal drei Monate und einmal ein Jahr.',
+        show: {
+          kind: 'compare', id: 'c', left: 'Miete', right: 'Eigentum',
+          pairs: [
+            { label: 'Einstieg', left: '0 €', right: '20 % Anzahlung' },
+            { label: 'Monatlich', left: '900 €', right: '1.100 €' },
+            { label: 'Umzug', left: '3 Monate', right: 'ca. 1 Jahr' },
+          ],
+        },
+      },
+      {
+        say: 'Teurer ist nicht die Rate, sondern die Unbeweglichkeit.',
+        show: { kind: 'figure', caption: 'Der Unterschied liegt in der letzten Zeile.' },
+      },
+    ],
+  },
+  scale: {
+    title: 'Groessenordnungen',
+    beats: [
+      {
+        say: 'Wie viel groesser ist ein Blauwal als ein Bakterium?',
+        show: { kind: 'statement', text: 'Mal wie viel?', sub: 'Bakterium bis Blauwal' },
+      },
+      {
+        say: 'Ein Bakterium misst ein Millionstel Meter.',
+        show: {
+          kind: 'scale', id: 's', unit: 'm',
+          items: [{ label: 'Bakterium', value: 0.000001 }, { label: 'Mensch', value: 1.7 }],
+        },
+      },
+      {
+        say: 'Ein Mensch ist knapp zwei Meter gross.',
+        show: {
+          kind: 'scale', id: 's', unit: 'm',
+          items: [
+            { label: 'Bakterium', value: 0.000001 },
+            { label: 'Mensch', value: 1.7 },
+            { label: 'Blauwal', value: 30 },
+          ],
+        },
+      },
+      {
+        say: 'Und ein Blauwal misst dreissig Meter.',
+        show: {
+          kind: 'scale', id: 's', unit: 'm',
+          items: [
+            { label: 'Bakterium', value: 0.000001 },
+            { label: 'Mensch', value: 1.7 },
+            { label: 'Blauwal', value: 30 },
+            { label: 'Wolkenkratzer', value: 830 },
+          ],
+        },
+      },
+      {
+        say: 'Zwischen dem Kleinsten und dem Groessten liegen neun Nullen.',
+        show: { kind: 'figure', caption: 'Jede Stufe ist ein Vielfaches, kein Zuwachs.' },
+      },
+    ],
+  },
+  guess: {
+    title: 'Schaetzen',
+    beats: [
+      {
+        say: 'Eine Frage, bevor ich es dir sage — was schaetzt du?',
+        show: {
+          kind: 'guess', id: 'g',
+          question: 'Wie viel Prozent deines Trinkwassers spuelst du die Toilette hinunter?',
+        },
+      },
+      {
+        say: 'Es sind dreissig Prozent.',
+        show: {
+          kind: 'guess', id: 'g',
+          question: 'Wie viel Prozent deines Trinkwassers spuelst du die Toilette hinunter?',
+          answer: '30 %',
+          sub: 'in Trinkwasserqualitaet',
+        },
+      },
+      {
+        say: 'Von hundert Litern gehen dreissig ungenutzt in den Abfluss.',
+        show: {
+          kind: 'quantity', id: 'q', total: 100, unit: 'l',
+          groups: [{ label: 'Toilette', value: 30 }],
+        },
+      },
+      {
+        say: 'Baden und Duschen kommen mit sechsunddreissig Litern dazu.',
+        show: {
+          kind: 'quantity', id: 'q', total: 100, unit: 'l',
+          groups: [{ label: 'Toilette', value: 30 }, { label: 'Baden, Duschen', value: 36 }],
+        },
+      },
+      {
+        say: 'Zum Trinken bleiben davon ganze drei Liter.',
+        show: {
+          kind: 'quantity', id: 'q', total: 100, unit: 'l',
+          groups: [
+            { label: 'Toilette', value: 30 },
+            { label: 'Baden, Duschen', value: 36 },
+            { label: 'Trinken, Kochen', value: 3 },
+          ],
+        },
+      },
+    ],
+  },
 };
 
 export default function KineticDemo() {

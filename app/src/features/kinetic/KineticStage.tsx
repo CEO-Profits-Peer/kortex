@@ -614,6 +614,260 @@ function Steps({
   );
 }
 
+// --- Gegenueberstellung ------------------------------------------------------
+
+function CompareRow({
+  label,
+  left,
+  right,
+  isNew,
+  accent,
+}: {
+  label: string;
+  left: string;
+  right: string;
+  isNew: boolean;
+  accent: string;
+}) {
+  const p = useSharedValue(isNew ? 0 : 1);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!isNew) {
+      p.value = 1;
+      return;
+    }
+    p.value = reduceMotion ? 1 : withTiming(1, { duration: motion.base });
+  }, [isNew, p, reduceMotion]);
+
+  const anim = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ translateY: (1 - p.value) * 8 }],
+  }));
+
+  return (
+    <Animated.View style={[styles.cmpRow, anim]}>
+      <Text style={styles.cmpLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.cmpCell, isNew && { color: accent }]} numberOfLines={2}>
+        {left}
+      </Text>
+      <Text style={[styles.cmpCell, isNew && { color: accent }]} numberOfLines={2}>
+        {right}
+      </Text>
+    </Animated.View>
+  );
+}
+
+function Compare({
+  show,
+  previous,
+  accent,
+}: {
+  show: Extract<KineticShow, { kind: 'compare' }>;
+  previous: KineticShow | null;
+  accent: string;
+}) {
+  const known = useMemo(() => {
+    if (!previous || previous.kind !== 'compare' || previous.id !== show.id) {
+      return new Set<string>();
+    }
+    return new Set(previous.pairs.map((r) => r.label));
+  }, [previous, show.id]);
+
+  return (
+    <View style={styles.compare}>
+      {/* Die Koepfe stehen von Anfang an. Sie sind die Frage, die die
+          Zeilen darunter beantworten - erschienen sie erst mit der ersten
+          Zeile, muesste man zweimal hinsehen, um zu verstehen, was womit
+          verglichen wird. */}
+      <View style={styles.cmpHead}>
+        <Text style={styles.cmpLabel} />
+        <Text style={styles.cmpHeadCell} numberOfLines={1}>
+          {show.left}
+        </Text>
+        <Text style={styles.cmpHeadCell} numberOfLines={1}>
+          {show.right}
+        </Text>
+      </View>
+      {show.pairs.map((r) => (
+        <CompareRow
+          key={r.label}
+          label={r.label}
+          left={r.left}
+          right={r.right}
+          isNew={!known.has(r.label)}
+          accent={accent}
+        />
+      ))}
+    </View>
+  );
+}
+
+// --- Groessenordnungen -------------------------------------------------------
+
+function ScaleRow({
+  label,
+  value,
+  anteil,
+  faktor,
+  unit,
+  isLast,
+  accent,
+  index,
+}: {
+  label: string;
+  value: number;
+  anteil: number;
+  faktor: string | null;
+  unit: string;
+  isLast: boolean;
+  accent: string;
+  index: number;
+}) {
+  const w = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    w.value = reduceMotion
+      ? anteil
+      : withDelay(index * 110, withTiming(anteil, { duration: motion.slow }));
+  }, [anteil, index, w, reduceMotion]);
+
+  const anim = useAnimatedStyle(() => ({ flex: Math.max(0.02, w.value) }));
+  const rest = useAnimatedStyle(() => ({ flex: Math.max(0.0001, 1 - w.value) }));
+
+  return (
+    <View style={styles.scaleBlock}>
+      {/* Der Sprung zur vorigen Zeile. Das ist die eigentliche Aussage
+          dieser Bildart - nicht wie lang ein Balken ist, sondern wie viele
+          Nullen zwischen zwei Zeilen liegen. */}
+      {faktor ? <Text style={styles.scaleFactor}>{faktor}</Text> : null}
+      <View style={styles.scaleHead}>
+        <Text style={styles.scaleLabel} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={[styles.scaleValue, isLast && { color: accent }]}>
+          {formatNumber(value)}
+          {unit ? ` ${unit}` : ''}
+        </Text>
+      </View>
+      <View style={styles.scaleTrack}>
+        <Animated.View
+          style={[
+            styles.scaleFill,
+            { backgroundColor: isLast ? accent : color.ink.mid },
+            anim,
+          ]}
+        />
+        <Animated.View style={rest} />
+      </View>
+    </View>
+  );
+}
+
+function Scale({
+  show,
+  accent,
+}: {
+  show: Extract<KineticShow, { kind: 'scale' }>;
+  accent: string;
+}) {
+  /**
+   * Logarithmisch, nicht linear - das ist der ganze Zweck.
+   *
+   * Linear waere ein Bakterium neben einem Blauwal ein unsichtbarer Strich
+   * neben einem vollen Balken: technisch richtig und vollkommen nutzlos.
+   * Auf der Zehnerpotenz-Achse wird aus dem Groessenunterschied eine
+   * ablesbare Anzahl von Schritten.
+   *
+   * Der kleinste Wert bekommt trotzdem eine sichtbare Laenge (0.12), sonst
+   * faengt die Reihe mit einem Nichts an.
+   */
+  const { anteile, faktoren } = useMemo(() => {
+    const werte = show.items.map((i) => Math.max(i.value, Number.MIN_VALUE));
+    const min = Math.min(...werte);
+    const max = Math.max(...werte);
+    const spanne = Math.log10(max / min);
+    const anteile = werte.map((v) =>
+      spanne > 0 ? 0.12 + 0.88 * (Math.log10(v / min) / spanne) : 1,
+    );
+    const faktoren = werte.map((v, i) => {
+      if (i === 0) return null;
+      const f = v / werte[i - 1];
+      if (f < 2) return null;
+      return f >= 1000 ? `× ${Math.round(f / 1000)} 000` : `× ${Math.round(f)}`;
+    });
+    return { anteile, faktoren };
+  }, [show.items]);
+
+  return (
+    <View style={styles.scale}>
+      {show.items.map((item, i) => (
+        <ScaleRow
+          key={`${item.label}-${item.value}`}
+          label={item.label}
+          value={item.value}
+          anteil={anteile[i]}
+          faktor={faktoren[i]}
+          unit={show.unit ?? ''}
+          isLast={i === show.items.length - 1}
+          accent={accent}
+          index={i}
+        />
+      ))}
+    </View>
+  );
+}
+
+// --- Fragen und aufloesen ----------------------------------------------------
+
+function Guess({
+  show,
+  accent,
+}: {
+  show: Extract<KineticShow, { kind: 'guess' }>;
+  accent: string;
+}) {
+  const hatAntwort = Boolean(show.answer && show.answer.trim());
+  const p = useSharedValue(hatAntwort ? 0 : 1);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!hatAntwort) {
+      p.value = 1;
+      return;
+    }
+    p.value = 0;
+    p.value = reduceMotion ? 1 : withTiming(1, { duration: motion.slow });
+  }, [hatAntwort, show.answer, p, reduceMotion]);
+
+  const antwort = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ scale: 0.86 + 0.14 * p.value }],
+  }));
+
+  return (
+    <View style={styles.guess}>
+      <Text style={styles.guessQuestion} numberOfLines={3}>
+        {show.question}
+      </Text>
+      {hatAntwort ? (
+        <Animated.Text style={[styles.guessAnswer, { color: accent }, antwort]}>
+          {show.answer}
+        </Animated.Text>
+      ) : (
+        // Der offene Takt. Das Fragezeichen steht da, wo gleich die Antwort
+        // steht - gleiche Groesse, gleiche Stelle, damit die Aufloesung
+        // nicht springt, sondern einsetzt.
+        <Text style={[styles.guessAnswer, styles.guessOpen]}>?</Text>
+      )}
+      {show.sub ? <Text style={styles.guessSub}>{show.sub}</Text> : null}
+    </View>
+  );
+}
+
 // --- Die Buehne --------------------------------------------------------------
 
 export function KineticStage({
@@ -674,6 +928,11 @@ export function KineticStage({
       {show.kind === 'steps' ? (
         <Steps show={show} previous={sameVisual ? previous : null} accent={accent} />
       ) : null}
+      {show.kind === 'compare' ? (
+        <Compare show={show} previous={sameVisual ? previous : null} accent={accent} />
+      ) : null}
+      {show.kind === 'scale' ? <Scale show={show} accent={accent} /> : null}
+      {show.kind === 'guess' ? <Guess show={show} accent={accent} /> : null}
       {show.kind === 'figure' ? (
         <View style={styles.figure}>
           <BlueprintVisual seed={show.seed ?? cardSeed} accentHex={accent} height={150} />
@@ -794,6 +1053,70 @@ const styles = StyleSheet.create({
   stepTexts: { flex: 1, paddingBottom: space.lg, gap: 2 },
   stepLabel: { ...type.body, fontSize: 16, lineHeight: 22, color: color.ink.high },
   stepNote: { ...type.meta, color: color.ink.low },
+
+  // --- Gegenueberstellung ---
+  compare: { gap: 2 },
+  cmpHead: {
+    flexDirection: 'row',
+    gap: space.sm,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: color.ink.low,
+  },
+  cmpRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.sm,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: color.ink.faint,
+  },
+  // 44/28/28: die Beschriftung braucht mehr Platz als die Werte, weil dort
+  // ganze Woerter stehen ("Monatliche Kosten") und rechts meist Zahlen.
+  cmpLabel: { ...type.meta, color: color.ink.low, width: '44%' },
+  cmpHeadCell: {
+    ...type.mono,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: color.ink.mid,
+    width: '28%',
+  },
+  cmpCell: { ...type.body, fontSize: 15, lineHeight: 20, color: color.ink.high, width: '28%' },
+
+  // --- Groessenordnungen ---
+  scale: { gap: space.md },
+  scaleBlock: { gap: 5 },
+  scaleFactor: {
+    ...type.mono,
+    fontSize: 11,
+    color: color.ink.low,
+    marginLeft: space.sm,
+  },
+  scaleHead: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  scaleLabel: { ...type.body, fontSize: 15, color: color.ink.mid, flex: 1 },
+  scaleValue: { ...type.mono, fontSize: 15, color: color.ink.high },
+  scaleTrack: {
+    flexDirection: 'row',
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: color.ink.faint,
+    overflow: 'hidden',
+  },
+  scaleFill: { borderRadius: radius.pill },
+
+  // --- Fragen und aufloesen ---
+  guess: { gap: space.md, alignItems: 'flex-start' },
+  guessQuestion: { ...type.deck, color: color.ink.high },
+  guessAnswer: {
+    ...type.display,
+    fontSize: 52,
+    lineHeight: 58,
+    letterSpacing: -1.5,
+    color: color.ink.max,
+  },
+  guessOpen: { color: color.ink.faint },
+  guessSub: { ...type.meta, color: color.ink.low },
 
   figure: { gap: space.md },
   figureCaption: { ...type.meta, color: color.ink.low },

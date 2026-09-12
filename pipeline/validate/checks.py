@@ -379,11 +379,13 @@ def validate(card: dict[str, Any], source_text: str) -> Result:
 #: drei Zeilen - die Buehne springt bei jedem Satzwechsel.
 MAX_SAY_CHARS = 160
 
-VALID_KINDS = {"statement", "table", "bars", "timeline", "quantity", "steps", "figure"}
+VALID_KINDS = {"statement", "table", "bars", "timeline", "quantity", "steps",
+               "compare", "scale", "guess", "figure"}
 
 #: Bildarten, in denen von Takt zu Takt etwas dazukommt. Mindestens eine
 #: davon muss vorkommen - siehe das Ende von validate_kinetic.
-BUILDING_KINDS = {"table", "bars", "timeline", "quantity", "steps"}
+BUILDING_KINDS = {"table", "bars", "timeline", "quantity", "steps",
+                  "compare", "scale", "guess"}
 
 #: Grenzen der neuen Bildarten, gespiegelt aus transform/kinetic.py. Dort
 #: stehen sie im Prompt, hier werden sie durchgesetzt - ein Modell haelt
@@ -421,6 +423,18 @@ def _show_numbers(show: dict[str, Any]) -> list[str]:
         if isinstance(step, dict):
             parts.append(str(step.get("label") or ""))
             parts.append(str(step.get("note") or ""))
+    for paar in show.get("pairs") or []:
+        if isinstance(paar, dict):
+            parts.append(str(paar.get("label") or ""))
+            parts.append(str(paar.get("left") or ""))
+            parts.append(str(paar.get("right") or ""))
+    for eintrag in show.get("items") or []:
+        if isinstance(eintrag, dict):
+            parts.append(str(eintrag.get("label") or ""))
+    for key in ("left", "right", "question", "answer"):
+        wert = show.get(key)
+        if isinstance(wert, str):
+            parts.append(wert)
     out: list[str] = []
     for p in parts:
         out.extend(_numbers(p))
@@ -437,12 +451,34 @@ def _show_numbers(show: dict[str, Any]) -> list[str]:
         g.get("value") for g in (show.get("groups") or [])
         if isinstance(g, dict) and isinstance(g.get("value"), (int, float))
     )
+    numeric.extend(
+        i.get("value") for i in (show.get("items") or [])
+        if isinstance(i, dict) and isinstance(i.get("value"), (int, float))
+    )
     if isinstance(show.get("total"), (int, float)):
         numeric.append(show["total"])
     for v in numeric:
-        text = str(int(v)) if float(v).is_integer() else str(v)
-        out.extend(_numbers(text))
+        out.extend(_numbers(_zahl_als_text(v)))
     return out
+
+
+def _zahl_als_text(v: float) -> str:
+    """Eine Zahl so schreiben, wie sie im Quelltext stehen wuerde.
+
+    Nicht str(): Python schreibt kleine Werte exponentiell, und
+    str(0.000001) ist '1e-06'. Die Zahlenpruefung liest daraus eine "06",
+    sucht sie im Quelltext, findet sie nicht und lehnt ab - bei einer
+    voellig korrekten Angabe.
+
+    Aufgefallen an der ersten scale-Karte ueberhaupt (Bakterium, 0,000001
+    Meter). Vorher konnte es nicht auffallen: so kleine Werte kamen in
+    keiner der alten Bildarten vor.
+    """
+    if float(v).is_integer():
+        return str(int(v))
+    # Zwoelf Nachkommastellen und dann die Nullen weg: deckt alles ab, was
+    # in einer Lernkarte vorkommt, ohne je einen Exponenten zu erzeugen.
+    return f"{v:.12f}".rstrip("0").rstrip(".")
 
 
 
@@ -464,6 +500,15 @@ def _picture_text(show: dict[str, Any]) -> str:
     for group in show.get("groups") or []:
         if isinstance(group, dict):
             parts.append(str(group.get("label") or ""))
+    for paar in show.get("pairs") or []:
+        if isinstance(paar, dict):
+            parts.append(str(paar.get("label") or ""))
+    for eintrag in show.get("items") or []:
+        if isinstance(eintrag, dict):
+            parts.append(str(eintrag.get("label") or ""))
+    # Die Frage nicht: sie ist bewusst frei formuliert ("Was schaetzt du?")
+    # und muss nicht im Quelltext stehen. Die ANTWORT haengt an einer Zahl,
+    # und die prueft die Zahlenpruefung.
     return " ".join(p for p in parts if p)
 
 
@@ -618,6 +663,59 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
             grew[("steps", show.get("id"))] = max(
                 grew.get(("steps", show.get("id")), 0), len(steps)
             )
+
+        if show["kind"] == "compare":
+            links, rechts = show.get("left"), show.get("right")
+            paare = show.get("pairs")
+            if not str(links or "").strip() or not str(rechts or "").strip():
+                return Result(False, f"Takt {i}: Gegenueberstellung ohne Spaltenkoepfe")
+            if not isinstance(paare, list) or not (1 <= len(paare) <= 5):
+                return Result(False, f"Takt {i}: {len(paare or [])} Zeilen im Vergleich")
+            for paar in paare:
+                if not isinstance(paar, dict):
+                    return Result(False, f"Takt {i}: Vergleichszeile ist kein Objekt")
+                if not all(str(paar.get(k) or "").strip() for k in ("label", "left", "right")):
+                    return Result(False, f"Takt {i}: Vergleichszeile unvollstaendig")
+            grew[("compare", show.get("id"))] = max(
+                grew.get(("compare", show.get("id")), 0), len(paare)
+            )
+
+        if show["kind"] == "scale":
+            eintraege = show.get("items")
+            if not isinstance(eintraege, list) or not (2 <= len(eintraege) <= 5):
+                return Result(False, f"Takt {i}: {len(eintraege or [])} Groessenordnungen")
+            werte = []
+            for e in eintraege:
+                if not isinstance(e, dict) or not isinstance(e.get("value"), (int, float)):
+                    return Result(False, f"Takt {i}: Groessenordnung ohne Wert")
+                if not str(e.get("label") or "").strip():
+                    return Result(False, f"Takt {i}: Groessenordnung ohne Beschriftung")
+                # Null und negativ haben auf einer logarithmischen Achse
+                # keinen Platz - log(0) ist minus unendlich, und die Anzeige
+                # zeichnete daraus einen Balken ohne Ende.
+                if e["value"] <= 0:
+                    return Result(False, f"Takt {i}: Wert {e['value']} passt nicht auf eine "
+                                         f"logarithmische Achse")
+                werte.append(float(e["value"]))
+            if werte != sorted(werte):
+                return Result(False, f"Takt {i}: Groessenordnungen nicht aufsteigend")
+            # Der Sinn dieser Bildart ist der ABSTAND. Liegt zwischen klein
+            # und gross weniger als Faktor zehn, ist es eine Balkengrafik mit
+            # unnoetiger Mathematik davor.
+            if werte[-1] / werte[0] < 10:
+                return Result(False, f"Takt {i}: nur Faktor {werte[-1] / werte[0]:.1f} - "
+                                     f"dafuer sind Balken richtig")
+            grew[("scale", show.get("id"))] = max(
+                grew.get(("scale", show.get("id")), 0), len(eintraege)
+            )
+
+        if show["kind"] == "guess":
+            if not str(show.get("question") or "").strip():
+                return Result(False, f"Takt {i}: Frage ohne Text")
+            # Zwei Takte: einer fragt, einer loest auf. Gezaehlt wird der
+            # aufloesende, damit die Wachstumspruefung unten greift.
+            if str(show.get("answer") or "").strip():
+                grew[("guess", show.get("id"))] = 2
 
         if show["kind"] == "statement" and not (show.get("text") or "").strip():
             return Result(False, f"Takt {i}: Aussage ohne Text")

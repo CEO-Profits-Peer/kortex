@@ -1,0 +1,95 @@
+-- =============================================================================
+-- 0061_kinetic_compare_scale_guess.sql  ·  Drei Bildarten, und eine Lehre
+--
+-- Kein Schema aendert sich. Es steht hier, weil die Migrationsdateien in
+-- diesem Projekt die Formatdokumentation sind - wer 0027 und 0058 liest,
+-- soll keine unvollstaendige Liste finden.
+--
+-- Was der Anlass war
+-- ------------------
+-- Nach 0058 gab es sieben Bildarten. Gemessen an 84 erzeugten Karten:
+--
+--     steps      174 Takte   52 % der Karten
+--     table       95 Takte   36 %
+--     timeline    43 Takte   14 %
+--     bars         7 Takte    5 %
+--     quantity     0 Takte    0 %
+--
+-- quantity wurde NIE gewaehlt. Gegenprobe mit acht Themen, bei denen es
+-- die offensichtlich richtige Wahl ist - Umsatzsteuer, Inflation,
+-- Betriebskosten, Sozialversicherung, Tax bracket, Carbon footprint,
+-- Macronutrient, Bruttoinlandsprodukt: null von acht. Sechsmal steps.
+--
+-- Der Grund stand im Prompt, und ich hatte ihn selbst hineingeschrieben:
+--
+--     "DIESE BILDART BRAUCHT KEINE ZAHLEN. Wenn der Text erklaert, wie
+--      etwas ablaeuft, ist das hier die richtige Wahl - und meistens die
+--      beste Karte."
+--
+-- Das Modell hat mir geglaubt. Fast alles laesst sich als Ablauf
+-- erzaehlen; damit war steps nicht die richtige Wahl, sondern die
+-- bequemste. Eine Bildart mehr haette daran nichts geaendert - der Fehler
+-- war die Empfehlung, nicht das Angebot.
+--
+-- Deshalb waehlt der Prompt jetzt nach der FRAGE, die der Text
+-- beantwortet, und die Liste ist als verbindlich gekennzeichnet:
+--
+--     Wann ist was passiert?       -> timeline
+--     Wie laeuft das ab?           -> steps
+--     Wie teilt sich das auf?      -> quantity
+--     Was ist der Unterschied?     -> compare
+--     Wie gross ist der Abstand?   -> bars / scale
+--     Welcher Wert gehoert wozu?   -> table
+--     Kann man die Zahl schaetzen? -> guess
+--
+-- Die drei neuen Bildarten
+-- ------------------------
+--   compare   Zwei Spalten nebeneinander. Fuer zwei Dinge, die in
+--             MEHREREN Eigenschaften verglichen werden - Balken
+--             vergleichen eine Groesse, hier sind es mehrere. Der Anlass
+--             war ein Drehbuch, das "aktive" und "passive Impfung" in eine
+--             steps-Kette gepresst hat, weil es nichts Besseres gab.
+--
+--               {"kind":"compare","id":"c","left":"Miete","right":"Eigentum",
+--                "pairs":[{"label":"Monatlich","left":"900 EUR",
+--                          "right":"1.100 EUR"}]}
+--
+--             Das Feld heisst "pairs" und nicht "rows": "rows" ist bei der
+--             Tabelle schon mit einem anderen Typ belegt, und ein
+--             Antwortschema erlaubt pro Feldname nur einen.
+--
+--   scale     Groessenordnungen auf logarithmischer Achse. Weil Balken
+--             genau dort aufhoeren zu funktionieren, wo es interessant
+--             wird: ein Bakterium neben einem Blauwal ist linear ein
+--             unsichtbarer Strich. Geprueft wird ein Mindestabstand von
+--             Faktor zehn - darunter sind Balken richtig.
+--
+--               {"kind":"scale","id":"sc","unit":"m","items":[
+--                {"label":"Bakterium","value":0.000001},
+--                {"label":"Blauwal","value":30}]}
+--
+--   guess     Fragen, warten, aufloesen. Ein Takt zeigt nur die Frage, der
+--             naechste die Antwort. Die einzige Bildart, die nicht zeigt,
+--             sondern zurueckhaelt - dieselbe Mechanik, von der kurze
+--             Videos leben. In einer Lern-App ist das nicht nur Effekt:
+--             eine Zahl, die man vorher geschaetzt hat, bleibt haengen.
+--             Hoechstens einmal pro Drehbuch; zweimal ist kein Spiel mehr,
+--             sondern ein Quiz.
+--
+--               {"kind":"guess","id":"g","question":"Wie viel Prozent ...?"}
+--               {"kind":"guess","id":"g","question":"...","answer":"30 %"}
+--
+-- Ein Fehler, der dabei aufflog
+-- -----------------------------
+-- Die Zahlenpruefung schrieb Werte mit str(). str(0.000001) ist '1e-06',
+-- daraus las sie eine "06", suchte sie im Quelltext und lehnte ab - bei
+-- einer korrekten Angabe. Vorher konnte das nicht auffallen: so kleine
+-- Werte kamen in keiner der alten Bildarten vor. Behoben in
+-- validate/checks.py (_zahl_als_text).
+-- =============================================================================
+
+comment on column public.content_items.kinetic_script is
+  'Drehbuch fuer presentation_mode=kinetic: {"beats":[{"say":..., "show":{...}}]}. '
+  'Bildarten: statement, table, bars, timeline, quantity, steps, compare, scale, '
+  'guess, figure. Siehe 0027 (Format), 0058 und 0061 (spaetere Bildarten) und '
+  'app/src/features/kinetic/.';

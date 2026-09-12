@@ -91,7 +91,8 @@ MAX_STEPS = 6       # Ablauf: desgleichen
 _SHOW_PROPERTIES: dict[str, Any] = {
     "kind": {
         "type": "string",
-        "enum": ["statement", "table", "bars", "timeline", "quantity", "steps", "figure"],
+        "enum": ["statement", "table", "bars", "timeline", "quantity", "steps",
+                 "compare", "scale", "guess", "figure"],
     },
     "id": {"type": "string"},
     "text": {"type": "string"},
@@ -137,6 +138,37 @@ _SHOW_PROPERTIES: dict[str, Any] = {
             },
         },
     },
+    "left": {"type": "string"},
+    "right": {"type": "string"},
+    # Nicht "rows": der Name ist bei der Tabelle schon mit einem anderen Typ
+    # belegt (Array aus String-Arrays), und ein Schema kann pro Feldname nur
+    # einen Typ haben. Zwei Bedeutungen unter einem Namen waeren genau die
+    # Sorte Kollision, die erst beim Abspielen auffaellt.
+    "pairs": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["label", "left", "right"],
+            "properties": {
+                "label": {"type": "string"},
+                "left": {"type": "string"},
+                "right": {"type": "string"},
+            },
+        },
+    },
+    "items": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["label", "value"],
+            "properties": {
+                "label": {"type": "string"},
+                "value": {"type": "number"},
+            },
+        },
+    },
+    "question": {"type": "string"},
+    "answer": {"type": "string"},
 }
 
 # Das Schema kann nur ausdruecken, WELCHE Felder es geben darf - nicht
@@ -181,7 +213,25 @@ Die Stimme liest den Satz vor, das Bild baut sich dabei auf. Der Reiz
 entsteht dadurch, dass sich von Takt zu Takt etwas SICHTBAR aendert -
 eine Tabellenzeile kommt dazu, ein Balken waechst, ein Schritt kommt hinzu.
 
-DIE SIEBEN BILDARTEN - waehle die, die zum Text passt
+WIE DU DIE BILDART WAEHLST
+Nicht nach Geschmack, sondern nach der FRAGE, die dein Text beantwortet.
+Genau eine Zeile trifft zu:
+
+    Wann ist was passiert?          -> timeline
+    Wie laeuft das ab?              -> steps
+    Wie teilt sich das auf?         -> quantity
+    Was ist der Unterschied?        -> compare
+    Wie gross ist der Abstand?      -> bars  (aehnliche Groessen)
+                                    -> scale (Faktor 100 oder mehr)
+    Welcher Wert gehoert wozu?      -> table
+    Kann man die Zahl schaetzen?    -> guess
+
+Diese Liste ist verbindlich. Wenn "Wie teilt sich das auf?" zutrifft,
+nimm quantity - auch dann, wenn sich der Text zusaetzlich als Ablauf
+erzaehlen liesse. Fast alles laesst sich als Ablauf erzaehlen; das macht
+steps nicht zur richtigen Wahl, sondern nur zur bequemsten.
+
+DIE ZEHN BILDARTEN
 
 1. statement - eine grosse Zahl oder Aussage.
    {{"kind":"statement","text":"1.000 EUR","sub":"Startkapital"}}
@@ -196,9 +246,11 @@ DIE SIEBEN BILDARTEN - waehle die, die zum Text passt
 3. bars - Balken, die auf ihren Wert wachsen.
    {{"kind":"bars","id":"b","unit":"%","labels":["vorher","nachher"],
      "values":[35,68]}}
-   Fuer zwei bis vier Groessen nebeneinander. "labels" und "values"
+   Fuer zwei bis vier AEHNLICH GROSSE Werte. "labels" und "values"
    muessen beide da und gleich lang sein - ein Balken ohne Wert wird
-   verworfen.
+   verworfen. Liegt zwischen kleinstem und groesstem Wert mehr als
+   Faktor 100, nimm scale: linear ist der kleine dann ein unsichtbarer
+   Strich.
 
 4. timeline - Punkte auf einer Zeitachse.
    {{"kind":"timeline","id":"tl","points":[
@@ -214,28 +266,55 @@ DIE SIEBEN BILDARTEN - waehle die, die zum Text passt
 5. quantity - ein Raster aus Kaestchen, das sich fuellt.
    {{"kind":"quantity","id":"q","total":100,"unit":"%","groups":[
      {{"label":"Miete","value":38}},{{"label":"Essen","value":22}}]}}
-   Fuer die Aufteilung EINER Groesse. Balken stellen zwei Dinge
-   nebeneinander, hier geht es darum, wie sich ein Ganzes aufteilt.
-   Jeder Takt wiederholt alle bisherigen Gruppen und haengt eine an.
-   Die Summe der Gruppen darf "total" nicht ueberschreiten.
+   Fuer die Aufteilung EINER Groesse: wovon besteht etwas, wohin geht es,
+   wie verteilt es sich. Steuersaetze, Ausgaben, Anteile, Zusammen-
+   setzungen. Jeder Takt wiederholt alle bisherigen Gruppen und haengt
+   eine an. Die Summe der Gruppen darf "total" nicht ueberschreiten.
 
 6. steps - ein Ablauf, Schritt fuer Schritt.
    {{"kind":"steps","id":"s","steps":[
      {{"label":"Antrag einbringen","note":"beim AMS"}},
      {{"label":"Frist laeuft","note":"vier Wochen"}}]}}
-   Fuer Vorgaenge, Verfahren, Mechanismen, Kreislaeufe. DIESE BILDART
-   BRAUCHT KEINE ZAHLEN. Wenn der Text erklaert, wie etwas ablaeuft oder
-   funktioniert, ist das hier die richtige Wahl - und meistens die beste
-   Karte. Jeder Takt wiederholt alle bisherigen Schritte und haengt einen
-   an. Hoechstens {max_steps} Schritte.
+   Fuer Vorgaenge und Verfahren, bei denen die REIHENFOLGE die Aussage
+   ist - wo Schritt zwei ohne Schritt eins nicht passieren kann. Braucht
+   keine Zahlen. Jeder Takt wiederholt alle bisherigen Schritte und
+   haengt einen an. Hoechstens {max_steps} Schritte.
    Jeder Schritt muss im Quelltext stehen. Nichts dazuerfinden, was
    plausibel klingt.
    Alle Schritte gehoeren zu EINEM Ablauf. Eine Gegenueberstellung ist
    kein Schritt: "aktive Impfung" und "passive Impfung" sind zwei Wege,
-   nicht Schritt drei und vier desselben Wegs. Nimm dafuer den
-   Schlusstakt, nicht die Kette.
+   nicht Schritt drei und vier desselben Wegs - dafuer gibt es compare.
 
-7. figure - eine abstrakte Grafik ohne eigene Zahlen.
+7. compare - zwei Spalten nebeneinander.
+   {{"kind":"compare","id":"c","left":"Miete","right":"Eigentum","pairs":[
+     {{"label":"Einstieg","left":"0 EUR","right":"20 Prozent Anzahlung"}},
+     {{"label":"Monatlich","left":"900 EUR","right":"1.100 EUR"}}]}}
+   Fuer zwei Dinge, die in MEHREREN Eigenschaften verglichen werden.
+   Balken vergleichen eine Groesse, hier sind es mehrere. Jeder Takt
+   wiederholt alle bisherigen Zeilen und haengt eine an.
+
+8. scale - Groessenordnungen auf logarithmischer Achse.
+   {{"kind":"scale","id":"sc","unit":"m","items":[
+     {{"label":"Bakterium","value":0.000001}},
+     {{"label":"Mensch","value":1.7}},
+     {{"label":"Blauwal","value":30}}]}}
+   Wenn zwischen klein und gross Faktor 100 oder mehr liegt. Gezeigt
+   wird, WIE VIELE Nullen dazwischenstehen. Aufsteigend, alle Werte
+   groesser als null, mindestens zwei.
+
+9. guess - fragen, warten, aufloesen.
+   Takt:      {{"kind":"guess","id":"g","question":"Wie viel Prozent des
+              Trinkwassers gehen in Oesterreich in die Toilette?"}}
+   Takt danach: {{"kind":"guess","id":"g","question":"...dieselbe Frage...",
+              "answer":"30 Prozent"}}
+   Der erste Takt zeigt nur die Frage, der naechste loest sie auf. Nimm
+   es fuer EINE ueberraschende Zahl - eine, bei der die meisten daneben
+   liegen. Hoechstens einmal pro Drehbuch: zweimal ist kein Spiel mehr,
+   sondern ein Quiz.
+   Der Satz zum Fragetakt muss die Frage auch stellen ("Was schaetzt
+   du?"), sonst steht die Stimme still, waehrend das Bild wartet.
+
+10. figure - eine abstrakte Grafik ohne eigene Zahlen.
    {{"kind":"figure","caption":"..."}}
    Nur fuer einen Schlusstakt.
 
@@ -256,15 +335,15 @@ addieren, und aus ihnen wird nichts sichtbar.
 
 WANN DU ABLEHNEN MUSST
 Setze "suitable": false und gib keine Takte zurueck, wenn eines zutrifft:
-- Der Text beschreibt WEDER eine Abfolge von Ereignissen, NOCH einen
-  Vorgang oder Mechanismus, NOCH vergleichbare Groessen, NOCH die
-  Aufteilung eines Ganzen. Erst wenn nichts davon da ist, ist es keine
-  Erklaerkarte.
+- Auf keine der Fragen oben gibt der Text eine Antwort: keine Abfolge,
+  kein Vorgang, keine vergleichbaren Groessen, keine Aufteilung, kein
+  Unterschied zwischen zwei Dingen. Erst wenn nichts davon da ist, ist es
+  keine Erklaerkarte.
 - Die einzigen Zahlen im Text sind Kennungen (siehe oben).
 - Das Bild aendert sich von Takt zu Takt nicht. Dann ist es der
   Fliesstext in Haeppchen, und das kann eine Textkarte besser.
-Ablehnen bleibt ein gutes Ergebnis - aber pruefe vorher ALLE sieben
-Bildarten. Ein Text ohne Zahlenreihe ist kein Grund zur Ablehnung,
+Ablehnen bleibt ein gutes Ergebnis - aber geh vorher die Frageliste
+durch. Ein Text ohne Zahlenreihe ist kein Grund zur Ablehnung,
 solange er einen Ablauf beschreibt.
 
 REGELN FUER DIE TAKTE
