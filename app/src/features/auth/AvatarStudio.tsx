@@ -100,10 +100,22 @@ export function AvatarStudio() {
   const uploadPhoto = () => {
     if (!profile) return;
     const picked = pickAvatarImage();
-    setBusy(true);
+    // `busy` erst, wenn wirklich eine Datei da ist - NICHT schon beim
+    // Oeffnen des Dialogs.
+    //
+    // Vorher stand es hier, und das machte den Bildschirm von einem
+    // abgebrochenen Dateidialog abhaengig: meldet der Browser den Abbruch
+    // nicht (Safari), loest das Versprechen nie auf, das `finally` laeuft
+    // nie, und beide Knoepfe bleiben deaktiviert. Danach tut "Profilbild
+    // aendern" gar nichts mehr, bis man den Bildschirm verlaesst.
+    //
+    // Waehrend der Dialog offen ist, gibt es ohnehin nichts zu sperren -
+    // er liegt darueber. Gesperrt gehoert das Hochladen, und das faengt
+    // erst hier an.
     picked
       .then(async (img) => {
         if (!img) return;
+        setBusy(true);
         const path = await api.uploadAvatar(profile.id, img.bytes, img.ext, profile.avatar_path);
         setProfile(await api.updateSettings({ avatar_path: path }));
         haptics.success();

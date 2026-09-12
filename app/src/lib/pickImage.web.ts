@@ -38,9 +38,33 @@ export function pickAvatarImage(): Promise<PickedImage | null> {
       resolve(f);
     };
     input.addEventListener('change', () => finish(input.files?.[0] ?? null));
-    // Abbruch im Dateidialog. Nicht jeder Browser meldet ihn - deswegen ist
-    // `settled` da: was nie kommt, schadet auch nicht.
+    // Abbruch im Dateidialog. Nicht jeder Browser meldet ihn.
     input.addEventListener('cancel', () => finish(null));
+
+    /**
+     * Der Rueckfall fuer die Browser, die `cancel` NICHT schicken - Safari
+     * zum Beispiel.
+     *
+     * Hier stand vorher nur "was nie kommt, schadet auch nicht". Das war
+     * falsch, und der Schaden war sichtbar: der Aufrufer setzt beim Oeffnen
+     * `busy`, und `busy` wird im `finally` zurueckgenommen. Loest das
+     * Versprechen nie auf, laeuft das `finally` nie - der Knopf bleibt fuer
+     * den Rest der Sitzung deaktiviert, und "Profilbild aendern" tut
+     * ueberhaupt nichts mehr. Ein Versprechen, das niemals antwortet, ist
+     * schlimmer als eines, das Nein sagt.
+     *
+     * Wenn der Dialog zugeht, bekommt das Fenster den Fokus zurueck. Die
+     * kurze Wartezeit danach ist noetig, weil `change` bei einer Auswahl
+     * teils ERST nach dem Fokuswechsel eintrifft - ohne sie meldet dieser
+     * Zweig einen Abbruch, obwohl gerade eine Datei gewaehlt wurde.
+     */
+    const beiFokus = () => {
+      window.removeEventListener('focus', beiFokus);
+      setTimeout(() => {
+        if (!input.files?.length) finish(null);
+      }, 600);
+    };
+    window.addEventListener('focus', beiFokus);
   });
 
   // Die echte Methode, kein nachgebautes Ereignis.
