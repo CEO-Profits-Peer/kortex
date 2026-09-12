@@ -32,7 +32,7 @@ source document, and nothing is generated from model memory.
   expo-router. Ships as a PWA to Cloudflare Pages (`elycic.pages.dev`).
   Native build exists but web is the live target.
 - **Backend** — Supabase (Postgres + RLS + SECURITY DEFINER RPCs + Storage +
-  Auth + Edge Functions). 57 migrations, all applied.
+  Auth + Edge Functions). 67 migrations, 0065-0067 still to be applied.
 - **Pipeline** — Python. Pulls RSS feeds and Wikipedia articles, asks Gemini
   for a card with structured output, validates deterministically, writes to
   Supabase. Runs in GitHub Actions every 3 hours.
@@ -57,7 +57,7 @@ pipeline/
   transform/      generate.py (cards), kinetic.py (animated "specials")
   validate/       checks.py, relevance.py, overclaim.py
 supabase/
-  migrations/     0001–0057, each with a long header explaining WHY
+  migrations/     0001–0067, each with a long header explaining WHY
   functions/push/ Edge Function, delivers notifications in ~3 s
 docs/             ARCHITECTURE, CONTENT-SOURCING, SETUP, DEPLOY, SMTP,
                   GOOGLE-LOGIN, PRODUKT-IDEEN
@@ -129,6 +129,16 @@ when something didn't work or when a previous decision was wrong.
 - Gemini free tier: **20 requests per day per model per project**. Hence 9
   models in a fallback chain × 5 API keys from 5 projects = ~900/day. A 429
   with `PerDay` in it means switch model immediately, don't back off.
+- **A `limit` behind an aggregate limits nothing.** `select jsonb_agg(x) from
+  t where ... limit 24` returns one row, so the limit is always satisfied and
+  every row ends up inside the JSON. It cost months of a profile screen that
+  never stopped scrolling (see 0065).
+- **Dwell time only reached the server on swipe-away**, and even then it sat
+  in the event buffer until ten events had piled up. Any server-side check
+  against `user_content_state` for the card the user is *currently looking
+  at* therefore saw nothing — that, not the threshold, is why the repost
+  button never worked. `reportSeenNow()` in `useDwellTracking.ts` now flushes
+  the elapsed remainder on demand.
 - `set search_path = ''` resolves types by OID but **operators by search
   path** — pgvector's `<=>` needs `operator(public.<=>)`.
 - pg_net lives in schema `net`, not `extensions.net`.
@@ -241,17 +251,21 @@ Deliberately not relaxed — checking only the mantissa would make
 
 ## Open items for the user (not you)
 
-- **Two migrations are written but not applied.** There is no Supabase CLI
+- **Three migrations are written but not applied.** There is no Supabase CLI
   and no psql in this environment, so DDL has to be pasted into the SQL
-  editor by hand:
-  - `0060_fresh_beats_repeat.sql` — unseen content beats a repeat, whatever
-    the category interest. Until it runs, an unfillable news quota still
-    sends the gap to `repeats` while fresh knowledge cards sit unused.
-  - `0062_english_from_the_start.sql` — `handle_new_user()` never set
-    `feed_english_pct`, so every account created after 0029 got the column
-    default regardless of its language. Seven of 28 accounts run the UI in
-    English and get a feed that is three quarters German.
-  (`0061` needs nothing — it is a `comment on column` and documentation.)
+  editor by hand, in this order:
+  - `0065_profile_lists.sql` — `get_my_social()` sends EVERY repost and like.
+    The `limit 24` in 0018 sits behind the `jsonb_agg` and therefore limits
+    the one aggregate row, not the rows going into it. Valid SQL that does
+    nothing. Also adds `get_my_collection()` for the "Alle ansehen" screen,
+    which shows an error until this runs.
+  - `0066_leaderboard_friends.sql` — friends become mutual follows (the old
+    scope queried `public.friendships`, a table nothing writes to, so the
+    tab was structurally empty), and `public_profiles` gains `avatar_path`
+    so the leaderboard shows the same picture as the daily list.
+  - `0067_likes_nudge_feed.sql` — at most +25 % score for likes, log-damped.
+  (`0063` and `0064` are applied — `profiles.is_admin` and `admin_pin_hash`
+  exist, and the repost path was confirmed working in the browser.)
 - **SMTP** — the one thing nobody but you can do. If "Enable custom SMTP" is
   on with empty fields, *no* auth mail goes out at all, not even through the
   built-in sender. Two options: fill it in (`docs/SMTP.md`, Brevo, ~10 min)
