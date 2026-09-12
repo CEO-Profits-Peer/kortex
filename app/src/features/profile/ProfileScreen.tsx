@@ -37,6 +37,16 @@ import { color, radius, space, type } from '@/theme/tokens';
  * noch dort, wo etwas antippbar ist — dann bedeutet ein Rahmen etwas.
  */
 
+/**
+ * Wie viele Kacheln im Profil stehen.
+ *
+ * Vorher standen ALLE hier - der Server hat trotz `limit 24` alles geliefert
+ * (das Limit stand hinter dem Aggregat und traf nie eine Zeile, siehe
+ * Migration 0065). Sechs sind eine Handbreit, danach kommt der Lernstand,
+ * und der Rest liegt hinter "Alle ansehen".
+ */
+const VORSCHAU = 6;
+
 function Count({
   value,
   label,
@@ -146,6 +156,7 @@ export function ProfileScreen() {
   const p = stats?.profile;
   const focusMin = Math.round((p?.focus_seconds_total ?? 0) / 60);
   const list = tab === 'reposts' ? social.reposts : social.likes;
+  const gesamt = tab === 'reposts' ? social.repost_count : social.like_count;
   const due = stats?.reviews_due ?? 0;
 
   return (
@@ -277,7 +288,7 @@ export function ProfileScreen() {
           </Text>
         ) : (
           <Animated.View entering={FadeIn.duration(180)} style={styles.grid}>
-            {list.map((r) => (
+            {list.slice(0, VORSCHAU).map((r) => (
               <Pressable
                 key={r.content_id}
                 onPress={() => router.push(`/category/${encodeURIComponent(r.category)}`)}
@@ -301,6 +312,21 @@ export function ProfileScreen() {
             ))}
           </Animated.View>
         )}
+
+        {/* Nur wenn es wirklich mehr gibt. Ein Knopf, der auf eine Liste
+            fuehrt, die genauso lang ist wie das, was daneben steht, ist ein
+            Versprechen ohne Inhalt. */}
+        {gesamt > Math.min(list.length, VORSCHAU) ? (
+          <Pressable
+            onPress={() => {
+              haptics.light();
+              router.push(`/collection/${tab}`);
+            }}
+            style={({ pressed }) => [styles.allButton, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.allText}>Alle {gesamt} ansehen</Text>
+          </Pressable>
+        ) : null}
 
         {/* --- Lernstand ----------------------------------------------------- */}
         <Text style={styles.sectionTitle}>Lernstand</Text>
@@ -424,6 +450,16 @@ const styles = StyleSheet.create({
 
   todayLine: { ...type.body, fontSize: 14, color: color.ink.mid },
   enough: { ...type.body, fontSize: 14, color: color.signal.warn, marginTop: -space.sm },
+
+  allButton: {
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  allText: { ...type.label, fontSize: 13, color: color.ink.mid },
 
   empty: { ...type.body, fontSize: 14, lineHeight: 21, color: color.ink.mid },
   error: { ...type.body, fontSize: 15, color: color.signal.error, textAlign: 'center' },

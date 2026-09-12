@@ -195,6 +195,7 @@ export type LeaderboardRow = {
   handle: string;
   display_name: string | null;
   avatar_seed: string;
+  avatar_path: string | null;
   mastery_total: number;
   streak_current: number;
   is_me: boolean;
@@ -336,6 +337,21 @@ export type FollowingItem = {
   at: string;
 };
 
+/**
+ * Ein Eintrag in einer der beiden eigenen Sammlungen (Empfohlen, Geliked).
+ *
+ * Dieselbe Form im Profilauszug und in der vollstaendigen Liste - sonst
+ * haette der zweite Bildschirm eine zweite Form desselben Dings.
+ */
+export type CollectionEntry = {
+  content_id: string;
+  title: string;
+  category: string;
+  comment: string | null;
+  likes: number;
+  at: string;
+};
+
 export type MySocial = {
   handle: string;
   display_name: string | null;
@@ -347,8 +363,8 @@ export type MySocial = {
   likes_public: boolean;
   repost_count: number;
   like_count: number;
-  reposts: { content_id: string; title: string; category: string; comment: string | null; likes: number; at: string }[];
-  likes: { content_id: string; title: string; category: string; likes: number; at: string }[];
+  reposts: CollectionEntry[];
+  likes: CollectionEntry[];
 };
 
 // --- Tagesaufgabe ------------------------------------------------------------

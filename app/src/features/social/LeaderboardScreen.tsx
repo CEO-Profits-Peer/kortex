@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,6 +11,7 @@ import {
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
@@ -38,21 +40,6 @@ const SCOPES: { key: Scope; label: string }[] = [
   { key: 'friends', label: 'Freunde' },
   { key: 'global', label: 'Global' },
 ];
-
-/** Deterministische Farbe aus dem Avatar-Seed - kein Bild noetig. */
-function seedColor(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const palette = [
-    color.signal.primary,
-    color.signal.success,
-    color.signal.mastery,
-    color.signal.warn,
-    '#FF9F45',
-    '#FF6BA8',
-  ];
-  return palette[h % palette.length];
-}
 
 export function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
@@ -128,20 +115,30 @@ export function LeaderboardScreen() {
           <Text style={styles.empty}>
             {error ??
               (scope === 'friends'
-                ? 'Noch keine Freunde. Das Einladen kommt in v0.4.'
+                ? 'Freunde sind gegenseitige Follows. Noch keine — such jemanden über @handle und folge. Wer zurückfolgt, steht hier.'
                 : 'Noch niemand hier. Sei die erste Person.')}
           </Text>
         ) : (
           <View style={styles.list}>
             {rows.map((row) => (
-              <View
+              <Pressable
                 key={row.handle}
-                style={[styles.row, row.is_me && styles.rowMe]}
+                onPress={() => {
+                  haptics.light();
+                  router.push(`/u/${encodeURIComponent(row.handle)}`);
+                }}
+                style={({ pressed }) => [
+                  styles.row,
+                  row.is_me && styles.rowMe,
+                  pressed && { opacity: 0.75 },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={personName(row)}
               >
                 <Text style={[styles.rank, row.rank_pos <= 3 && styles.rankTop]}>
                   {row.rank_pos}
                 </Text>
-                <View style={[styles.avatar, { backgroundColor: seedColor(row.avatar_seed) }]} />
+                <Avatar seed={row.avatar_seed} path={row.avatar_path} size={32} />
                 <View style={styles.who}>
                   <Text
                     style={[styles.handle, row.is_me && { color: color.signal.primary }]}
@@ -157,7 +154,7 @@ export function LeaderboardScreen() {
                 <Text style={[styles.mastery, { color: color.signal.mastery }]}>
                   {row.mastery_total}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         )}
@@ -205,7 +202,6 @@ const styles = StyleSheet.create({
   rowMe: { borderWidth: 1, borderColor: color.signal.primary },
   rank: { ...type.mono, width: 26, color: color.ink.low, textAlign: 'right' },
   rankTop: { color: color.ink.max },
-  avatar: { width: 28, height: 28, borderRadius: 8 },
   who: { flex: 1 },
   handle: { ...type.body, fontSize: 15, color: color.ink.high },
   streak: { ...type.meta, color: color.signal.warn },

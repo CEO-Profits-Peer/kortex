@@ -13,6 +13,7 @@ import type { AdminData } from '@/features/admin/AdminOverview';
 import type {
   Category,
   CategoryDetail,
+  CollectionEntry,
   CommentQuestion,
   DailyChallenge,
   DailyLeaderboard,
@@ -271,6 +272,26 @@ export const api = {
     const { data, error } = await supabase.rpc('get_my_social');
     if (error) throw error;
     return data as MySocial;
+  },
+
+  /**
+   * Die vollstaendige eigene Liste, seitenweise.
+   *
+   * Das Profil zeigt nur einen Auszug - siehe Migration 0065. Wer "Alle
+   * ansehen" tippt, landet hier.
+   */
+  async myCollection(
+    kind: 'reposts' | 'likes',
+    limit = 40,
+    offset = 0,
+  ): Promise<CollectionEntry[]> {
+    const { data, error } = await supabase.rpc('get_my_collection', {
+      p_kind: kind,
+      p_limit: limit,
+      p_offset: offset,
+    });
+    if (error) throw error;
+    return (data ?? []) as CollectionEntry[];
   },
 
   async publicProfile(handle: string): Promise<PublicProfile> {
