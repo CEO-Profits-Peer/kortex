@@ -8,7 +8,7 @@ feedparser==6.0.11        # RSS/Atom parsen
 trafilatura==2.0.0        # Artikeltext aus HTML (entfernt Werbung, Navigation, Scripts)
 httpx==0.28.1             # HTTP: Feeds, Artikel, PostgREST
 google-genai==1.44.0      # Gemini: Structured Output + Embeddings
-python-dotenv==1.1.1
+python-dotenv==1.2.2
 # Festgenagelt wie alles andere hier. Es stand als >=2.0.0 drin und war
 # damit die einzige Zeile, die sich ohne Commit aendern kann: eine neue
 # Version auf PyPI, und der naechste CI-Lauf installiert etwas anderes als
