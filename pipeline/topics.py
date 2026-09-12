@@ -346,6 +346,123 @@ _RAW: list[tuple[str, str, str]] = [
     ("world.science", "en", "Randomized controlled trial"),
     ("local.ca", "en", "Provinces and territories of Canada"),
     ("local.ca", "en", "Canada Pension Plan"),
+
+    # =================================================================
+    # Nachtrag 2026-09-11: 67 Themen, davon 53 deutsch
+    #
+    # Anlass war ein Missverhaeltnis, nicht ein Wunsch nach mehr: die
+    # deutsche Seite hatte 123 Themen, die englische 169 - und in der
+    # Datenbank 78 gegen 69 Karten, bei deutlich weniger Erklaerkarten
+    # (44 gegen 58 Prozent). Die schwaechere Sprache hatte den kleineren
+    # Vorrat.
+    #
+    # Schwerpunkt sind die Bereiche, die im Konzept stehen und in der
+    # Liste fehlten: Arbeit, Steuern, Miete, Schule. Genau dafuer gibt es
+    # auch keine Nachrichtenquelle - AMS, Arbeiterkammer, WKO, Parlament
+    # und Sozialministerium haben alle keinen RSS-Feed mehr (geprueft
+    # 2026-09-11). Wikipedia ist fuer diese Themen nicht die zweite Wahl,
+    # sondern die einzige.
+    #
+    # Jedes Lemma wurde vor dem Eintragen gegen die Wikipedia-API
+    # geprueft: existiert es, ist es eine Begriffsklaerung, hat es eine
+    # Einleitung? Von 118 Kandidaten sind 15 durchgefallen - und zwar
+    # ausgerechnet die naheliegenden:
+    #
+    #   "Mietvertrag"       Begriffsklaerung -> "Mietvertrag (Deutschland)"
+    #   "Pflichtschule"     Begriffsklaerung -> "Schulpflicht"
+    #   "Mietrecht (Oesterreich)"  gibt es nicht -> "Mietrechtsgesetz"
+    #   "Kaution (Recht)"   gibt es nicht
+    #   "E-Card (Oesterreich)"     gibt es nicht -> "Elektronische
+    #                              Gesundheitsakte"
+    #   "Achtsamkeit"       Begriffsklaerung -> "Achtsamkeit
+    #                       (Geistesgegenwart)"
+    #
+    # Von Hand haette ich sie alle so eingetragen, wie sie oben stehen.
+    # check_topics.py haette sie gemeldet - aber erst danach.
+    # =================================================================
+
+    # --- Geld ----------------------------------------------------
+    ("finance.basics", "de", "Dispositionskredit"),
+    ("finance.basics", "de", "Privatinsolvenz"),
+    ("finance.basics", "de", "Schufa"),
+    ("finance.basics", "en", "Registered education savings plan"),
+    ("finance.markets", "de", "Börsengehandelter Fonds"),
+    ("finance.taxes", "de", "Arbeitnehmerveranlagung"),
+    ("finance.taxes", "de", "Kalte Progression"),
+    ("finance.taxes", "de", "Lohnsteuer"),
+    ("finance.taxes", "de", "Sozialversicherung"),
+    ("finance.taxes", "en", "Goods and services tax (Canada)"),
+    ("finance.taxes", "en", "Income tax in Canada"),
+    ("finance.taxes", "en", "Tax bracket"),
+    ("finance.work", "de", "Arbeitslosengeld"),
+    ("finance.work", "de", "Arbeitszeit"),
+    ("finance.work", "de", "Berufsausbildung"),
+    ("finance.work", "de", "Duale Ausbildung"),
+    ("finance.work", "de", "Geringfügige Beschäftigung"),
+    ("finance.work", "de", "Probezeit"),
+    ("finance.work", "en", "Minimum wage in Canada"),
+
+    # --- Alltag und Recht ----------------------------------------
+    ("life.consumer", "de", "Abofalle"),
+    ("life.consumer", "de", "Effektiver Jahreszins"),
+    ("life.consumer", "en", "Annual percentage rate"),
+    ("life.housing", "de", "Betriebskosten (Immobilien)"),
+    ("life.housing", "de", "Mietrechtsgesetz"),
+    ("life.housing", "de", "Wohngeld"),
+    ("life.housing", "en", "Landlord–tenant law"),
+    ("life.housing", "en", "Leasehold estate"),
+    ("life.mobility", "de", "Führerschein"),
+    ("life.mobility", "de", "Klimaticket"),
+    ("life.mobility", "en", "Driver's license"),
+    ("life.rights", "de", "Geschäftsfähigkeit"),
+    ("life.rights", "de", "Rücktritt (Zivilrecht)"),
+    ("life.rights", "de", "Urheberrecht"),
+
+    # --- Vor Ort -------------------------------------------------
+    ("local.at", "de", "Bildungssystem in Österreich"),
+    ("local.at", "de", "Bundesheer"),
+    ("local.at", "de", "Elektronische Gesundheitsakte"),
+    ("local.at", "de", "Gemeindebau"),
+    ("local.at", "de", "Matura"),
+    ("local.at", "de", "Nationalrat (Österreich)"),
+    ("local.at", "de", "Schulpflicht"),
+    ("local.at", "de", "Zivildienst"),
+    ("local.ca", "en", "Education in Canada"),
+    ("local.ca", "en", "Parliament of Canada"),
+    ("local.ch", "de", "Bundesrat (Schweiz)"),
+    ("local.ch", "de", "Volksabstimmung (Schweiz)"),
+    ("local.de", "de", "Bürgergeld-Gesetz"),
+    ("local.de", "de", "Deutscher Bundestag"),
+
+    # --- Koerper -------------------------------------------------
+    ("body.health", "de", "Antibiotikum"),
+    ("body.mental", "de", "Achtsamkeit (Geistesgegenwart)"),
+    ("body.mental", "de", "Angststörung"),
+    ("body.mental", "de", "Burn-out"),
+    ("body.mental", "de", "Meditation"),
+
+    # --- Denken --------------------------------------------------
+    ("mind.creativity", "de", "Brainstorming"),
+    ("mind.decisions", "de", "Spieltheorie"),
+    ("mind.decisions", "de", "Versunkene Kosten"),
+
+    # --- Wissenschaft --------------------------------------------
+    ("science.chem", "de", "Katalysator"),
+    ("science.chem", "en", "Catalysis"),
+    ("science.earth", "de", "Vulkan"),
+    ("science.math", "de", "Exponentielles Wachstum"),
+    ("science.math", "de", "Normalverteilung"),
+
+    # --- Technik -------------------------------------------------
+    ("tech.games", "de", "Lootbox"),
+    ("tech.games", "en", "Loot box"),
+    ("tech.web", "de", "HTTP-Cookie"),
+
+    # --- Welt ----------------------------------------------------
+    ("world.culture", "de", "UNESCO-Welterbe"),
+    ("world.culture", "en", "World Heritage Site"),
+    ("world.history", "de", "Kalter Krieg"),
+    ("world.media", "de", "Desinformation"),
 ]
 
 def _dedupe(raw: list[tuple[str, str, str]]) -> list[Topic]:

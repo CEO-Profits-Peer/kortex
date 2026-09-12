@@ -149,7 +149,26 @@ def main() -> int:
     coverages: list[float] = []
     written = 0
 
-    for src in sources:
+    # 'link_only': nur Titel und Link erlaubt. In v1 wird das ganz
+    # uebersprungen, statt halbe Karten zu bauen (docs/CONTENT-SOURCING.md).
+    #
+    # Aussortiert wird VOR dem Abruf, nicht danach - das ist eine Korrektur.
+    # Vorher wurden diese Feeds geholt, gezaehlt und dann weggeworfen, und
+    # ihre Artikel zaehlten dabei gegen MAX_ITEMS_PER_RUN. Solange zehn von
+    # zweiundzwanzig Quellen link_only waren, ging das gerade noch auf. Mit
+    # 0059 sind es einunddreissig Feeds, und die Obergrenze haette nun
+    # zugeschlagen, bevor die hinteren Quellen ueberhaupt drankommen -
+    # welche das sind, entscheidet die Reihenfolge aus der Datenbank, also
+    # der Zufall. Ein Kontingent an etwas zu verbrauchen, das per Definition
+    # nichts ergeben kann, ist in beiden Faellen falsch; es faellt nur erst
+    # jetzt auf.
+    nutzbar = [s for s in sources if s.may_store_fulltext]
+    if len(nutzbar) < len(sources):
+        log.info("%d Quellen uebersprungen (Lizenz erlaubt keinen Volltext)",
+                 len(sources) - len(nutzbar))
+        stats["skipped_license_sources"] = len(sources) - len(nutzbar)
+
+    for src in nutzbar:
         if stats["seen"] >= cfg.max_items_per_run:
             log.info("Limit von %d Artikeln erreicht", cfg.max_items_per_run)
             break
@@ -163,12 +182,6 @@ def main() -> int:
             continue
 
         stats["seen"] += len(items)
-
-        # 'link_only': nur Titel und Link erlaubt. In v1 ueberspringen wir das
-        # ganz, statt halbe Karten zu bauen (docs/CONTENT-SOURCING.md).
-        if not src.may_store_fulltext:
-            stats["skipped_license"] += len(items)
-            continue
 
         known = db.known_hashes([i.hash for i in items])
         fresh = [i for i in items if i.hash not in known]
@@ -343,7 +356,7 @@ def main() -> int:
     for label, value in [
         ("gesehen", stats["seen"]),
         ("schon bekannt", stats["already_known"]),
-        ("Lizenz uebersprungen", stats["skipped_license"]),
+        ("Quellen ohne Volltextrecht", stats["skipped_license_sources"]),
         ("ohne Lernwert", stats["irrelevant"]),
         ("Dublette", stats["duplicate"]),
         ("Gemini unbrauchbar", stats["gemini_unusable"]),
