@@ -89,6 +89,13 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          # Namen, die schon einmal verwechselt wurden. Ein Secret, das es
+          # nicht gibt, ist hier einfach leer - das kostet nichts und
+          # erlaubt die Frage "meintest du vielleicht das hier?".
+          TIPPFEHLER_SUPERBASE_URL: ${{ secrets.SUPERBASE_URL }}
+          TIPPFEHLER_SUPERBASE_KEY: ${{ secrets.SUPERBASE_SERVICE_ROLE_KEY }}
+          TIPPFEHLER_SERVICE_ROLE_KEY: ${{ secrets.SERVICE_ROLE_KEY }}
+          TIPPFEHLER_SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "Python: $(python -V)"
           echo
@@ -118,6 +125,20 @@ jobs:
             echo "Eintragen unter: Settings -> Secrets and variables -> Actions."
             echo "Ohne sie bricht pipeline/run.py sofort ab - genau das war"
             echo "die Ursache, wenn ein Lauf nach rund 20 Sekunden rot wird."
+
+            # "Es fehlt" und "es heisst anders" sehen von hier aus gleich
+            # aus, fuehren aber zu voellig verschiedenen Suchen. Der Name
+            # SUPERBASE hat einmal eine Stunde gekostet: die Secrets waren
+            # laengst eingetragen, nur unter einem Namen, den der Workflow
+            # nie liest. Von aussen ununterscheidbar von "vergessen".
+            if [ -n "$TIPPFEHLER_SUPERBASE_URL" ] || [ -n "$TIPPFEHLER_SUPERBASE_KEY" ]; then
+              echo
+              echo "::error::Es gibt hier Secrets mit SUPERBASE im Namen. Die Datenbank heisst SUPABASE - mit A in der Mitte, nicht ER. Anlegen unter dem richtigen Namen und die falschen loeschen."
+            fi
+            if [ -n "$TIPPFEHLER_SERVICE_ROLE_KEY" ] || [ -n "$TIPPFEHLER_SUPABASE_KEY" ]; then
+              echo
+              echo "::error::Es gibt ein Secret SERVICE_ROLE_KEY oder SUPABASE_KEY. Gebraucht wird der volle Name SUPABASE_SERVICE_ROLE_KEY."
+            fi
             exit 1
           fi
 
