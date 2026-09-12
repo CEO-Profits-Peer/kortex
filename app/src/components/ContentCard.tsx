@@ -348,6 +348,19 @@ function ContentCardBase({
   const beat = (delay: number) =>
     reduceMotion ? undefined : FadeInDown.duration(BEAT_DURATION).delay(delay);
 
+  /**
+   * Traegt der erste Block die Karte?
+   *
+   * Nur auf der ersten Seite und nur bei einer Kennzahl oder einem Zitat -
+   * beides sind Aussagen, die fuer sich stehen koennen. Ein Absatz kann das
+   * nicht, eine Aufzaehlung auch nicht.
+   *
+   * Die Entscheidung liegt hier und nicht im Block: nur EIN Block je Karte
+   * darf der Hauptblock sein. Zwei grosse Zahlen untereinander waeren zwei
+   * Hauptsachen, also keine.
+   */
+  const heroKind = page === 0 ? current.blocks[0]?.type : undefined;
+  const hasHero = heroKind === 'stat' || heroKind === 'quote';
 
   return (
     <Animated.View style={[styles.card, { height }, shell]}>
@@ -433,7 +446,11 @@ function ContentCardBase({
               </Animated.Text>
             ) : null}
 
-            {current.showVisual ? (
+            {/* Die Blaupausen-Grafik faellt weg, wenn die Karte einen
+                Hauptblock hat. Nicht aus Platzgruenden - sondern weil eine
+                generische Grafik NEBEN einer grossen Zahl die Zahl zur
+                Beilage macht. Zwei Blickfaenge sind keiner. */}
+            {current.showVisual && !hasHero ? (
               <Animated.View entering={beat(BEAT.visual)}>
                 <BlueprintVisual seed={item.id} accentHex={accentHex} height={126} />
               </Animated.View>
@@ -444,7 +461,7 @@ function ContentCardBase({
                 key={`${page}-${i}`}
                 entering={beat(BEAT.firstBlock + i * BEAT.perBlock)}
               >
-                <CardBlock block={b} accent={accent} />
+                <CardBlock block={b} accent={accent} hero={hasHero && i === 0} />
               </Animated.View>
             ))}
 

@@ -46,8 +46,19 @@ export type Page = {
   label: string;
 };
 
-/** Grober Platzbedarf eines Blocks in „Zeilen“. */
-function weigh(block: BodyBlock): number {
+/**
+ * Grober Platzbedarf eines Blocks in „Zeilen“.
+ *
+ * `hero` ist der erste Block einer Karte, wenn er eine Kennzahl oder ein
+ * Zitat ist — der wird deutlich größer gesetzt (CardBlock.tsx). Ohne diesen
+ * Zusatz schätzt die Seitenaufteilung eine Kennzahl mit drei Zeilen, während
+ * sie in Wirklichkeit fünf braucht: 60 px Ziffer plus Strich plus Beschriftung.
+ * Die Folge wäre kein sichtbarer Fehler, sondern ein schleichender: FitBox
+ * zieht die ganze Karte zusammen, und der Fließtext wird auf allen
+ * Kennzahl-Karten kleiner als auf den übrigen. Genau die Art Abweichung, die
+ * man nicht benennen kann und trotzdem sieht.
+ */
+function weigh(block: BodyBlock, hero = false): number {
   switch (block.type) {
     case 'para':
       // ~34 Zeichen pro Zeile bei 17 px auf einem üblichen Handy.
@@ -55,12 +66,20 @@ function weigh(block: BodyBlock): number {
     case 'bullet':
       return block.items.reduce((n, l) => n + Math.ceil(l.length / 30), 0) + 0.5;
     case 'stat':
-      return 3;
+      return hero ? 5 : 3;
     case 'quote':
-      return Math.ceil(block.text.length / 30) + 1;
+      // 22 px statt 18 px, dazu das große Anführungszeichen darüber.
+      return hero
+        ? Math.ceil(block.text.length / 26) * 1.2 + 2
+        : Math.ceil(block.text.length / 30) + 1;
     default:
       return 2;
   }
+}
+
+/** Trägt der erste Block die Karte? Dieselbe Regel wie in ContentCard. */
+function isHero(blocks: BodyBlock[], i: number): boolean {
+  return i === 0 && (blocks[0]?.type === 'stat' || blocks[0]?.type === 'quote');
 }
 
 const HEADER_LINES = 5; // Titel und Unterzeile
@@ -117,9 +136,13 @@ export function paginate(
   }
 
   // --- Lesekarten: erst die Grafik opfern, dann erst teilen ---------------
-  const total = blocks.reduce((n, b) => n + weigh(b), 0);
+  const total = blocks.reduce((n, b, i) => n + weigh(b, isHero(blocks, i)), 0);
 
-  if (!forceSplit && total + VISUAL_LINES <= room) {
+  // Bei einem Hauptblock zeichnet ContentCard die Blaupausen-Grafik gar
+  // nicht erst — zwei Blickfänge sind keiner. Dann darf die Schätzung auch
+  // keinen Platz dafür freihalten.
+  const hero = isHero(blocks, 0);
+  if (!forceSplit && !hero && total + VISUAL_LINES <= room) {
     return [{ showVisual: true, blocks, showInteraction: false, label: '' }];
   }
   if (!forceSplit && total <= room) {
@@ -136,8 +159,8 @@ export function paginate(
   const cut = forceSplit ? total / 2 : room;
   const first: BodyBlock[] = [];
   let used = 0;
-  for (const b of blocks) {
-    const w = weigh(b);
+  for (const [i, b] of blocks.entries()) {
+    const w = weigh(b, isHero(blocks, i));
     if (used + w > cut && first.length > 0) break;
     first.push(b);
     used += w;
