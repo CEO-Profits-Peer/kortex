@@ -198,6 +198,74 @@ class Database:
             raise RuntimeError(f"Insert fehlgeschlagen: {response.status_code} {response.text[:500]}")
         return len(response.json())
 
+    def text_cards(self, limit: int, language: str | None = None) -> list[dict[str, Any]]:
+        """Freigegebene Karten OHNE Drehbuch - die Arbeitsliste zum Nachruesten.
+
+        Aelteste zuerst. Sie sind am laengsten im Feed und hatten die
+        schlechtesten Chancen: zur Zeit ihrer Entstehung gab es vier
+        Bildarten, keine sieben.
+        """
+        params = {
+            "select": "id,title,language,primary_category_id,primary_source_id,source_urls",
+            "presentation_mode": "eq.text",
+            "status": "eq.approved",
+            "order": "created_at.asc",
+            "limit": str(limit),
+        }
+        if language:
+            params["language"] = f"eq.{language}"
+        return self._get("/content_items", params)
+
+    def presentation_counts(self) -> tuple[int, int]:
+        """(freigegebene Karten, davon Erklaerkarten).
+
+        Ueber den Kopf `content-range` statt ueber die Zeilen: die Zahl
+        interessiert, nicht der Inhalt, und 147 Karten zu holen, um sie zu
+        zaehlen, waere Unsinn.
+        """
+
+        def count(**extra: str) -> int:
+            response = self.http.get(
+                "/content_items",
+                params={"select": "id", "status": "eq.approved", **extra},
+                headers={"Prefer": "count=exact", "Range": "0-0"},
+            )
+            return int(response.headers["content-range"].split("/")[-1])
+
+        return count(), count(presentation_mode="eq.kinetic")
+
+    def attach_script(self, item_id: str, script: dict[str, Any]) -> None:
+        """Aus einer Textkarte eine Erklaerkarte machen.
+
+        Beide Spalten in EINEM Aufruf, nicht nacheinander: die Bedingung aus
+        Migration 0027 verlangt, dass presentation_mode='kinetic' und ein
+        vorhandenes Drehbuch immer zusammen auftreten. Zwei getrennte
+        Aenderungen wuerde die Datenbank je einzeln ablehnen.
+        """
+        response = self.http.patch(
+            "/content_items",
+            params={"id": f"eq.{item_id}"},
+            headers={"Prefer": "return=minimal"},
+            json={"presentation_mode": "kinetic", "kinetic_script": script},
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"Nachruesten fehlgeschlagen: {response.status_code} {response.text[:300]}"
+            )
+
+    def detach_script(self, item_id: str) -> None:
+        """Zurueck zur Textkarte. Das Drehbuch ist danach weg."""
+        response = self.http.patch(
+            "/content_items",
+            params={"id": f"eq.{item_id}"},
+            headers={"Prefer": "return=minimal"},
+            json={"presentation_mode": "text", "kinetic_script": None},
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"Zuruecknehmen fehlgeschlagen: {response.status_code} {response.text[:300]}"
+            )
+
     def mark_fetched(self, source_id: str, error: str | None = None) -> None:
         self.http.patch(
             "/sources",

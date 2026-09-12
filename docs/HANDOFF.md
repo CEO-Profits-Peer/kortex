@@ -74,14 +74,17 @@ an area.
 - **knowledge** — evergreen. No decay, no expiry.
 - **interactive** — quiz/task cards, marked with a coloured frame.
 - **specials / kinetic** — animated, narrated cards built from a beat script
-  (`kinetic_script`). These are the best thing in the feed.
+  (`kinetic_script`). These are the best thing in the feed. Seven picture
+  kinds: `statement`, `table`, `bars`, `timeline`, `quantity`, `steps`,
+  `figure` — see migration 0027 (format) and 0058 (the three later ones).
+  A special loops: after the last beat it pauses a second and starts over.
 
 ## Current state
 
 | | |
 |---|---|
 | Approved cards | 147 (78 de / 69 en) |
-| Specials (kinetic) | 26 = **18 %**, target 50 % |
+| Specials (kinetic) | 74 = **50 %** (de 34/78, en 40/69) |
 | From Wikipedia (evergreen) | 49 |
 | Active sources | 26 |
 | Categories | 53 (8 top-level) |
@@ -130,22 +133,53 @@ when something didn't work or when a previous decision was wrong.
 - `expo-image-picker` on web loses the user gesture before opening the file
   dialog — the web path uses a hand-rolled `<input type=file>`.
 
-## Your task
+## What was just done (specials, 18 % → 50 %)
 
-**Raise the share of specials (kinetic cards) from 18 % to 50 %.**
+The old handoff guessed that the pre-filter in `transform/kinetic.py` (three
+distinct multi-digit numbers) was the bottleneck. **It was not.** Measured
+over 60 Wikipedia articles it stopped 2 of them. The loss was the model
+itself: 12 of 20 attempts came back `"suitable": false` — and rightly so.
+What it refused were "Scientific method", "Peer-Review", "Turing test",
+"Evolution", "Impfung", "Plattentektonik", "Greenhouse effect". Those are the
+*best* topics, they just have no series of numbers, and the prompt only
+offered a table or bars.
 
-They are the single best thing in the feed and the user has made this an
-explicit priority. The display side is already done — `arrange.ts` shows one
-whenever available, capped at every second card. The bottleneck is
-production.
+Three more picture kinds fixed that — `timeline` (scaled time axis),
+`quantity` (a grid of boxes filling up), `steps` (a process, **the only kind
+that needs no numbers at all**). On the same 20 topics the yield went from
+2/20 to 18/20.
 
-Start by reading `pipeline/transform/kinetic.py` and
-`pipeline/validate/checks.py` (`validate_kinetic`). The current pre-filter
-requires at least 3 distinct numbers in the source text before even trying,
-and scripts get rejected for shape violations. Measure first — run
-`python pipeline/evergreen.py --dry-run --limit 20` and count how many
-attempts fail at the pre-filter versus at validation — then decide where the
-loss actually is before changing anything.
+Also changed: the token ceiling for a script (3000 was truncating long
+tables — three of twenty came back as broken JSON), a rescue for truncated
+JSON that keeps the complete beats instead of dropping the card, one repair
+retry when validation finds a concrete shape error, and `make_script` now
+returns *why* an attempt failed so the run summary separates "model said no"
+from "validation said no". That distinction did not exist, which is why the
+wrong bottleneck was assumed for so long.
+
+`pipeline/kinetic_backfill.py` converts existing text cards: it refetches
+the source document, builds a script against it and validates as usual. It
+stops at `--target` (default 0.5) rather than converting everything —
+`arrange.ts` caps specials at every second card, so the feed needs just as
+many text cards. Every conversion is written to `pipeline/kinetic-backfill.log`
+and `--revert` undoes the lot.
+
+The cards also **loop** now: after the last beat, one second of silence, then
+from the top, like a short video. There is no "Nochmal" button any more.
+
+`/kinetic-demo` is a route that plays a hand-written script of each new kind.
+It is not linked anywhere and exists to look at the picture kinds without
+waiting for the pipeline.
+
+Two things worth knowing before the next change here:
+
+- `quantity` has **not been chosen by the model even once** in production yet
+  (134 `steps` beats, 43 `timeline`, 0 `quantity`). It works — the demo route
+  plays it — the model just never picks it for a Wikipedia article. Budget
+  and share topics are where it should turn up.
+- 32 of the remaining text cards can never be converted: the article URL is
+  gone or returns too little text (`Quelle nicht mehr da`). The share only
+  moves further through *new* cards.
 
 ## Backlog after that
 
