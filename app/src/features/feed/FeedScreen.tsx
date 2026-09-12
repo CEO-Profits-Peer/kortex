@@ -40,6 +40,21 @@ import { VIEWABILITY_CONFIG, useDwellTracking } from './useDwellTracking';
 const PREFETCH_AT_REMAINING = 3;
 const BATCH_SIZE = 10;
 
+/**
+ * Nach wie vielen Karten die Fragerunde kommt.
+ *
+ * Frueher war das dasselbe wie BATCH_SIZE, also zehn. Jetzt fuenfzehn,
+ * und der Unterschied ist eine Abwaegung, keine Kleinigkeit: bei zehn
+ * bleibt ein Drittel der Karten unabgefragt, bei fuenfzehn die Haelfte -
+ * dafuer wird seltener unterbrochen. Bei einem Feed, dessen Problem
+ * gerade der Durchlauf ist und nicht die Lerntiefe, ist das die richtige
+ * Richtung.
+ *
+ * Bewusst kein Vielfaches von BATCH_SIZE: die Fragerunde haengt am
+ * Lesefortschritt, nicht daran, wann zufaellig nachgeladen wurde.
+ */
+const CHECKPOINT_AFTER = 15;
+
 type FeedProps = {
   /**
    * Woher die Karten kommen. Ohne Angabe der normale Mix aus get_feed().
@@ -108,17 +123,18 @@ export function FeedScreen({
     scrollY.value = e.contentOffset.y;
   });
 
-  // Bei zehn validierten Karten anhalten. Vorher die Events rausschicken:
-  // claim_batch_bonus prueft serverseitig nach, ob sie wirklich gelesen wurden.
+  // Bei CHECKPOINT_AFTER validierten Karten anhalten. Vorher die Events
+  // rausschicken: claim_batch_bonus prueft serverseitig nach, ob sie
+  // wirklich gelesen wurden.
   useEffect(() => {
-    if (!withCheckpoint || checkpoint || batch.length < BATCH_SIZE) return;
-    const full = batch.slice(0, BATCH_SIZE);
+    if (!withCheckpoint || checkpoint || batch.length < CHECKPOINT_AFTER) return;
+    const full = batch.slice(0, CHECKPOINT_AFTER);
     void eventBuffer.flush().then(() => setCheckpoint(full));
   }, [batch, checkpoint, withCheckpoint]);
 
   const continueReading = useCallback(() => {
     setCheckpoint(null);
-    setBatch((prev) => prev.slice(BATCH_SIZE));
+    setBatch((prev) => prev.slice(CHECKPOINT_AFTER));
   }, []);
 
   /**

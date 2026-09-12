@@ -64,11 +64,17 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # Optional. Das Gratiskontingent gilt pro Google-PROJEKT, ein
-          # zweiter Schluessel aus einem zweiten Projekt ist deshalb ein
-          # zweiter kompletter Satz. Fehlt das Secret, ist die Variable
-          # leer und die Pipeline benutzt einfach nur den ersten.
+          # Das Gratiskontingent gilt pro Google-PROJEKT: 20 Anfragen am
+          # Tag und Modell. Jeder weitere Schluessel aus einem WEITEREN
+          # Projekt ist ein kompletter zweiter Satz - fuenf Schluessel mal
+          # neun Modelle mal zwanzig sind 900 statt 180 am Tag.
+          #
+          # Fehlt eines der Secrets, ist die Variable leer und wird
+          # uebersprungen (config._keys filtert Leeres und Dubletten).
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
           # Beide Namen sind geprueft, nicht geraten:
           # gemini-flash-latest zeigt auf das jeweils neueste Flash-Modell
           # und ist genau deshalb staendig ausgelastet (503). text-embedding-004
@@ -112,6 +118,9 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
           GEMINI_MODEL: gemini-3.5-flash
           GEMINI_EMBEDDING_MODEL: gemini-embedding-001
           INGEST_LANGUAGES: de,en
