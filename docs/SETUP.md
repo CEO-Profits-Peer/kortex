@@ -42,7 +42,7 @@ Dashboard → **Project Settings → API**. Drei Werte:
 ## Schritt 3 · Repo aufsetzen
 
 ```powershell
-cd "C:\Users\Admin1\Documents\Privat\CODING\Project TikTok lernApp"; git init; git branch -M main
+cd "<Pfad zum Projektordner>"; git init; git branch -M main
 ```
 
 Dann auf github.com ein **privates** Repo `kortex` anlegen und verbinden:
