@@ -185,8 +185,35 @@ KINETIC_SCHEMA: dict[str, Any] = {
         "suitable": {"type": "boolean"},
         "beats": {
             "type": "array",
-            "minItems": 0,
-            "maxItems": MAX_BEATS,
+            # KEIN maxItems hier. Das ist keine Schlamperei, sondern
+            # gemessen - und es war der Grund, warum seit dem Commit
+            # "compare, scale, guess" KEIN EINZIGES Drehbuch mehr entstanden
+            # ist.
+            #
+            # Mit `maxItems: 8` antwortet die API auf jeden Aufruf mit
+            # 400 INVALID_ARGUMENT, und zwar bei ALLEN acht Modellen:
+            #
+            #     Modell                    mit maxItems   ohne
+            #     gemini-3.5-flash          400            OK
+            #     gemini-3.8-flash          400            OK
+            #     gemini-3-flash-preview    400            OK
+            #     gemini-3.1-flash-lite     400            OK
+            #     gemini-3.1-flash-lite-p.  400            OK
+            #     gemini-3.6-flash          400            400
+            #     gemini-3.5-flash-lite     400            400
+            #
+            # `minItems` allein ist dagegen in Ordnung, und das Karten-
+            # Schema hat `maxItems` an drei Stellen ohne Probleme. Der
+            # Unterschied ist die Groesse: die API baut aus dem Schema eine
+            # Grammatik fuer die Dekodierung, und `maxItems` verlangt, den
+            # Takt-Gegenstand achtmal auszurollen. Mit vier Bildarten ging
+            # das; seit es zehn sind (points, groups, steps, pairs, items,
+            # question, answer kamen dazu), ist die Grammatik zu gross.
+            #
+            # Die Obergrenze ist dadurch nicht weg, sie steht nur woanders:
+            # der Prompt nennt sie, und _one_round lehnt alles ausserhalb
+            # MIN_BEATS..MAX_BEATS ab. Eine Pruefung, die wir selbst machen,
+            # statt einer, die die Anfrage unmoeglich macht.
             "items": {
                 "type": "object",
                 "required": ["say", "show"],
@@ -495,8 +522,19 @@ def _one_round(gen: Any, prompt: str, source_text: str) -> Attempt:
             ),
         )
     except Exception as exc:  # noqa: BLE001
-        log.debug("Drehbuch fehlgeschlagen: %s", exc)
-        return Attempt(None, "modellfehler", type(exc).__name__)
+        # Die MELDUNG, nicht nur die Klasse des Fehlers.
+        #
+        # Hier stand `type(exc).__name__`, und der Text ging an log.debug,
+        # also nirgendwohin. Der Zaehler in der Bilanz heisst "Modell nicht
+        # erreichbar" - und so habe ich ein 400 auf mein eigenes Schema
+        # fuer ein aufgebrauchtes Tageskontingent gehalten und die Ursache
+        # zweimal am falschen Ende gesucht. Ein aufgebrauchtes Kontingent
+        # und eine abgelehnte Anfrage sehen ohne den Text gleich aus,
+        # fuehren aber zu voellig verschiedenen Schluessen: einmal warten,
+        # einmal reparieren.
+        grund = " ".join(str(exc).split())[:160]
+        log.warning("Drehbuch fehlgeschlagen: %s", grund)
+        return Attempt(None, "modellfehler", grund)
 
     raw = (response.text or "").strip()
     if not raw:
