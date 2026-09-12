@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
-import { Icon } from '@/components/Icon';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
@@ -31,6 +32,8 @@ export function PeopleListScreen({
   mode: 'followers' | 'following';
 }) {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [people, setPeople] = useState<PersonHit[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Set<string>>(new Set());
@@ -80,20 +83,22 @@ export function PeopleListScreen({
 
   return (
     <GridBackground>
+      {/* Kopfzeile ausserhalb der Liste - sie bleibt stehen und
+          klappt beim Scrollen zusammen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title={title} eyebrow={`@${handle}`} scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.root,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <Icon name="back" size={18} color={color.ink.mid} />
-          <Text style={styles.backText}>@{handle}</Text>
-        </Pressable>
-
-        <Text style={styles.title}>{title}</Text>
-
         {people === null ? (
           <ActivityIndicator color={color.ink.low} />
         ) : people.length === 0 ? (
@@ -154,9 +159,6 @@ export function PeopleListScreen({
 
 const styles = StyleSheet.create({
   root: { paddingHorizontal: space.xl, gap: space.lg, flexGrow: 1 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  backText: { ...type.mono, fontSize: 12, color: color.ink.mid },
-  title: { ...type.title, fontSize: 24, color: color.ink.max },
   empty: { ...type.body, color: color.ink.mid },
 
   list: { gap: space.xs },

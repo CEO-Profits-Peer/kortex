@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -8,6 +9,7 @@ import { haptics } from '@/lib/haptics';
 
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
@@ -71,6 +73,8 @@ function LevelRing({ level, max, progress, accent }: {
 
 export function CategoryScreen({ categoryId }: { categoryId: string }) {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [detail, setDetail] = useState<CategoryDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
@@ -148,20 +152,22 @@ export function CategoryScreen({ categoryId }: { categoryId: string }) {
 
   return (
     <GridBackground>
+      {/* Kopfzeile ausserhalb der Liste - sie bleibt stehen und
+          klappt beim Scrollen zusammen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title={detail.name} titleInBarOnly scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <>
-            <Icon name="back" size={15} color={color.ink.mid} />
-            <Text style={styles.backText}>zurück</Text>
-          </>
-        </Pressable>
-
         <View style={styles.head}>
           <View style={styles.headText}>
             <Text style={styles.emoji}>{detail.emoji ?? '◇'}</Text>
@@ -263,14 +269,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl },
   body: { paddingHorizontal: space.xl, gap: space.lg },
 
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingVertical: space.xs,
-  },
-  backText: { ...type.meta, color: color.ink.mid },
 
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.lg },
   headText: { flex: 1, gap: 2 },

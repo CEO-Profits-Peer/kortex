@@ -1,12 +1,12 @@
-import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, AvatarArt } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
-import { Icon } from '@/components/Icon';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import {
   type AvatarDesign,
   PALETTE,
@@ -36,6 +36,8 @@ import { color, radius, space, type } from '@/theme/tokens';
  */
 export function AvatarStudio() {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [design, setDesign] = useState<AvatarDesign | null>(null);
   const [busy, setBusy] = useState(false);
@@ -152,19 +154,22 @@ export function AvatarStudio() {
 
   return (
     <GridBackground>
+      {/* Die Kopfzeile liegt AUSSERHALB der Liste: sie muss stehen
+          bleiben, um beim Scrollen zusammenklappen zu koennen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title="Profilbild" eyebrow="dein zeichen" scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <Icon name="back" size={15} color={color.ink.mid} />
-          <Text style={styles.backText}>zurück</Text>
-        </Pressable>
-
-        <Text style={styles.pageTitle}>Profilbild</Text>
         {note ? <Text style={styles.note}>{note}</Text> : null}
 
         {/* --- Vorschau und Raster ---------------------------------------- */}
@@ -317,15 +322,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingVertical: space.xs,
-  },
-  backText: { ...type.meta, color: color.ink.mid },
-  pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   note: { ...type.body, fontSize: 14, color: color.signal.primary },
 
   stage: { flexDirection: 'row', alignItems: 'center', gap: space.lg },

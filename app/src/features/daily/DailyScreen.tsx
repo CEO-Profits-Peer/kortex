@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Appear } from '@/components/Appear';
 import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Icon } from '@/components/Icon';
 import { analytics } from '@/lib/analytics';
 import { feedback } from '@/lib/feedback';
@@ -353,38 +354,34 @@ function Shell({
   children: React.ReactNode;
   scroll?: boolean;
 }) {
-  const inner = (
-    <>
-      <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-        <Icon name="back" size={18} color={color.ink.mid} />
-        <Text style={styles.backText}>zurück</Text>
-      </Pressable>
-      <Text style={styles.kicker}>Tagesaufgabe</Text>
-      {children}
-    </>
-  );
-
   return (
     <GridBackground>
+      {/* Die Zurueck-Taste stand hier absolut positioniert ueber dem
+          Inhalt - als einzige im Projekt. Dadurch lag sie auf einer
+          anderen Hoehe als auf jedem anderen Bildschirm, und der Inhalt
+          musste einen Platz freihalten, den er nicht kannte. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title="Tagesaufgabe" titleInBarOnly />
+      </View>
       {scroll ? (
         <ScrollView
           contentContainerStyle={[
             styles.root,
-            { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+            { paddingBottom: insets.bottom + space.xxxl },
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {inner}
+          {children}
         </ScrollView>
       ) : (
         <View
           style={[
             styles.root,
             styles.rootCenter,
-            { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xl },
+            { paddingBottom: insets.bottom + space.xl },
           ]}
         >
-          {inner}
+          {children}
         </View>
       )}
     </GridBackground>
@@ -395,15 +392,7 @@ const styles = StyleSheet.create({
   root: { paddingHorizontal: space.xl, gap: space.lg, flexGrow: 1 },
   rootCenter: { justifyContent: 'center' },
 
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, position: 'absolute', top: 0, left: space.xl },
-  backText: { ...type.meta, color: color.ink.mid },
 
-  kicker: {
-    ...type.label,
-    color: color.ink.mid,
-    textTransform: 'uppercase',
-    letterSpacing: 1.4,
-  },
 
   headline: { ...type.title, fontSize: 24, color: color.ink.max },
   body: { ...type.body, color: color.ink.mid },

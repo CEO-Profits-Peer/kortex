@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
@@ -59,6 +61,8 @@ function RefRow({
 
 export function PublicProfileScreen({ handle }: { handle: string }) {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [p, setP] = useState<PublicProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -119,18 +123,22 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
 
   return (
     <GridBackground>
+      {/* Kopfzeile ausserhalb der Liste - sie bleibt stehen und
+          klappt beim Scrollen zusammen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title={`@${p.handle}`} titleInBarOnly scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <Icon name="back" size={15} color={color.ink.mid} />
-          <Text style={styles.backText}>zurück</Text>
-        </Pressable>
-
         <View style={styles.head}>
           <Avatar
             seed={p.avatar_seed}
@@ -243,8 +251,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md, padding: space.xl },
 
-  back: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingVertical: space.xs },
-  backText: { ...type.meta, color: color.ink.mid },
 
   head: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   headText: { flex: 1, gap: 2 },

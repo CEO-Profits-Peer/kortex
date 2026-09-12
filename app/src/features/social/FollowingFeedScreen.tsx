@@ -9,11 +9,13 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Icon } from '@/components/Icon';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
@@ -44,6 +46,8 @@ function timeAgo(iso: string): string {
 
 export function FollowingFeedScreen() {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [items, setItems] = useState<FollowingItem[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,11 +78,20 @@ export function FollowingFeedScreen() {
 
   return (
     <GridBackground>
+      {/* Kopfzeile ausserhalb der Liste - sie bleibt stehen und
+          klappt beim Scrollen zusammen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title="Von deinen Leuten" subtitle="Empfehlungen der Personen, denen du folgst. Likes bleiben privat." scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -92,18 +105,6 @@ export function FollowingFeedScreen() {
           />
         }
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <Icon name="back" size={15} color={color.ink.mid} />
-          <Text style={styles.backText}>zurück</Text>
-        </Pressable>
-
-        <View>
-          <Text style={styles.pageTitle}>Von deinen Leuten</Text>
-          <Text style={styles.pageSub}>
-            Empfehlungen der Personen, denen du folgst. Likes bleiben privat.
-          </Text>
-        </View>
-
         {items.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
@@ -159,11 +160,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  back: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingVertical: space.xs },
-  backText: { ...type.meta, color: color.ink.mid },
 
-  pageTitle: { ...type.display, fontSize: 28, lineHeight: 34, color: color.ink.max },
-  pageSub: { ...type.body, fontSize: 14, color: color.ink.mid, marginTop: space.xs },
 
   list: { gap: space.md },
   card: {

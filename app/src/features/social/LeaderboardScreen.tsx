@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,10 +7,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GridBackground } from '@/components/GridBackground';
-import { Icon } from '@/components/Icon';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
@@ -56,6 +56,8 @@ function seedColor(seed: string): string {
 
 export function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [scope, setScope] = useState<Scope>('region');
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,21 +81,22 @@ export function LeaderboardScreen() {
 
   return (
     <GridBackground>
+      {/* Die Kopfzeile liegt AUSSERHALB der Liste: sie muss stehen
+          bleiben, um beim Scrollen zusammenklappen zu koennen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title="Rangliste" scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <>
-            <Icon name="back" size={15} color={color.ink.mid} />
-            <Text style={styles.backText}>zurück</Text>
-          </>
-        </Pressable>
-
-        <Text style={styles.pageTitle}>Rangliste</Text>
 
         <View style={styles.scopes}>
           {SCOPES.map((s) => (
@@ -174,15 +177,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { paddingVertical: space.xxxl, alignItems: 'center' },
 
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingVertical: space.xs,
-  },
-  backText: { ...type.meta, color: color.ink.mid },
-  pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
 
   scopes: { flexDirection: 'row', gap: space.sm },
   scope: {

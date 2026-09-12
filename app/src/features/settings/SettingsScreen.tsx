@@ -11,10 +11,13 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { SectionTitle } from '@/components/SectionTitle';
 import { Icon } from '@/components/Icon';
 import { COUNTRIES } from '@/features/onboarding/regions';
 import { BRAND } from '@/lib/brand';
@@ -98,7 +101,7 @@ function Row({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <SectionTitle>{title}</SectionTitle>
       <View style={styles.card}>{children}</View>
     </View>
   );
@@ -117,6 +120,8 @@ const PUSH_HINT: Record<PushState, string | null> = {
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const prefs = usePrefs();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [busy, setBusy] = useState(false);
@@ -222,21 +227,24 @@ export function SettingsScreen() {
 
   return (
     <GridBackground>
+      {/* Die Kopfzeile liegt AUSSERHALB der Liste. Sie muss stehen
+          bleiben, um beim Scrollen zusammenklappen zu koennen - mit der
+          Liste mitzuscrollen und dabei zu schrumpfen waere zweimal
+          dieselbe Bewegung. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title="Einstellungen" eyebrow="konto & app" scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <>
-            <Icon name="back" size={15} color={color.ink.mid} />
-            <Text style={styles.backText}>zurück</Text>
-          </>
-        </Pressable>
-
-        <Text style={styles.pageTitle}>Einstellungen</Text>
         {note ? <Text style={styles.note}>{note}</Text> : null}
 
         {/* --- Konto ---------------------------------------------------- */}
@@ -529,24 +537,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: space.xl, gap: space.lg },
 
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingVertical: space.xs,
-  },
-  backText: { ...type.meta, color: color.ink.mid },
-  pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   note: { ...type.body, fontSize: 14, color: color.signal.primary },
 
   section: { gap: space.sm },
-  sectionTitle: {
-    ...type.label,
-    color: color.ink.mid,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
   card: {
     borderRadius: radius.lg,
     backgroundColor: color.bgElevated,

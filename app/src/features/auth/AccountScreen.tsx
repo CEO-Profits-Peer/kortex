@@ -9,11 +9,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { SectionTitle } from '@/components/SectionTitle';
 import { Icon } from '@/components/Icon';
 import { EmailAuthForm } from '@/features/auth/EmailAuthForm';
 import { haptics } from '@/lib/haptics';
@@ -33,6 +36,8 @@ import { color, radius, space, type } from '@/theme/tokens';
 
 export function AccountScreen() {
   const insets = useSafeAreaInsets();
+  // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
+  const scrollY = useSharedValue(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(true);
@@ -103,20 +108,23 @@ export function AccountScreen() {
 
   return (
     <GridBackground>
+      {/* Die Kopfzeile liegt AUSSERHALB der Liste: sie muss stehen
+          bleiben, um beim Scrollen zusammenklappen zu koennen. */}
+      <View style={{ paddingTop: insets.top }}>
+        <ScreenHeader title="Konto" eyebrow="anmeldung & daten" scrollY={scrollY} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl },
+          { paddingTop: space.lg, paddingBottom: insets.bottom + space.xxxl },
         ]}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
-          <Icon name="back" size={15} color={color.ink.mid} />
-          <Text style={styles.backText}>zurück</Text>
-        </Pressable>
-
-        <Text style={styles.pageTitle}>Konto</Text>
         {note ? <Text style={styles.note}>{note}</Text> : null}
         {oauthError ? <Text style={styles.oauthError}>{oauthError.message}</Text> : null}
 
@@ -163,9 +171,9 @@ export function AccountScreen() {
 
         {/* --- E-Mail ----------------------------------------------------- */}
         <View style={styles.group}>
-          <Text style={styles.sectionTitle}>
+          <SectionTitle>
             {isAnonymous ? 'Konto sichern' : 'Angemeldet'}
-          </Text>
+          </SectionTitle>
 
           {isAnonymous ? (
             <>
@@ -212,9 +220,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  back: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingVertical: space.xs },
-  backText: { ...type.meta, color: color.ink.mid },
-  pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   note: { ...type.body, fontSize: 14, color: color.signal.primary },
   oauthError: { ...type.body, fontSize: 14, lineHeight: 20, color: color.signal.error },
 
@@ -225,7 +230,6 @@ const styles = StyleSheet.create({
   link: { ...type.label, color: color.signal.primary },
 
   group: { gap: space.sm },
-  sectionTitle: { ...type.label, color: color.ink.mid, textTransform: 'uppercase', letterSpacing: 1 },
   label: { ...type.meta, color: color.ink.low, marginTop: space.xs },
   input: {
     minHeight: 50,
