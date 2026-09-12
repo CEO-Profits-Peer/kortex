@@ -53,7 +53,7 @@ from db import Database                        # noqa: E402
 from run import (AUTO_APPROVE_MIN_TRUST, WRITE_EVERY, buffered_twin,  # noqa: E402
                  build_row)
 from sources.wikipedia import fetch_article     # noqa: E402
-from topics import topics_for                   # noqa: E402
+from topics import order_by_scarcity, topics_for  # noqa: E402
 from transform.generate import Generator        # noqa: E402
 from transform.kinetic import make_script       # noqa: E402
 from validate.checks import validate                    # noqa: E402
@@ -120,9 +120,23 @@ def main() -> int:
         category_ids = [c["id"] for c in db.categories() if c["parent_id"]]
         gen = Generator(cfg.gemini_api_keys, cfg.gemini_model)
 
+        # Reihenfolge nach Bestand, nicht nach Position in der Datei.
+        # Begruendung und Messung stehen in topics.order_by_scarcity.
+        bestand = db.card_counts()
+        topics = order_by_scarcity(topics, bestand)
+        leer = sorted(
+            {t.category_id for t in topics if not bestand.get((t.category_id, t.language))}
+        )
+
         log.info("%d Themen · Sprachen %s · %s · %d Schluessel",
                  len(topics), ",".join(cfg.languages),
                  "Trockenlauf" if dry else "schreibend", len(cfg.gemini_api_keys))
+        if leer:
+            # Sichtbar machen, woran der Lauf arbeitet. Ohne diese Zeile
+            # sieht eine Bestandsluecke genauso aus wie eine Themenschwaeche
+            # - und genau diese Verwechslung hat die Luecke wochenlang
+            # ueberlebt.
+            log.info("Zuerst ohne Karte (%d): %s", len(leer), ", ".join(leer[:12]))
 
         with httpx.Client(timeout=25.0, follow_redirects=True) as http:
             for topic in topics:

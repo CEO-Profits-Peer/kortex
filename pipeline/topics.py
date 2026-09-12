@@ -489,3 +489,52 @@ TOPICS: list[Topic] = _dedupe(_RAW)
 
 def topics_for(languages: tuple[str, ...]) -> list[Topic]:
     return [t for t in TOPICS if t.language in languages]
+
+
+def order_by_scarcity(
+    topics: list[Topic], counts: dict[tuple[str, str], int]
+) -> list[Topic]:
+    """Die duennsten Kategorien zuerst.
+
+    Der Anlass war eine Frage, auf die die ehrliche Antwort "nein" war:
+    wird darauf geachtet, dass von allen Kategorien ungefaehr gleich viel
+    da ist? Gemessen bei 199 Karten:
+
+        20 von 45 Unterkategorien hatten KEINE einzige Karte
+        die fuenf groessten hatten 103 - mehr als die Haelfte
+
+    Das war kein Zufall und keine Themenschwaeche, sondern die
+    Reihenfolge dieser Datei. Evergreen laeuft die Liste von oben nach
+    unten ab und hoert auf, wenn das Tageskontingent leer ist. Ganz oben
+    stehen Technik, Geld und Wissenschaft - also wurden jeden Tag wieder
+    Technik, Geld und Wissenschaft gebaut, waehrend "Wohnen", "Steuern"
+    und "Rechte" seit Wochen auf ihren ersten Durchlauf warteten. Die
+    Liste war als Vorrat gedacht und wirkte als Rangliste.
+
+    Jetzt entscheidet der Bestand: eine Kategorie ohne Karte kommt vor
+    einer mit siebzehn. Das kostet keinen einzigen Modellaufruf - es ist
+    dieselbe Arbeit in einer anderen Reihenfolge.
+
+    Sprache ist Teil des Schluessels, nicht nur die Kategorie. "science.bio
+    hat 22 Karten" verdeckt, dass davon 9 deutsch und 13 englisch sind;
+    eine Kategorie kann in einer Sprache voll und in der anderen leer
+    sein.
+
+    Bei Gleichstand entscheidet zuerst der Gesamtbestand der Kategorie
+    (0 de / 17 en ist weniger duenn als 0 / 0) und dann die Reihenfolge in
+    dieser Datei. Damit bleibt die Auswahl vorhersagbar: zwei Laeufe mit
+    demselben Bestand bauen dasselbe.
+    """
+    je_kategorie: dict[str, int] = {}
+    for (category_id, _language), n in counts.items():
+        je_kategorie[category_id] = je_kategorie.get(category_id, 0) + n
+
+    def rang(eintrag: tuple[int, Topic]) -> tuple[int, int, int]:
+        stelle, topic = eintrag
+        return (
+            counts.get((topic.category_id, topic.language), 0),
+            je_kategorie.get(topic.category_id, 0),
+            stelle,
+        )
+
+    return [t for _, t in sorted(enumerate(topics), key=rang)]

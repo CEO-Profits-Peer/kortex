@@ -216,6 +216,39 @@ class Database:
             params["language"] = f"eq.{language}"
         return self._get("/content_items", params)
 
+    def card_counts(self) -> dict[tuple[str, str], int]:
+        """Wie viele freigegebene Karten hat jede Kategorie je Sprache?
+
+        Grundlage fuer die Reihenfolge der Themenliste (siehe
+        topics.order_by_scarcity). Geholt werden nur zwei Spalten, das sind
+        bei zweihundert Karten wenige Kilobyte. Die Alternative waere eine
+        Zaehlung je Kategorie ueber `count=exact` - also fuenfundvierzig
+        Anfragen fuer eine Zahl, die in einer Antwort Platz hat.
+
+        Seitenweise, weil PostgREST bei tausend Zeilen abschneidet und ein
+        stilles Abschneiden hier die schlimmste Form von falsch waere: die
+        Liste sieht vollstaendig aus und ist es nicht.
+        """
+        counts: dict[tuple[str, str], int] = {}
+        page = 0
+        while True:
+            rows = self._get(
+                "/content_items",
+                {
+                    "select": "primary_category_id,language",
+                    "status": "eq.approved",
+                    "order": "id.asc",
+                    "limit": "1000",
+                    "offset": str(page * 1000),
+                },
+            )
+            for row in rows:
+                key = (row.get("primary_category_id") or "", row.get("language") or "")
+                counts[key] = counts.get(key, 0) + 1
+            if len(rows) < 1000:
+                return counts
+            page += 1
+
     def presentation_counts(self) -> tuple[int, int]:
         """(freigegebene Karten, davon Erklaerkarten).
 
