@@ -115,7 +115,7 @@ const SCRIPTS: Record<string, { title: string; beats: unknown[] }> = {
         },
       },
       {
-        say: 'Uebrig bleiben sechsundzwanzig Euro fuer alles andere.',
+        say: 'Neun gehen fuer Freizeit weg und sieben fuer Kleidung.',
         show: {
           kind: 'quantity',
           id: 'q',
@@ -125,7 +125,29 @@ const SCRIPTS: Record<string, { title: string; beats: unknown[] }> = {
             { label: 'Wohnen', value: 38 },
             { label: 'Essen', value: 22 },
             { label: 'Verkehr', value: 14 },
-            { label: 'Rest', value: 26 },
+            { label: 'Freizeit', value: 9 },
+            { label: 'Kleidung', value: 7 },
+          ],
+        },
+      },
+      {
+        // Sechs Gruppen sind die Obergrenze - und sie steht hier, damit
+        // man sie ansehen kann, statt sie zu glauben. Die Pruefung in
+        // pipeline/validate/checks.py liess vorher nur vier zu, und daran
+        // ist "Wasserverbrauch" gescheitert: fuenf Verwendungen.
+        say: 'Uebrig bleiben zehn Euro fuer alles andere.',
+        show: {
+          kind: 'quantity',
+          id: 'q',
+          total: 100,
+          unit: '€',
+          groups: [
+            { label: 'Wohnen', value: 38 },
+            { label: 'Essen', value: 22 },
+            { label: 'Verkehr', value: 14 },
+            { label: 'Freizeit', value: 9 },
+            { label: 'Kleidung', value: 7 },
+            { label: 'Rest', value: 10 },
           ],
         },
       },

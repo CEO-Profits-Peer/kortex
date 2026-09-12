@@ -458,6 +458,55 @@ _RAW: list[tuple[str, str, str]] = [
     ("tech.games", "en", "Loot box"),
     ("tech.web", "de", "HTTP-Cookie"),
 
+    # --- Themen, die eine BESTIMMTE Bildart hergeben -------------
+    #
+    # Gemessen an 114 Erklaerkarten: `quantity`, `scale` und `guess`
+    # kamen in keiner einzigen vor. Der naheliegende Verdacht war der
+    # Prompt, und er war falsch - nachgesehen an 40 Artikeln der Liste:
+    # bei zwei stehen Prozentanteile, die sich zu einem Ganzen fuegen,
+    # bei keinem einzigen Werte, die um Faktor 1000 auseinanderliegen.
+    # Die Bildarten werden nicht uebergangen, das Material fehlt.
+    #
+    # Eine Wikipedia-Einleitung ueber "Photosynthese" erzaehlt einen
+    # Vorgang, keine Aufteilung. Wer Kaestchenraster sehen will, muss
+    # Themen aufnehmen, bei denen sich etwas AUFTEILT - und fuer die
+    # logarithmische Achse solche, bei denen Groessenordnungen der
+    # eigentliche Inhalt sind.
+    #
+    # Der Massstab aus dem Kopf dieser Datei gilt weiter: jede Zeile muss
+    # fuer sich etwas erklaeren, das im Alltag vorkommt. "Zehnerpotenz"
+    # steht hier nicht, weil es eine schoene Achse ergibt, sondern weil
+    # Groessenordnungen zu verstehen im Alltag dauernd gebraucht wird.
+    ("science.earth", "de", "Erdatmosphäre"),
+    ("science.earth", "en", "Atmosphere of Earth"),
+    ("science.earth", "de", "Meerwasser"),
+    ("science.earth", "en", "Seawater"),
+    ("science.earth", "de", "Erdbeben"),
+    ("science.earth", "en", "Richter scale"),
+    ("science.math", "de", "Zehnerpotenz"),
+    ("science.math", "en", "Order of magnitude"),
+    ("science.math", "de", "Prozentrechnung"),
+    ("science.math", "en", "Percentage"),
+    ("science.physics", "de", "Elektromagnetisches Spektrum"),
+    ("science.physics", "en", "Electromagnetic spectrum"),
+    ("science.physics", "de", "Schalldruck"),
+    ("science.space", "de", "Lichtjahr"),
+    ("science.space", "en", "Light-year"),
+    ("science.bio", "de", "Blut"),
+    ("science.bio", "en", "Blood"),
+    ("body.nutrition", "de", "Nährstoff"),
+    ("body.nutrition", "en", "Macronutrient"),
+    ("finance.taxes", "de", "Umsatzsteuer"),
+    ("finance.taxes", "en", "Value-added tax"),
+    ("finance.taxes", "de", "Einkommensteuer (Österreich)"),
+    ("finance.taxes", "en", "Income tax"),
+    ("life.housing", "de", "Wasserverbrauch"),
+    ("life.housing", "en", "Water footprint"),
+    ("science.climate", "de", "Strommix"),
+    ("science.climate", "en", "Electricity generation"),
+    ("tech.hardware", "de", "Byte"),
+    ("tech.hardware", "en", "Byte"),
+
     # --- Welt ----------------------------------------------------
     ("world.culture", "de", "UNESCO-Welterbe"),
     ("world.culture", "en", "World Heritage Site"),

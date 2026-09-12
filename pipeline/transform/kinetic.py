@@ -297,6 +297,8 @@ DIE ZEHN BILDARTEN
    wie verteilt es sich. Steuersaetze, Ausgaben, Anteile, Zusammen-
    setzungen. Jeder Takt wiederholt alle bisherigen Gruppen und haengt
    eine an. Die Summe der Gruppen darf "total" nicht ueberschreiten.
+   Hoechstens sechs Gruppen. Bei Prozentanteilen ist "total" einfach 100
+   und "unit" ist "%".
 
 6. steps - ein Ablauf, Schritt fuer Schritt.
    {{"kind":"steps","id":"s","steps":[
@@ -379,6 +381,11 @@ REGELN FUER DIE TAKTE
   Einstieg, dann vier bis sechs Takte auf demselben Bild (dieselbe "id"),
   zum Schluss statement oder figure. Zwischen Bildarten hin- und
   herzuspringen zerstoert den Aufbau.
+- EINE Ausnahme davon, und nur diese: statt des statement-Einstiegs
+  duerfen die ersten ZWEI Takte ein guess sein - erst die Frage, dann die
+  Aufloesung. Danach geht es wie gehabt auf einem bewegten Bild weiter.
+  Nimm das, wenn der Text genau eine Zahl hat, bei der die meisten daneben
+  liegen wuerden.
 - "say": genau EIN Satz, hoechstens 140 Zeichen, gesprochene Sprache.
   Zahlen ausschreiben, wo man sie sprechen wuerde ("sechs Prozent").
 - JEDE Zahl in Bild und Text muss im Quelltext stehen. Nichts hochrechnen,

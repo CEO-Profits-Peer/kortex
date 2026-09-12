@@ -455,7 +455,21 @@ def _show_numbers(show: dict[str, Any]) -> list[str]:
         i.get("value") for i in (show.get("items") or [])
         if isinstance(i, dict) and isinstance(i.get("value"), (int, float))
     )
-    if isinstance(show.get("total"), (int, float)):
+    # Die Bezugsgroesse eines Rasters ist eine Behauptung - AUSSER bei
+    # hundert.
+    #
+    # "total": 100 mit Prozentanteilen ist keine Aussage ueber die Welt,
+    # sondern die Definition von Prozent. Trotzdem hat die Pruefung hier
+    # verlangt, dass die Ziffernfolge "100" woertlich im Quelltext steht -
+    # und genau daran sind die Raster gescheitert, die wir gerade erst
+    # haben wollen: "Blut" und "Macronutrient" kamen als
+    # "Zahl '100' steht nicht im Quelltext" zurueck, obwohl jeder einzelne
+    # Anteil im Text stand. Die Anteile selbst werden weiter geprueft; das
+    # Raster ist nur der Rahmen, in den sie gezeichnet werden.
+    #
+    # Jede andere Bezugsgroesse bleibt pruefbedueftig: "von 6.000 Litern"
+    # ist sehr wohl eine Behauptung ueber die Quelle.
+    if isinstance(show.get("total"), (int, float)) and float(show["total"]) != 100.0:
         numeric.append(show["total"])
     for v in numeric:
         out.extend(_numbers(_zahl_als_text(v)))
@@ -635,7 +649,15 @@ def validate_kinetic(script: dict[str, Any], source_text: str) -> Result:
             # auseinander, bleibt die Karte in der App leer.
             if not isinstance(total, (int, float)) or total < 2:
                 return Result(False, f"Takt {i}: Raster ohne Bezugsgroesse")
-            if not isinstance(groups, list) or not (1 <= len(groups) <= 4):
+            # Sechs, nicht vier.
+            #
+            # Vier war geraten. Nachgesehen im Zeichner: die Legende ist
+            # eine Liste untereinander, das Raster bleibt bei zehn mal zehn
+            # Kaestchen, und die Graustufen wechseln sich ab - sechs Zeilen
+            # passen. Vier hat dagegen genau die Texte verworfen, fuer die
+            # es das Raster gibt: "Wasserverbrauch" teilt sich in fuenf
+            # Verwendungen auf und wurde deshalb abgelehnt.
+            if not isinstance(groups, list) or not (1 <= len(groups) <= 6):
                 return Result(False, f"Takt {i}: {len(groups or [])} Gruppen im Raster")
             total_value = 0.0
             for g in groups:
