@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -149,6 +150,24 @@ def main() -> int:
     coverages: list[float] = []
     written = 0
 
+    # Eigene Frist, kuerzer als die des Workflows.
+    #
+    # Der Job bricht nach zwanzig Minuten ab. Das ist ein Abschuss: der
+    # Schritt ist weg, die noch nicht geschriebenen Karten im Puffer sind
+    # weg, und die Bilanz, aus der man lernen wuerde, gibt es nicht. Vor
+    # allem laufen Evergreen und Push danach gar nicht mehr - die
+    # Wikipedia-Karten fallen also immer als erstes aus, obwohl sie die
+    # sind, die bleiben.
+    #
+    # Mit eigener Frist hoert der Lauf von selbst auf, schreibt seinen
+    # Puffer und gibt die Bilanz aus. Was liegen bleibt, holt der naechste
+    # Lauf: Bekanntes faellt an der Hash-Pruefung raus, bevor das Modell
+    # gefragt wird, und kostet nichts.
+    frist = time.monotonic() + cfg.max_run_minutes * 60
+
+    def zeit_um() -> bool:
+        return time.monotonic() >= frist
+
     # 'link_only': nur Titel und Link erlaubt. In v1 wird das ganz
     # uebersprungen, statt halbe Karten zu bauen (docs/CONTENT-SOURCING.md).
     #
@@ -169,6 +188,10 @@ def main() -> int:
         stats["skipped_license_sources"] = len(sources) - len(nutzbar)
 
     for src in nutzbar:
+        if zeit_um():
+            log.warning("Zeitbudget von %d Minuten aufgebraucht - Rest beim "
+                        "naechsten Lauf", cfg.max_run_minutes)
+            break
         if stats["seen"] >= cfg.max_items_per_run:
             log.info("Limit von %d Artikeln erreicht", cfg.max_items_per_run)
             break
@@ -188,6 +211,9 @@ def main() -> int:
         stats["already_known"] += len(items) - len(fresh)
 
         for item in fresh:
+            if zeit_um():
+                log.warning("Zeitbudget aufgebraucht, breche ab")
+                break
             if gen.calls >= cfg.max_gemini_calls_per_run:
                 log.warning("Gemini-Limit erreicht, breche ab")
                 break

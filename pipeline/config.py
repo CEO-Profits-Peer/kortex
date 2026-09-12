@@ -48,6 +48,10 @@ class Config:
     # gesamte Gemini-Kontingent verbrennen.
     max_items_per_run: int
     max_gemini_calls_per_run: int
+    #: Minuten, nach denen ein Lauf von selbst aufhoert. Muss KLEINER sein
+    #: als das Zeitlimit des Workflow-Schritts, sonst kommt der Abschuss
+    #: zuerst und die Frist hat nichts genuetzt.
+    max_run_minutes: int
     dry_run: bool
 
     languages: tuple[str, ...]
@@ -65,6 +69,7 @@ class Config:
             embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001").strip(),
             max_items_per_run=_int("MAX_ITEMS_PER_RUN", 250),
             max_gemini_calls_per_run=_int("MAX_GEMINI_CALLS_PER_RUN", 400),
+            max_run_minutes=_int("MAX_RUN_MINUTES", 10),
             dry_run=_bool("DRY_RUN"),
             languages=tuple(
                 x.strip() for x in os.getenv("INGEST_LANGUAGES", "de,en").split(",") if x.strip()

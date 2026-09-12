@@ -88,8 +88,42 @@ FALLBACK_MODELS = (
     # jedes Mal einen Anlauf und liefert nie etwas.
 )
 
-MAX_ATTEMPTS = 4
+#: Wie oft dasselbe Modell bei einer voruebergehenden Stoerung erneut
+#: gefragt wird, bevor auf das naechste gewechselt wird.
+#:
+#: Stand auf 4, und das war teuer. Gemessen am ersten echten Lauf in
+#: GitHub Actions, eine einzige Karte:
+#:
+#:     07:36:37  Anfrage -> 07:36:55  503   (18 s)
+#:     07:36:57  Anfrage -> 07:37:05  503   ( 8 s)
+#:     07:37:09  Anfrage -> 07:37:32  503   (23 s)
+#:     07:37:40  Anfrage -> 07:38:18  503   (38 s)   -> Modellwechsel
+#:     07:38:18  Anfrage -> 07:39:11  200   (53 s)
+#:
+#: Zweieinhalb Minuten fuer eine Karte, davon 101 Sekunden in Anfragen,
+#: die nur langsam Nein sagen. Der Kostenpunkt ist NICHT die Wartezeit
+#: dazwischen (2 bis 8 Sekunden) - es ist die Zeit, die ein ueberlastetes
+#: Modell braucht, um die Ueberlastung zuzugeben.
+#:
+#: Bei neun Modellen und fuenf Schluesseln gibt es 45 Toepfe. Auf einen
+#: ueberlasteten zu warten, waehrend 44 danebenstehen, ist das falsche
+#: Geschaeft. Ein Wiederholungsversuch bleibt, weil ein 503 manchmal
+#: sofort danach durchgeht; der zweite hat sich nicht bezahlt gemacht.
+MAX_ATTEMPTS = 2
 BASE_DELAY = 2.0
+
+#: Wie lange eine einzelne Anfrage hoechstens dauern darf, in
+#: Millisekunden.
+#:
+#: Ohne diese Grenze haengt der Lauf an der Geduld der Gegenseite: oben
+#: sind es 38 Sekunden bis zu einem 503, und beobachtet wurden auch
+#: laengere. Eine Karte braucht bei Erfolg 5 bis 25 Sekunden - was
+#: darueber liegt, wird fast nie noch etwas.
+#:
+#: 45 Sekunden ist bewusst grosszuegig: ein abgeschnittener Erfolg waere
+#: schlimmer als ein spaeter. Es geht nur darum, dass ueberhaupt eine
+#: Obergrenze existiert.
+REQUEST_TIMEOUT_MS = 45_000
 
 # --- Warum hier das Nachdenken abgeschaltet wird ------------------------------
 #
@@ -420,7 +454,10 @@ class Generator:
         # beste Modell so lange wie moeglich im Spiel.
         self.api_keys: list[str] = [api_key] if isinstance(api_key, str) else list(api_key)
         self.key_index = 0
-        self.client = genai.Client(api_key=self.api_keys[0])
+        self.client = genai.Client(
+            api_key=self.api_keys[0],
+            http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS),
+        )
         # Das gewuenschte Modell zuerst, danach die Ausweichmodelle - ohne
         # Dubletten, falls das gewuenschte schon in der Liste steht.
         self.models: list[str] = [model] + [m for m in FALLBACK_MODELS if m != model]
@@ -467,7 +504,10 @@ class Generator:
 
         if self.key_index + 1 < len(self.api_keys):
             self.key_index += 1
-            self.client = genai.Client(api_key=self.api_keys[self.key_index])
+            self.client = genai.Client(
+                api_key=self.api_keys[self.key_index],
+                http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS),
+            )
             # Mit dem neuen Schluessel fangen die Kontingente von vorne an,
             # also auch wieder beim besten Modell.
             self.model_index = 0

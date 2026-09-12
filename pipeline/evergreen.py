@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -88,6 +89,13 @@ def main() -> int:
     rows: list[dict] = []
     written = 0
 
+    # Dieselbe Frist wie in run.py, aus demselben Grund - hier wiegt sie
+    # sogar schwerer: Evergreen laeuft als ZWEITES und bekommt nur, was
+    # vom Zeitlimit des Jobs uebrig ist. Ohne eigene Frist ist es das
+    # erste, was abgeschnitten wird, obwohl seine Karten die sind, die
+    # bleiben.
+    frist = time.monotonic() + cfg.max_run_minutes * 60
+
     with Database(cfg) as db:
         sources = {}
         for lang in cfg.languages:
@@ -117,6 +125,11 @@ def main() -> int:
 
         with httpx.Client(timeout=25.0, follow_redirects=True) as http:
             for topic in topics:
+                if time.monotonic() >= frist:
+                    log.warning("Zeitbudget von %d Minuten aufgebraucht - der "
+                                "naechste Lauf macht hier weiter",
+                                cfg.max_run_minutes)
+                    break
                 if args.limit and stats["accepted"] >= args.limit:
                     log.info("Grenze von %d Karten erreicht", args.limit)
                     break

@@ -45,7 +45,11 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Grosszuegiger als die Summe der Schritte unten. Dieses Limit soll
+    # nie greifen: ein Abschuss auf Job-Ebene ueberspringt auch die
+    # Bilanz, und dann fehlt genau die Information, warum es zu lange
+    # gedauert hat.
+    timeout-minutes: 28
 
     steps:
       # v5/v6 statt v4/v5: die aelteren laufen auf Node 20, und das meldet
@@ -162,7 +166,12 @@ jobs:
         run: pip install -r pipeline/requirements.txt
 
       - name: Pipeline
+        # Zwoelf Minuten als Notbremse, neun als eigene Frist des Skripts.
+        # Die Reihenfolge ist Absicht: run.py soll von selbst aufhoeren
+        # und seinen Puffer schreiben, nicht abgeschossen werden.
+        timeout-minutes: 12
         env:
+          MAX_RUN_MINUTES: "9"
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -232,7 +241,9 @@ jobs:
       # schon durch und hat geschrieben.
       - name: Evergreen-Karten
         continue-on-error: true
+        timeout-minutes: 9
         env:
+          MAX_RUN_MINUTES: "6"
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -264,6 +275,7 @@ jobs:
       # gehen nicht verloren, sie warten.
       - name: Push zustellen
         continue-on-error: true
+        timeout-minutes: 3
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
