@@ -9,7 +9,15 @@ import { CardTypeBadge } from '@/components/CardTypeBadge';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SectionTitle } from '@/components/SectionTitle';
-import { AdminOverview, type AdminData } from '@/features/admin/AdminOverview';
+import { AdminCategories } from '@/features/admin/AdminCategories';
+import { AdminOverview } from '@/features/admin/AdminOverview';
+import { AdminPeople } from '@/features/admin/AdminPeople';
+import type {
+  AdminCategory,
+  AdminData,
+  AdminPerson,
+  AdminPersonHit,
+} from '@/features/admin/types';
 import type { BodyBlock, ContentItem } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -181,6 +189,92 @@ function Karte({
  * Hand gesetzt: die Werkstatt darf nicht ans Netz und schon gar nicht an
  * Nutzungsdaten.
  */
+/**
+ * Erfundene Zahlen fuer die drei Ansichten des Kontrollzentrums.
+ *
+ * Damit laesst sich die Gestaltung ohne Anmeldung und ohne PIN pruefen. Eine
+ * Ansicht, die man nur im Echtbetrieb sehen kann, wird nicht gestaltet,
+ * sondern vermutet - und im Echtbetrieb stehen zufaellig gerade nie die
+ * Faelle drin, die weh tun (leere Kategorie, Quelle mit Fehler, Konto, das
+ * einmal da war und nie wieder).
+ */
+const KATEGORIEN: AdminCategory[] = [
+  { id: 'wissen.physik', name: 'Physik', eltern: 'wissen', art: 'knowledge',
+    farbe: '#00F0FF', karten: 46, de: 27, en: 19, erklaerkarten: 21, likes: 38,
+    gesehen: 312, gelesen: 129, interessiert: 14, neuste: new Date(Date.now() - 3 * 3600e3).toISOString() },
+  { id: 'weltgeschehen.politik', name: 'Politik', eltern: 'weltgeschehen', art: 'news',
+    farbe: '#FFD84D', karten: 38, de: 31, en: 7, erklaerkarten: 9, likes: 12,
+    gesehen: 401, gelesen: 96, interessiert: 6, neuste: new Date(Date.now() - 40 * 60e3).toISOString() },
+  { id: 'finanzen.steuern', name: 'Steuern', eltern: 'finanzen', art: 'knowledge',
+    farbe: '#7CFF6B', karten: 11, de: 8, en: 3, erklaerkarten: 6, likes: 9,
+    gesehen: 88, gelesen: 51, interessiert: 9, neuste: new Date(Date.now() - 4 * 86400e3).toISOString() },
+  { id: 'koerper.ernaehrung', name: 'Ernährung', eltern: 'koerper', art: 'knowledge',
+    farbe: '#B78BFF', karten: 4, de: 4, en: 0, erklaerkarten: 1, likes: 2,
+    gesehen: 31, gelesen: 6, interessiert: 11, neuste: new Date(Date.now() - 19 * 86400e3).toISOString() },
+  { id: 'alltag.mietrecht', name: 'Mietrecht', eltern: 'alltag', art: 'knowledge',
+    farbe: '#FF9F45', karten: 0, de: 0, en: 0, erklaerkarten: 0, likes: 0,
+    gesehen: 0, gelesen: 0, interessiert: 7, neuste: null },
+];
+
+const LEUTE: AdminPersonHit[] = [
+  { handle: 'gridb6eca3', name: null, avatar_seed: 'b6eca3', avatar_path: null,
+    seit: new Date(Date.now() - 41 * 86400e3).toISOString(),
+    zuletzt: new Date().toISOString(), land: 'AT', region: 'AT-9', sprache: 'de',
+    plan: 'free', xp: 1284, mastery: 96, streak: 6, gelesen: 312, ist_admin: true },
+  { handle: 'grid2a8089', name: 'Lena', avatar_seed: '2a8089', avatar_path: null,
+    seit: new Date(Date.now() - 12 * 86400e3).toISOString(),
+    zuletzt: new Date(Date.now() - 2 * 86400e3).toISOString(), land: 'CA', region: 'CA-ON',
+    sprache: 'en', plan: 'pro', xp: 540, mastery: 31, streak: 0, gelesen: 130, ist_admin: false },
+  { handle: 'grid7f1102', name: null, avatar_seed: '7f1102', avatar_path: null,
+    seit: new Date(Date.now() - 3 * 86400e3).toISOString(),
+    zuletzt: new Date(Date.now() - 3 * 86400e3).toISOString(), land: 'DE', region: 'DE-BY',
+    sprache: 'de', plan: 'free', xp: 18, mastery: 0, streak: 0, gelesen: 9, ist_admin: false },
+];
+
+const PERSON: AdminPerson = {
+  person: {
+    handle: 'grid2a8089', name: 'Lena', bio: 'Hier für Physik und Steuern.',
+    avatar_seed: '2a8089', avatar_path: null,
+    seit: new Date(Date.now() - 12 * 86400e3).toISOString(),
+    zuletzt: new Date(Date.now() - 2 * 86400e3).toISOString(),
+    land: 'CA', region: 'CA-ON', sprache: 'en', englisch_pct: 100, jahrgang: 2004,
+    plan: 'pro', tagesziel: 60, rangliste: true,
+    onboarding: new Date(Date.now() - 12 * 86400e3).toISOString(), ist_admin: false,
+  },
+  lernen: { xp: 540, mastery: 31, streak: 0, streak_best: 5, gelesen: 130,
+    fokus_sekunden: 4820, wiederholungen_faellig: 7 },
+  aufmerksamkeit: { paare: 214, gelesen: 130, geskippt: 71, geliked: 22,
+    verweildauer_median_ms: 9400 },
+  aktivitaet: {
+    tage_30: 9,
+    letztes_ereignis: new Date(Date.now() - 2 * 86400e3).toISOString(),
+    ereignisse_30: [
+      { art: 'impression', anzahl: 412 }, { art: 'dwell', anzahl: 214 },
+      { art: 'skip', anzahl: 71 }, { art: 'like', anzahl: 22 },
+    ],
+    tage: Array.from({ length: 30 }, (_, n) => ({
+      tag: new Date(Date.now() - (29 - n) * 86400e3).toISOString().slice(0, 10),
+      anzahl: [0, 0, 12, 34, 0, 0, 0, 8, 51, 22, 0, 0, 0, 0, 19, 44, 61, 0, 0, 7,
+        0, 0, 0, 0, 33, 28, 0, 14, 0, 0][n],
+    })),
+  },
+  sicht: {
+    interessen: [
+      { id: 'wissen.physik', name: 'Physik', gewicht: 2.4, gewaehlt: true, level: 3, mastery: 18 },
+      { id: 'finanzen.steuern', name: 'Steuern', gewicht: 1.8, gewaehlt: true, level: 2, mastery: 9 },
+      { id: 'weltgeschehen.politik', name: 'Politik', gewicht: 0.6, gewaehlt: false, level: 1, mastery: 4 },
+    ],
+    letzte_100: [
+      { id: 'wissen.physik', anzahl: 41, sprache_de: 2 },
+      { id: 'finanzen.steuern', anzahl: 29, sprache_de: 0 },
+      { id: 'weltgeschehen.politik', anzahl: 18, sprache_de: 11 },
+      { id: 'koerper.ernaehrung', anzahl: 12, sprache_de: 4 },
+    ],
+  },
+  sozial: { folgt: 4, follower: 2, reposts: 6, kommentare: 1 },
+  stand: new Date().toISOString(),
+};
+
 const KONTROLLE: AdminData = {
   betrieb: {
     quellen_aktiv: 31,
@@ -319,6 +413,13 @@ export default function Atelier() {
       {reiter === 'kontrolle' ? (
         <ScrollView contentContainerStyle={styles.bahn}>
           <AdminOverview data={KONTROLLE} />
+          <View style={{ height: 32 }} />
+          <AdminCategories data={KATEGORIEN} />
+          <View style={{ height: 32 }} />
+          <AdminPeople
+            suche={async () => LEUTE}
+            laden={async () => PERSON}
+          />
         </ScrollView>
       ) : null}
 

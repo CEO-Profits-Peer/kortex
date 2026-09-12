@@ -57,6 +57,21 @@ update public.profiles
  where handle = 'DEIN-HANDLE';
 ```
 
+## Drei Reiter
+
+**Übersicht** · Betrieb, Bestand, Nutzung, Aufmerksamkeit, Inhalt.
+**Kategorien** · alle Unterkategorien mit Bestand, Sprachaufteilung,
+Lesequote und Interesse; sortierbar nach Bestand, Lesequote, Interesse und
+Lücken.
+**Personen** · Suche nach `@handle` oder Name, ohne Eingabe die zuletzt
+Aktiven; ein Tipp öffnet die Einzelansicht.
+
+Die PIN liegt beim Öffnen in einer Ref und bleibt dort, solange der
+Bildschirm offen ist — mit drei Reitern müsste man sie sonst vor jedem Klick
+neu tippen. Sie landet **nicht** im Gerätespeicher: eine PIN, die einen
+Neustart überlebt, ist keine zweite Sperre mehr, sondern ein zweiter
+Schlüssel unter der Fußmatte. „Sperren" oben rechts wirft alles weg.
+
 ## Was es zeigt
 
 | Feld | Frage |
@@ -71,17 +86,32 @@ update public.profiles
 echte Präsenzanzeige gibt es nicht, und für die Frage „ist jemand da"
 braucht es sie auch nicht.
 
-## Was es bewusst NICHT zeigt
+## Personen — die Begründung
 
-**Einzelpersonen.** Keine Zeile sagt, was ein bestimmtes Konto gelesen
-hat. Nicht weil es schwer wäre — es ist trivial —, sondern weil ein
-Kontrollzentrum, das erst einmal alles anzeigt, nie wieder zurückgebaut
-wird. Wer später eine einzelne Sitzung untersuchen muss, baut das als
-eigene Funktion mit eigener Begründung.
+In der ersten Fassung stand hier: keine Einzelpersonen, und wer das braucht,
+baut es als eigene Funktion mit eigener Begründung. Das ist mit Migration
+0068 passiert, und die Begründung ist: ohne das ist keine Unterstützung
+möglich. „Mein Feed ist nur auf Deutsch", „ich bekomme keine
+Wiederholungen", „meine Strähne ist weg" — auf keine dieser Fragen gibt es
+eine Antwort aus Summen über alle Konten. Die Alternative wäre, mit dem
+`service_role`-Schlüssel in die Tabellen zu greifen, und der umgeht **jede**
+Regel dieser Datenbank. Eine enge Funktion mit PIN davor ist der kleinere
+Zugriff, nicht der größere.
+
+**Was auch dort nicht steht:**
+
+- **Keine Kartentitel.** Statt einer Leseliste die *Verteilung* der letzten
+  100 gesehenen Karten auf Kategorien. Das beantwortet „warum sehe ich nur
+  Politik" genauso gut, ohne jemandem über die Schulter zu lesen. Wer die
+  Titel wirklich braucht, ändert genau eine Unterabfrage in 0068 — und
+  schreibt in den Kopf, warum.
+- Keine Kommentartexte, keine Likes auf einzelne Karten.
+- Kein `admin_pin_hash`, auch nicht der eigene.
 
 ## Ansehen ohne Anmeldung
 
-`/atelier`, Reiter **kontrolle**, zeigt dieselbe Darstellung mit
-erfundenen Zahlen. Dafür ist die Darstellung (`features/admin/AdminOverview.tsx`)
+`/atelier`, Reiter **kontrolle**, zeigt alle drei Ansichten mit erfundenen
+Zahlen — samt der Fälle, die im Echtbetrieb zufällig gerade nie dastehen:
+leere Kategorie, Quelle mit Fehler, Konto, das einmal da war und nie wieder. Dafür ist die Darstellung (`features/admin/AdminOverview.tsx`)
 vom Holen und Absichern (`app/admin.tsx`) getrennt: eine Gestaltung, die
 man nur im Echtbetrieb sehen kann, wird nicht gestaltet, sondern vermutet.

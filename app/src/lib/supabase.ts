@@ -9,7 +9,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
-import type { AdminData } from '@/features/admin/AdminOverview';
+import type {
+  AdminCategory,
+  AdminData,
+  AdminPerson,
+  AdminPersonHit,
+} from '@/features/admin/types';
 import type {
   Category,
   CategoryDetail,
@@ -422,6 +427,31 @@ export const api = {
     const { data, error } = await supabase.rpc('admin_overview', { p_pin: pin });
     if (error) throw error;
     return data as AdminData;
+  },
+
+  async adminCategories(pin: string): Promise<AdminCategory[]> {
+    const { data, error } = await supabase.rpc('admin_categories', { p_pin: pin });
+    if (error) throw error;
+    return (data ?? []) as AdminCategory[];
+  },
+
+  /** Ohne Suchbegriff die zuletzt Aktiven. */
+  async adminPeople(pin: string, query = ''): Promise<AdminPersonHit[]> {
+    const { data, error } = await supabase.rpc('admin_people', {
+      p_pin: pin,
+      p_query: query || null,
+    });
+    if (error) throw error;
+    return (data ?? []) as AdminPersonHit[];
+  },
+
+  async adminPerson(pin: string, handle: string): Promise<AdminPerson> {
+    const { data, error } = await supabase.rpc('admin_person', {
+      p_pin: pin,
+      p_handle: handle,
+    });
+    if (error) throw error;
+    return data as AdminPerson;
   },
 
   // --- Kommentare ------------------------------------------------------
