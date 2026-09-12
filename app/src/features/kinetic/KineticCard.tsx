@@ -41,6 +41,15 @@ import {
  * stumm. Die Karte muss auch dann funktionieren - deshalb steht der Text
  * unten und nicht nur in der Stimme.
  *
+ * Sie laeuft in der Schleife
+ * --------------------------
+ * Nach dem letzten Takt faengt sie von selbst wieder vorne an - wie ein
+ * kurzes Video im Feed. Vorher stand dort ein Ende mit einer Taste
+ * "Nochmal", und das war die falsche Entscheidung: es verlangt genau in dem
+ * Moment eine Handlung, in dem jemand gerade verstanden hat, dass er den
+ * Anfang verpasst hat. Den Anfang sieht man ohnehin selten - man wischt
+ * mitten hinein, hoert zwei Saetze und will wissen, wovon die handeln.
+ *
  * Was sie ausdruecklich NICHT tut
  * -------------------------------
  * Sie haelt niemanden fest. Kein Vollbild, keine Sperre, kein "erst zu Ende
@@ -51,6 +60,17 @@ import {
 
 /** Eine feste leere Liste - eine frische waere wieder eine neue Identitaet. */
 const NO_BEATS: KineticBeat[] = [];
+
+/**
+ * Atempause zwischen letztem und erstem Takt.
+ *
+ * Ohne sie klebt die Pointe am Einstiegssatz und der Durchlauf ist nicht
+ * mehr als solcher zu erkennen - es sieht aus, als haette die Karte einen
+ * Takt uebersprungen. Eine gute Sekunde reicht: lang genug, dass der letzte
+ * Satz stehen bleibt, kurz genug, dass es keine Pause ist, in der man
+ * weiterwischt.
+ */
+const LOOP_PAUSE_MS = 1100;
 
 export function KineticCard({
   item,
@@ -81,7 +101,12 @@ export function KineticCard({
   const isActive = useIsActiveCard(item.id);
   const [beat, setBeat] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [finished, setFinished] = useState(false);
+  /**
+   * Der wievielte Durchlauf. Nur fuer die Anzeige - aber nicht bloss Zierat:
+   * ohne sie sieht der zweite Durchlauf genauso aus wie der erste, und man
+   * fragt sich, ob man sich verschaut hat.
+   */
+  const [round, setRound] = useState(0);
 
   /** Laeuft gerade eine Aeusserung oder ein Zeitgeber? Zum Abbrechen. */
   const cancel = useRef<(() => void) | null>(null);
@@ -95,6 +120,9 @@ export function KineticCard({
    * zweites Mal angefangen.
    */
   const speaking = useRef<number | null>(null);
+
+  /** Laeuft gerade die Atempause vor dem naechsten Durchlauf? */
+  const resting = useRef(false);
 
   const clearPending = useCallback(() => {
     cancel.current?.();
@@ -115,14 +143,18 @@ export function KineticCard({
   useEffect(() => {
     if (isActive) return;
     clearPending();
+    // Nicht in clearPending(): das ruft auch die Pause-Taste auf, und beim
+    // Fortsetzen muss noch erkennbar sein, dass die Karte in der Atempause
+    // stand.
+    resting.current = false;
     setBeat(0);
     setPaused(false);
-    setFinished(false);
+    setRound(0);
   }, [isActive, clearPending]);
 
   // --- Der Taktgeber --------------------------------------------------------
   useEffect(() => {
-    if (!isActive || paused || finished || beats.length === 0) return;
+    if (!isActive || paused || beats.length === 0) return;
 
     const current = beats[beat];
     if (!current) return;
@@ -132,13 +164,28 @@ export function KineticCard({
     const next = () => {
       cancel.current = null;
       timer.current = null;
-      speaking.current = null;
       if (beat + 1 < beats.length) {
+        speaking.current = null;
         setBeat(beat + 1);
-      } else {
-        setFinished(true);
-        stopSpeech();
+        return;
       }
+
+      // Letzter Takt: kurz stehen lassen, dann von vorn.
+      //
+      // `speaking` wird waehrend der Pause ABSICHTLICH nicht geleert.
+      // Sonst genuegt ein beliebiges Neurendern - die Sprechen-Taste, ein
+      // neuer Kommentarzaehler -, damit dieser Effekt wieder laeuft, den
+      // Takt noch unveraendert vorfindet und den letzten Satz ein zweites
+      // Mal anfaengt. Geleert wird er erst zusammen mit dem Ruecksprung.
+      stopSpeech();
+      resting.current = true;
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        speaking.current = null;
+        resting.current = false;
+        setBeat(0);
+        setRound((r) => r + 1);
+      }, LOOP_PAUSE_MS);
     };
 
     if (getPrefs().audioEnabled) {
@@ -161,7 +208,7 @@ export function KineticCard({
     // clearPending() an den Stellen, die wirklich abbrechen (Pause, Karte
     // verlassen, Ausbau). Haenge es hier an den Effekt, bricht jedes
     // Neurendern den laufenden Satz ab.
-  }, [isActive, paused, finished, beat, beats, item.id, item.language]);
+  }, [isActive, paused, beat, beats, item.id, item.language]);
 
   useEffect(() => () => clearPending(), [clearPending]);
 
@@ -171,19 +218,20 @@ export function KineticCard({
   const previous: KineticShow | null = beat > 0 ? beats[beat - 1].show : null;
 
   const toggle = () => {
-    if (finished) return replay();
-    if (paused) {
-      setPaused(false);
-    } else {
+    if (!paused) {
       clearPending();
       setPaused(true);
+      return;
     }
-  };
-
-  const replay = () => {
-    clearPending();
-    setBeat(0);
-    setFinished(false);
+    // Wer waehrend der Atempause angehalten hat, steht auf dem letzten
+    // Takt. Dort einfach weiterzumachen hiesse, die Pointe ein zweites Mal
+    // zu hoeren - gemeint war der naechste Durchlauf.
+    if (resting.current) {
+      resting.current = false;
+      speaking.current = null;
+      setBeat(0);
+      setRound((r) => r + 1);
+    }
     setPaused(false);
   };
 
@@ -220,21 +268,21 @@ export function KineticCard({
           onPress={toggle}
           hitSlop={10}
           style={styles.control}
-          accessibilityLabel={finished ? 'Nochmal' : paused ? 'Weiter' : 'Pause'}
+          accessibilityLabel={paused ? 'Weiter' : 'Pause'}
         >
-          <Icon
-            name={finished ? 'refresh' : paused ? 'listen' : 'listening'}
-            size={15}
-            color={color.ink.mid}
-          />
-          <Text style={styles.controlText}>
-            {finished ? 'Nochmal' : paused ? 'Weiter' : 'Pause'}
-          </Text>
+          <Icon name={paused ? 'listen' : 'listening'} size={15} color={color.ink.mid} />
+          <Text style={styles.controlText}>{paused ? 'Weiter' : 'Pause'}</Text>
         </Pressable>
 
-        <Text style={styles.step}>
-          {beat + 1} / {beats.length}
-        </Text>
+        {/* Ab dem zweiten Durchlauf steht das Zeichen dabei. Es beantwortet
+            die einzige Frage, die ein Neuanfang aufwirft: "war das schon
+            mal da?" */}
+        <View style={styles.counter}>
+          {round > 0 ? <Icon name="refresh" size={12} color={color.ink.low} /> : null}
+          <Text style={styles.step}>
+            {beat + 1} / {beats.length}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -330,5 +378,6 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
   },
   controlText: { ...type.meta, color: color.ink.mid },
-  step: { ...type.mono, fontSize: 11, color: color.ink.low, marginLeft: 'auto' },
+  counter: { flexDirection: 'row', alignItems: 'center', gap: 5, marginLeft: 'auto' },
+  step: { ...type.mono, fontSize: 11, color: color.ink.low },
 });

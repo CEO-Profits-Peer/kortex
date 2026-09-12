@@ -1,0 +1,247 @@
+import React, { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { KineticCard } from '@/features/kinetic/KineticCard';
+import { setActiveCard } from '@/lib/activeCard';
+import type { ContentItem } from '@/lib/types.db';
+import { color, radius, space, type } from '@/theme/tokens';
+
+/**
+ * Schaufenster fuer die Bildarten der Erklaerkarten - NUR zum Ansehen.
+ *
+ * Die Drehbuecher hier sind von Hand geschrieben und stehen in keiner
+ * Datenbank. Sie duerfen das, weil sie nie in einen Feed kommen: ohne
+ * Quelldokument waere eine echte Karte daraus ein Regelbruch (siehe
+ * docs/CONTENT-SOURCING.md, Regel 1).
+ */
+
+const SCRIPTS: Record<string, { title: string; beats: unknown[] }> = {
+  timeline: {
+    title: 'Zeitstrahl',
+    beats: [
+      {
+        say: 'Die Geschichte des maschinellen Lernens beginnt 1943.',
+        show: { kind: 'statement', text: '1943', sub: 'der Anfang' },
+      },
+      {
+        say: 'Damals beschrieben McCulloch und Pitts das erste kuenstliche Neuron.',
+        show: {
+          kind: 'timeline',
+          id: 'h',
+          points: [{ at: 1943, label: 'Kuenstliches Neuron' }],
+        },
+      },
+      {
+        say: 'Vierzehn Jahre spaeter folgte das Perzeptron.',
+        show: {
+          kind: 'timeline',
+          id: 'h',
+          points: [
+            { at: 1943, label: 'Kuenstliches Neuron' },
+            { at: 1957, label: 'Perzeptron' },
+          ],
+        },
+      },
+      {
+        say: 'Dann passierte lange wenig, bis 2006 das Deep Learning kam.',
+        show: {
+          kind: 'timeline',
+          id: 'h',
+          points: [
+            { at: 1943, label: 'Kuenstliches Neuron' },
+            { at: 1957, label: 'Perzeptron' },
+            { at: 2006, label: 'Deep Learning' },
+          ],
+        },
+      },
+      {
+        say: 'Und ab 2018 kamen die Transformer, im Jahrestakt.',
+        show: {
+          kind: 'timeline',
+          id: 'h',
+          points: [
+            { at: 1943, label: 'Kuenstliches Neuron' },
+            { at: 1957, label: 'Perzeptron' },
+            { at: 2006, label: 'Deep Learning' },
+            { at: 2018, label: 'Transformer', note: 'Sprachmodelle' },
+            { at: 2020, label: 'GPT-3' },
+          ],
+        },
+      },
+    ],
+  },
+  quantity: {
+    title: 'Anteile',
+    beats: [
+      {
+        say: 'Stell dir hundert Euro Haushaltsgeld vor.',
+        show: { kind: 'statement', text: '100 €', sub: 'im Monat' },
+      },
+      {
+        say: 'Achtunddreissig davon gehen fuer die Wohnung weg.',
+        show: {
+          kind: 'quantity',
+          id: 'q',
+          total: 100,
+          unit: '€',
+          groups: [{ label: 'Wohnen', value: 38 }],
+        },
+      },
+      {
+        say: 'Zweiundzwanzig kostet das Essen.',
+        show: {
+          kind: 'quantity',
+          id: 'q',
+          total: 100,
+          unit: '€',
+          groups: [
+            { label: 'Wohnen', value: 38 },
+            { label: 'Essen', value: 22 },
+          ],
+        },
+      },
+      {
+        say: 'Vierzehn gehen fuer Verkehr und Mobilfunk drauf.',
+        show: {
+          kind: 'quantity',
+          id: 'q',
+          total: 100,
+          unit: '€',
+          groups: [
+            { label: 'Wohnen', value: 38 },
+            { label: 'Essen', value: 22 },
+            { label: 'Verkehr', value: 14 },
+          ],
+        },
+      },
+      {
+        say: 'Uebrig bleiben sechsundzwanzig Euro fuer alles andere.',
+        show: {
+          kind: 'quantity',
+          id: 'q',
+          total: 100,
+          unit: '€',
+          groups: [
+            { label: 'Wohnen', value: 38 },
+            { label: 'Essen', value: 22 },
+            { label: 'Verkehr', value: 14 },
+            { label: 'Rest', value: 26 },
+          ],
+        },
+      },
+    ],
+  },
+  steps: {
+    title: 'Ablauf',
+    beats: [
+      {
+        say: 'Ein Gesetz entsteht in Oesterreich in vier Schritten.',
+        show: { kind: 'statement', text: 'Vier Schritte', sub: 'vom Entwurf zum Gesetz' },
+      },
+      {
+        say: 'Zuerst bringt die Regierung einen Entwurf ein.',
+        show: {
+          kind: 'steps',
+          id: 's',
+          steps: [{ label: 'Regierungsvorlage', note: 'der Entwurf' }],
+        },
+      },
+      {
+        say: 'Dann beraet ihn der zustaendige Ausschuss.',
+        show: {
+          kind: 'steps',
+          id: 's',
+          steps: [
+            { label: 'Regierungsvorlage', note: 'der Entwurf' },
+            { label: 'Ausschuss beraet' },
+          ],
+        },
+      },
+      {
+        say: 'Danach stimmt der Nationalrat ab.',
+        show: {
+          kind: 'steps',
+          id: 's',
+          steps: [
+            { label: 'Regierungsvorlage', note: 'der Entwurf' },
+            { label: 'Ausschuss beraet' },
+            { label: 'Nationalrat stimmt ab' },
+          ],
+        },
+      },
+      {
+        say: 'Zuletzt wird es kundgemacht und gilt.',
+        show: {
+          kind: 'steps',
+          id: 's',
+          steps: [
+            { label: 'Regierungsvorlage', note: 'der Entwurf' },
+            { label: 'Ausschuss beraet' },
+            { label: 'Nationalrat stimmt ab' },
+            { label: 'Kundmachung', note: 'im Bundesgesetzblatt' },
+          ],
+        },
+      },
+    ],
+  },
+};
+
+export default function KineticDemo() {
+  const [which, setWhich] = useState<keyof typeof SCRIPTS>('timeline');
+
+  useEffect(() => {
+    setActiveCard(`demo-${which}`);
+    return () => setActiveCard(null);
+  }, [which]);
+
+  const script = SCRIPTS[which];
+  const item = {
+    id: `demo-${which}`,
+    title: script.title,
+    language: 'de',
+    kinetic_script: { beats: script.beats },
+  } as unknown as ContentItem;
+
+  return (
+    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      <View style={styles.tabs}>
+        {Object.keys(SCRIPTS).map((key) => (
+          <Pressable
+            key={key}
+            onPress={() => setWhich(key as keyof typeof SCRIPTS)}
+            style={[styles.tab, which === key && styles.tabOn]}
+          >
+            <Text style={[styles.tabText, which === key && styles.tabTextOn]}>{key}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.card}>
+        <KineticCard key={which} item={item} accent="#00F0FF" />
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.bg },
+  content: { padding: space.lg, gap: space.lg },
+  tabs: { flexDirection: 'row', gap: space.sm },
+  tab: {
+    paddingVertical: 6,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  tabOn: { borderColor: color.signal.primary },
+  tabText: { ...type.meta, color: color.ink.mid },
+  tabTextOn: { color: color.signal.primary },
+  card: {
+    height: 560,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+});
