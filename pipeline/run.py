@@ -430,6 +430,13 @@ def main() -> int:
         ("  Modell: ungeeignet", stats["kinetic_ungeeignet"]),
         ("  Antwort unbrauchbar", stats["kinetic_unbrauchbar"]),
         ("  Pruefung abgelehnt", stats["kinetic_abgelehnt"]),
+        # Fehlte, und das war teuer: bei aufgebrauchtem Tageskontingent
+        # wirft JEDER Drehbuchversuch, landet unter "modellfehler" - und
+        # die Bilanz zeigte ueberall Null. Ein Lauf mit acht Karten und
+        # null Erklaerkarten sah damit aus wie ein inhaltliches Problem
+        # und war eine leere Quote. Eine Kategorie, die man nicht sehen
+        # kann, ist genau die, die man sucht.
+        ("  Modell nicht erreichbar", stats["kinetic_modellfehler"]),
         ("wartet auf Freigabe", stats["held_for_review"]),
         ("geschrieben", written),
         ("Gemini-Aufrufe", gen.calls),
