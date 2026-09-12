@@ -157,7 +157,19 @@ function Karte({
         ))}
       </View>
 
-      <Text style={styles.quelle}>atelier.example.org</Text>
+      {/* Das Schriftfeld, wie im Feed: Herkunft links, Urteil rechts,
+          Haarlinien dazwischen und darueber. */}
+      <View style={styles.schriftfeld}>
+        <Text style={styles.quelle}>QUELLE · atelier.example.org</Text>
+        <View style={styles.trenner} />
+        <View style={styles.urteil}>
+          {['zu leicht', 'zu schwer'].map((t) => (
+            <View key={t} style={styles.urteilChip}>
+              <Text style={styles.urteilText}>{t}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -302,8 +314,29 @@ const styles = StyleSheet.create({
   kategorie: { ...type.meta },
   schwierigkeit: { flexDirection: 'row', gap: 3 },
   diffDot: { width: 5, height: 5, borderRadius: 1 },
-  inhalt: { flex: 1, gap: space.lg },
+  // Im Feed passt FitBox den Inhalt an die Kartenhoehe an. Hier wird
+  // stattdessen beschnitten - die Werkstatt zeigt die Gestaltung, nicht
+  // die Umbruchlogik.
+  inhalt: { flex: 1, gap: space.lg, overflow: 'hidden' },
   titel: { ...type.title, color: color.ink.max },
   deckZeile: { ...type.deck, color: color.ink.mid },
-  quelle: { ...type.meta, color: color.ink.low },
+  schriftfeld: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.ink.faint,
+  },
+  quelle: { ...type.meta, color: color.ink.low, flex: 1 },
+  trenner: { width: StyleSheet.hairlineWidth, height: 18, backgroundColor: color.ink.faint },
+  urteil: { flexDirection: 'row', gap: 6 },
+  urteilChip: {
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  urteilText: { ...type.meta, fontSize: 9.5, color: color.ink.low },
 });

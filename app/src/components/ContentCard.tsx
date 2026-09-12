@@ -566,6 +566,21 @@ function ContentCardBase({
         </View>
       ) : null}
 
+      {/* Das Schriftfeld.
+          *
+          * In einer technischen Zeichnung steht unten am Blattrand ein
+          * abgeteiltes Feld: woher das Blatt kommt, in welchem Massstab,
+          * von wem. Genau das ist diese Zeile - Quelle links, Urteil
+          * rechts, dazwischen eine senkrechte Haarlinie, darueber eine
+          * waagrechte.
+          *
+          * Vorher war es dieselbe Zeile ohne Linien: zwei Elemente, die
+          * unten am Rand herumstanden. Die Linien kosten zwei Pixel und
+          * machen aus "da unten steht noch was" einen Teil der Zeichnung.
+          *
+          * Kein Rahmen um die ganze Karte - der ist vergeben: er
+          * kennzeichnet Aufgabenkarten (siehe testFrame oben). Ein
+          * zweites Mal verwendet, hiesse er nichts mehr. */}
       <View style={styles.footer}>
         <View style={styles.footerLeft}>
           <SourceBadge contentId={item.id} sources={sources} />
@@ -575,6 +590,7 @@ function ContentCardBase({
             </Animated.Text>
           ) : null}
         </View>
+        <View style={styles.footerDivider} />
         <View style={styles.rating}>
           {(['too_easy', 'too_hard'] as const).map((kind) => (
             <Pressable
@@ -686,8 +702,18 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingBottom: space.xxl,
     paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.ink.faint,
   },
   footerLeft: { flex: 1, gap: 4 },
+  // Die senkrechte Trennung zwischen Herkunft und Urteil. Ihre Hoehe ist
+  // fest: an der Zeile ausgerichtet waere sie mal hoeher, mal niedriger -
+  // je nachdem, ob gerade ein Hinweis eingeblendet ist.
+  footerDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 18,
+    backgroundColor: color.ink.faint,
+  },
   shareNote: { ...type.meta, color: color.signal.primary },
 
   rating: { flexDirection: 'row', gap: 6 },

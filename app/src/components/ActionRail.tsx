@@ -18,8 +18,15 @@ import { color, motion, radius, space, type } from '@/theme/tokens';
  * einhändig wischt — dieselbe Stelle wie bei jedem Feed, den die Zielgruppe
  * kennt. Waagrecht unten wäre eine Umgewöhnung ohne Gegenwert.
  *
- * Vier Aktionen, mehr nicht. Jede weitere macht die Leiste zu einem Menü,
- * und ein Menü liest niemand während des Wischens.
+ * Vier Aktionen auf jeder Karte — Like, Repost, Kommentar, Teilen —, plus
+ * Vorlesen auf allen ausser den Erklaerkarten, die selbst sprechen. Jede
+ * weitere macht die Leiste zu einem Menü, und ein Menü liest niemand
+ * während des Wischens.
+ *
+ * (Hier stand "Vier Aktionen, mehr nicht", während fünf Knöpfe daruntert
+ * standen. Ein Kommentar, der die eigene Regel falsch wiedergibt, ist
+ * schlimmer als keiner: beim nächsten Mal streicht jemand den richtigen
+ * Knopf.)
  *
  * Vorlesen steht ganz oben, nicht unten. Es ist die einzige Aktion, die man
  * VOR dem Lesen braucht — alle anderen kommen danach.
