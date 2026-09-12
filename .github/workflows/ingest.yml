@@ -47,11 +47,11 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    # Grosszuegiger als die Summe der Schritte unten. Dieses Limit soll
-    # nie greifen: ein Abschuss auf Job-Ebene ueberspringt auch die
-    # Bilanz, und dann fehlt genau die Information, warum es zu lange
-    # gedauert hat.
-    timeout-minutes: 28
+    # Grosszuegiger als die Summe der Schritte unten (12 + 9 + 6 + 3).
+    # Dieses Limit soll nie greifen: ein Abschuss auf Job-Ebene
+    # ueberspringt auch die Bilanz, und dann fehlt genau die Information,
+    # warum es zu lange gedauert hat.
+    timeout-minutes: 34
 
     steps:
       # v5/v6 statt v4/v5: die aelteren laufen auf Node 20, und das meldet
@@ -263,6 +263,53 @@ jobs:
           set -o pipefail
           python pipeline/evergreen.py 2>&1 | tee -a "$RUNNER_TEMP/evergreen.log"
 
+      # --- Erklaerkarten nachruesten -------------------------------------
+      #
+      # Der Anteil an Erklaerkarten ist eine Quote ueber den BESTAND. Jede
+      # neue Textkarte senkt ihn, auch wenn kein einziges Drehbuch
+      # misslingt - genau das ist passiert: nach dem Nachruesten stand er
+      # bei 50 Prozent, vier Laeufe spaeter bei 42, ohne dass etwas kaputt
+      # war. Der Zulauf hat den Nenner vergroessert.
+      #
+      # Also muss das Nachruesten mitlaufen und nicht von Hand gestartet
+      # werden. Es kommt ZULETZT und bekommt, was vom Tageskontingent uebrig
+      # ist: eine neue Karte ist mehr wert als eine bessere Darstellung
+      # einer alten. Ist nichts uebrig, bricht das Skript nach dem ersten
+      # Fehlversuch ab (gen.exhausted) und kostet Sekunden.
+      #
+      # Nur EINMAL am Tag, nicht bei jedem der vier Laeufe. Der Grund ist
+      # das Minutenbudget: dieses Repo ist privat, GitHub gibt 2000 Minuten
+      # im Monat, und vier Laeufe sind schon der groessere Teil davon. Die
+      # Nachruestung arbeitet ueber Tage, nicht ueber Stunden - ein Lauf
+      # taeglich reicht dafuer voellig.
+      - name: Erklaerkarten nachruesten
+        continue-on-error: true
+        timeout-minutes: 6
+        env:
+          MAX_RUN_MINUTES: "4"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
+          GEMINI_MODEL: gemini-3.5-flash
+          MAX_GEMINI_CALLS_PER_RUN: "300"
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -o pipefail
+          stunde=$(date -u +%H)
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$stunde" != "06" ]; then
+            echo "Nicht der Lauf fuer die Nachruestung (UTC-Stunde $stunde)."
+            echo "Sie laeuft im 06:17-Lauf und bei jedem Start von Hand."
+            exit 0
+          fi
+          # --limit deckelt die Versuche, nicht die Treffer: jede Karte
+          # kostet vorher einen Abruf des Quelldokuments, und der kostet
+          # Zeit auch dann, wenn kein Kontingent mehr da ist.
+          python pipeline/kinetic_backfill.py --limit 25 --target 0.5             2>&1 | tee -a "$RUNNER_TEMP/backfill.log"
+
       # --- Benachrichtigungen zustellen ----------------------------------
       #
       # Laeuft zuletzt und unabhaengig vom Rest: ob Karten erzeugt wurden,
@@ -300,7 +347,7 @@ jobs:
       - name: Bilanz in die Uebersicht
         if: always()
         run: |
-          for datei in ingest evergreen; do
+          for datei in ingest evergreen backfill; do
             pfad="$RUNNER_TEMP/$datei.log"
             [ -f "$pfad" ] || continue
             echo "## $datei" >> "$GITHUB_STEP_SUMMARY"

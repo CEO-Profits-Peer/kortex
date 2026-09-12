@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 import urllib.parse
 from collections import Counter
 from pathlib import Path
@@ -185,12 +186,26 @@ def main() -> int:
         journal = Path(args.journal)
         changed = journal.open("a", encoding="utf-8")
 
+        # Dieselbe Frist wie in run.py und evergreen.py.
+        #
+        # Neu, weil dieses Skript jetzt im Zeitplan mitlaeuft und dort als
+        # LETZTES kommt. Ohne eigene Frist ist es das erste, was das
+        # Zeitlimit des Jobs abschneidet - und abgeschossen zu werden heisst
+        # hier: die Bilanz fehlt, und man weiss nicht, ob nichts ging oder
+        # nur die Zeit fehlte.
+        frist = time.monotonic() + cfg.max_run_minutes * 60
+
         with httpx.Client(
             timeout=25.0, follow_redirects=True, headers={"User-Agent": USER_AGENT}
         ) as http:
             for card in cards:
                 if stats["ok"] >= needed:
                     log.info("Ziel erreicht.")
+                    break
+                if time.monotonic() >= frist:
+                    log.warning("Zeitbudget von %d Minuten aufgebraucht - der "
+                                "naechste Lauf macht bei den aeltesten "
+                                "Textkarten weiter", cfg.max_run_minutes)
                     break
                 if gen.calls >= cfg.max_gemini_calls_per_run:
                     log.warning("Gemini-Limit erreicht, breche ab")
