@@ -61,6 +61,58 @@ BLOCK_PATTERNS = [
 
 BLOCK_RE = re.compile("|".join(BLOCK_PATTERNS), re.IGNORECASE)
 
+
+# --- Textsorten, die auch die Rettung unten NICHT retten darf ----------------
+#
+# Der Anlass war der erste echte Lauf mit den neuen Forschungsquellen. Von
+# 27 Karten waren sechs Selbstauskunft der Einrichtung:
+#
+#     "Erweiterung der Institutsleitung am Fraunhofer IOSB"   (als SPEZIAL!)
+#     "Professuren an der Universitaet Wien"
+#     "Foerderung durch den Europaeischen Forschungsrat"
+#     "Studieninformationstag bei der Bundesbank"
+#     "Duales Studium bei der Bundesbank"
+#     "Innovationskraft durch untergesetzliche Regelungen"    (Positionspapier)
+#
+# Dieselbe Gattung, die 0045 bei APA-OTS herausgeworfen hat: eine
+# Einrichtung sagt etwas ueber sich selbst. Nur faellt sie hier nicht auf,
+# weil sie aus einer VERTRAUENSWUERDIGEN Quelle kommt und deshalb
+# automatisch freigegeben wird. Eine Personalmeldung als vorgetragene
+# Erklaerkarte ist das genaue Gegenteil von dem, wofuer es die gibt.
+#
+# Warum die vorhandene Sperre nicht griff: RESCUE_RE laeuft zuerst und
+# gewinnt. Eine Personalmeldung des Fraunhofer IOSB enthaelt garantiert
+# "Forschung", eine Grant-Meldung garantiert "Forscher". Die Rettung war
+# dafuer gedacht, dass eine STUDIE auf einer Pressekonferenz vorgestellt
+# wird - bei diesen Texten rettet sie das Gegenteil.
+#
+# Deshalb eine zweite, kleine Liste, die VOR der Rettung greift. Bewusst
+# eng: jedes Muster benennt die Gattung, nicht das Thema. Ueber Professuren
+# zu lesen ist nicht verboten - eine Meldung, die AUS der Bestellung einer
+# Professur besteht, ist nur keine Lernkarte.
+HARD_BLOCK_PATTERNS = [
+    r"\bverst(?:ae|ä)rkt (?:die |das |den )?(?:institutsleitung|leitung|vorstand)\b",
+    r"\b(?:erweiterung der |neue[rns]? )?institutsleitung\b",
+    r"\bneue professur(?:en)?\b",
+    r"\bprofessuren an der\b",
+    r"\bjoins the (?:board|leadership|management)\b",
+    r"\bnew (?:group|team) leader\b",
+    r"\b(?:erc[- ])?(?:starting|consolidator|advanced|synergy) grants?\b",
+    r"\beingeworben\b",
+    r"\bmillionenf(?:oe|ö)rderung\b",
+    r"\bawarded (?:an? )?(?:grant|funding)\b",
+    r"\bduales studium\b",
+    r"\bstudieninformationstag\b",
+    r"\btag der offenen t(?:ue|ü)r\b",
+    r"\bopen day\b",
+    r"\bbewerbungsfrist\b",
+    r"\bpositionspapier\b",
+    r"\bposition paper\b",
+    r"\bstellungnahme (?:zu|zur|zum)\b",
+]
+
+HARD_BLOCK_RE = re.compile("|".join(HARD_BLOCK_PATTERNS), re.IGNORECASE)
+
 # --- Was fuer eine Lernkarte spricht -----------------------------------------
 #
 # Trifft eins davon zu, wird NICHT abgewiesen, auch wenn oben etwas passt.
@@ -87,6 +139,11 @@ def is_worth_a_card(title: str, text: str) -> tuple[bool, str]:
         return False, f"zu kurz ({len(text)} Zeichen)"
 
     head = f"{title}\n{text[:1200]}"
+
+    # Vor der Rettung, nicht danach: siehe HARD_BLOCK_PATTERNS.
+    hard = HARD_BLOCK_RE.search(head)
+    if hard:
+        return False, f"Selbstauskunft der Einrichtung ({hard.group(0).strip()!r})"
 
     if RESCUE_RE.search(head):
         return True, ""

@@ -79,13 +79,26 @@ FALLBACK_MODELS = (
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3-flash-preview",
-    "gemini-2.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
     "gemini-3.1-flash-lite-preview",
     # gemini-2.5-flash-lite steht bewusst NICHT mehr hier: die API
     # antwortet mit 404 "no longer available to new users". Es kostet
     # jedes Mal einen Anlauf und liefert nie etwas.
+    #
+    # gemini-2.5-flash ist aus demselben Grund raus, nur spaeter bemerkt.
+    # probe_gemini.py sagt es eindeutig:
+    #   "gemini-2.5-flash: Fehler - 404 NOT_FOUND. This model
+    #    models/gemini-2.5-flash is no longer available"
+    # Im Log des ersten echten Laufs stand es als stiller Anlauf zwischen
+    # zwei Modellwechseln - ein Platz in der Kette, der nur Zeit kostet.
+    #
+    # gemini-3.6-flash und gemini-3.5-flash-lite haben im selben Lauf mit
+    # 400 geantwortet und BLEIBEN trotzdem: im Einzeltest antworten beide
+    # sauber. Das 400 kommt also von der Anfrage, nicht vom Modell, und wer
+    # sie deswegen entfernt, verliert zwei Tageskontingente aufgrund einer
+    # falschen Diagnose. Offen, ungeloest, aber ohne Schaden - die Kette
+    # wechselt einfach weiter.
 )
 
 #: Wie oft dasselbe Modell bei einer voruebergehenden Stoerung erneut
@@ -120,10 +133,18 @@ BASE_DELAY = 2.0
 #: laengere. Eine Karte braucht bei Erfolg 5 bis 25 Sekunden - was
 #: darueber liegt, wird fast nie noch etwas.
 #:
-#: 45 Sekunden ist bewusst grosszuegig: ein abgeschnittener Erfolg waere
-#: schlimmer als ein spaeter. Es geht nur darum, dass ueberhaupt eine
-#: Obergrenze existiert.
-REQUEST_TIMEOUT_MS = 45_000
+#: Erst standen hier 45 Sekunden. Das war zu knapp, und zwar nachweislich:
+#: probe_gemini.py ist damit beim Structured-Output-Schritt in einen
+#: ReadTimeout gelaufen - also genau bei der Anfrageform, die die Pipeline
+#: benutzt. Im Lauf davor gab es ausserdem einen ERFOLG nach 53 Sekunden
+#: (07:38:18 -> 07:39:11). Mit 45 Sekunden haette ich diese Karte
+#: weggeworfen, um Zeit zu sparen.
+#:
+#: 90 Sekunden begrenzen weiterhin den krankhaften Fall - beobachtet wurde
+#: nie ein Erfolg jenseits einer Minute -, ohne einen langsamen Erfolg zu
+#: bestrafen. Die eigentliche Bremse gegen einen ausufernden Lauf ist
+#: ohnehin nicht dieser Wert, sondern MAX_RUN_MINUTES in run.py.
+REQUEST_TIMEOUT_MS = 90_000
 
 # --- Warum hier das Nachdenken abgeschaltet wird ------------------------------
 #

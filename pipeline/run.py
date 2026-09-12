@@ -116,6 +116,38 @@ def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
     }
 
 
+def buffered_twin(
+    embedding: list[float] | None, rows: list[dict], threshold: float
+) -> dict | None:
+    """Dublette gegen den EIGENEN Puffer - nicht gegen die Datenbank.
+
+    db.similar_to() fragt, was schon gespeichert ist. Geschrieben wird aber
+    erst alle WRITE_EVERY Karten; was seitdem entstanden ist, liegt im
+    Puffer und ist fuer die Datenbankabfrage unsichtbar.
+
+    Genau das ist passiert: im ersten echten Lauf steht "Duales Studium bei
+    der Bundesbank" ZWEIMAL im Feed, aus zwei verschiedenen Meldungen
+    desselben Hauses. Beide Karten waren korrekt, beide neu - und die
+    Pruefung, die das haette merken sollen, hat die erste noch nicht
+    gesehen.
+
+    Die Kosinus-Aehnlichkeit hier von Hand: numpy nur fuer ein Skalarprodukt
+    ueber hoechstens fuenf Vektoren mitzuschleppen, waere ein Paket mehr in
+    jedem Lauf fuer nichts.
+    """
+    if not embedding:
+        return None
+    for row in rows:
+        other = row.get("embedding")
+        if not other or len(other) != len(embedding):
+            continue
+        punkt = sum(a * b for a, b in zip(embedding, other))
+        betrag = (sum(a * a for a in embedding) ** 0.5) * (sum(b * b for b in other) ** 0.5)
+        if betrag and punkt / betrag >= threshold:
+            return {"title": row.get("title", "?"), "similarity": punkt / betrag}
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="nichts schreiben")
@@ -285,7 +317,8 @@ def main() -> int:
             # Verglichen wird der Quelltext, nicht die fertige Karte: zwei
             # Meldungen ueber denselben Start sind sich im Original
             # aehnlicher als in zwei verschieden formulierten Karten.
-            twin = db.similar_to(embedding, cfg.dedupe_threshold)
+            twin = (db.similar_to(embedding, cfg.dedupe_threshold)
+                    or buffered_twin(embedding, rows, cfg.dedupe_threshold))
             if twin:
                 stats["duplicate"] += 1
                 log.info(

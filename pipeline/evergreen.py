@@ -50,7 +50,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config import Config                      # noqa: E402
 from db import Database                        # noqa: E402
-from run import AUTO_APPROVE_MIN_TRUST, WRITE_EVERY, build_row   # noqa: E402
+from run import (AUTO_APPROVE_MIN_TRUST, WRITE_EVERY, buffered_twin,  # noqa: E402
+                 build_row)
 from sources.wikipedia import fetch_article     # noqa: E402
 from topics import topics_for                   # noqa: E402
 from transform.generate import Generator        # noqa: E402
@@ -193,7 +194,9 @@ def main() -> int:
                 card["category_id"] = topic.category_id
 
                 embedding = gen.embed(item.text, cfg.embedding_model)
-                twin = db.similar_to(embedding, cfg.dedupe_threshold) if embedding else None
+                twin = (db.similar_to(embedding, cfg.dedupe_threshold)
+                        or buffered_twin(embedding, rows, cfg.dedupe_threshold)
+                        ) if embedding else None
                 if twin:
                     stats["duplicate"] += 1
                     log.info("  Dublette: %s  (wie '%s', %.0f%%)",
