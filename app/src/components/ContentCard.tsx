@@ -429,6 +429,22 @@ function ContentCardBase({
         */}
       <GestureDetector gesture={doubleTap} touchAction="pan-y">
         <View style={styles.stage}>
+          {/* Das Blatt.
+              *
+              * Jede Karte, die KEIN Bild im Textfluss hat, bekommt die
+              * Zeichnung stattdessen ueber die ganze Flaeche gelegt, sehr
+              * blass und hinter allem. Damit hat jede Karte
+              * Blaupausen-Charakter - entweder als Bild oder als Blatt -
+              * statt dass die eine Haelfte des Feeds gezeichnet aussieht
+              * und die andere wie eine Textseite.
+              *
+              * Vorher stand hier das Gegenteil: bei einer grossen Kennzahl
+              * fiel die Grafik ersatzlos weg, "zwei Blickfaenge sind
+              * keiner". Das Ziel ist aber nicht EIN Blickfang, sondern eine
+              * Karte, die als Ganzes lebt. */}
+          {!current.showVisual && !kinetic ? (
+            <BlueprintVisual seed={item.id} accentHex={accentHex} variant="sheet" />
+          ) : null}
           {kinetic && page === 0 ? (
             <Animated.View style={[styles.kinetic, contentDrift]}>
               <KineticCard item={item} accent={accent} />
@@ -446,10 +462,6 @@ function ContentCardBase({
               </Animated.Text>
             ) : null}
 
-            {/* Die Blaupausen-Grafik faellt weg, wenn die Karte einen
-                Hauptblock hat. Nicht aus Platzgruenden - sondern weil eine
-                generische Grafik NEBEN einer grossen Zahl die Zahl zur
-                Beilage macht. Zwei Blickfaenge sind keiner. */}
             {current.showVisual && !hasHero ? (
               <Animated.View entering={beat(BEAT.visual)}>
                 <BlueprintVisual seed={item.id} accentHex={accentHex} height={126} />

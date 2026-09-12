@@ -18,6 +18,27 @@ import { categoryAccent, color } from '@/theme/tokens';
  *
  * Dieselbe ID ergibt immer dieselbe Grafik. Der Nutzer erkennt eine Karte
  * wieder, ohne dass irgendwo ein Bild gespeichert waere.
+ *
+ * Zwei Auftritte
+ * --------------
+ * `block`  Ein Bild im Textfluss, wie bisher: Titel, Unterzeile, BILD,
+ *          Absaetze. Fuer Karten, auf denen Platz dafuer ist.
+ *
+ * `sheet`  Dieselbe Zeichnung ueber die GANZE Karte, sehr blass, hinter
+ *          dem Text. Die Karte wird damit zum Blatt, auf dem etwas
+ *          gezeichnet ist, statt eine Liste mit einem Bild darin zu sein.
+ *
+ * Der Anlass fuer `sheet` war eine Rueckmeldung, die meine Aenderung
+ * korrigiert hat: ich hatte die Grafik auf Karten mit grosser Kennzahl
+ * ganz weggelassen, mit der Begruendung "zwei Blickfaenge sind keiner".
+ * Das Ziel ist aber gar nicht EIN Blickfang - es ist, dass die ganze
+ * Karte lebt. Weglassen war die bequeme Antwort; die richtige ist, die
+ * Zeichnung in den Hintergrund zu legen, wo sie traegt statt zu
+ * konkurrieren.
+ *
+ * Die Passermarken sitzen dann an den Ecken der KARTE. Genau das macht
+ * den Blaupausen-Eindruck aus: ein Blatt hat Marken am Rand, nicht in
+ * der Mitte.
  */
 
 const W = 320;
@@ -47,11 +68,30 @@ function BlueprintVisualBase({
   seed,
   accentHex,
   height = H,
+  variant = 'block',
 }: {
   seed: string;
   accentHex?: string | null;
   height?: number;
+  variant?: 'block' | 'sheet';
 }) {
+  const sheet = variant === 'sheet';
+
+  /**
+   * Die Hoehe des Zeichenfelds.
+   *
+   * Beim ersten Versuch wurde dasselbe 320x150-Feld mit "slice" auf die
+   * Karte gestreckt. Das vergroessert alles um das Sechsfache: aus einem
+   * Punkt mit Radius 3 wird ein Klecks von zwanzig Pixeln, und der lag dann
+   * mitten im Wort "Posten". Ein Hintergrund darf nicht die vergroesserte
+   * Fassung eines Vordergrunds sein.
+   *
+   * Also wird die Zeichnung gleich im Format der Karte erzeugt: dieselbe
+   * Strichstaerke, dieselben Abstaende, nur mehr Platz nach unten - und
+   * entsprechend mehr Elemente, damit das Blatt nicht oben voll und unten
+   * leer ist.
+   */
+  const h = sheet ? 560 : H;
   const accent = categoryAccent(accentHex);
 
   const art = useMemo(() => {
@@ -64,18 +104,44 @@ function BlueprintVisualBase({
 
   const { motif, r, highlight } = art;
   const line = { stroke: color.gridLineMajor, strokeWidth: 1, fill: 'none' } as const;
-  const hot = { stroke: accent, strokeWidth: 1.6, fill: 'none' } as const;
+  /**
+   * Im Blatt gibt es KEINE Signalfarbe.
+   *
+   * Nicht aus Geschmack, sondern wegen der Kernregel des Designsystems
+   * (theme/tokens.ts): Farbe erscheint nur bei Interaktion. Ein cyanfarbener
+   * Strich, den niemand ausgeloest hat und der auch noch hinter dem Text
+   * liegt, bricht genau diese Regel - und macht den Text schlechter lesbar.
+   */
+  const hot = sheet
+    ? line
+    : ({ stroke: accent, strokeWidth: 1.6, fill: 'none' } as const);
+  /** Punkte im Blatt sind Markierungen, keine Leuchtpunkte. */
+  const dot = sheet ? color.ink.faint : accent;
+  const dotQuiet = sheet ? color.ink.faint : color.ink.mid;
 
   return (
-    <View style={[styles.wrap, { height }]}>
-      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+    <View
+      style={sheet ? styles.sheet : [styles.wrap, { height }]}
+      pointerEvents="none"
+    >
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${W} ${h}`}
+        // "slice" statt "meet": das Blatt soll die Karte FUELLEN. Bei
+        // "meet" bliebe oben und unten ein Streifen frei, und genau dort
+        // stehen Titel und Quelle - die Passermarken saessen dann mitten
+        // im Text statt an den Ecken.
+        preserveAspectRatio={sheet ? 'xMidYMid slice' : 'xMidYMid meet'}
+        opacity={sheet ? 0.55 : 1}
+      >
         {/* Passermarken an den Ecken - das Detail, das den Blaupausen-Eindruck macht */}
         <G opacity={0.5}>
           {[
             [8, 8],
             [W - 8, 8],
-            [8, H - 8],
-            [W - 8, H - 8],
+            [8, h - 8],
+            [W - 8, h - 8],
           ].map(([x, y], i) => (
             <G key={i}>
               <Line x1={x - 5} y1={y} x2={x + 5} y2={y} stroke={color.ink.faint} strokeWidth={1} />
@@ -86,13 +152,13 @@ function BlueprintVisualBase({
 
         {motif === 'orbit' && (
           <G>
-            {[0, 1, 2, 3].map((i) => {
-              const rx = 26 + i * 20 + r() * 8;
+            {(sheet ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 1, 2, 3]).map((i) => {
+              const rx = 26 + i * (sheet ? 34 : 20) + r() * 8;
               return (
                 <Circle
                   key={i}
                   cx={W / 2}
-                  cy={H / 2}
+                  cy={h / 2}
                   r={rx}
                   {...(i === highlight % 4 ? hot : line)}
                 />
@@ -105,9 +171,9 @@ function BlueprintVisualBase({
                 <Circle
                   key={`d${i}`}
                   cx={W / 2 + Math.cos(angle) * rad}
-                  cy={H / 2 + Math.sin(angle) * rad}
+                  cy={h / 2 + Math.sin(angle) * rad}
                   r={3}
-                  fill={i === 0 ? accent : color.ink.low}
+                  fill={i === 0 ? dot : sheet ? color.ink.faint : color.ink.low}
                 />
               );
             })}
@@ -117,16 +183,16 @@ function BlueprintVisualBase({
         {motif === 'network' && (
           <G>
             {(() => {
-              const nodes = Array.from({ length: 7 }, () => ({
+              const nodes = Array.from({ length: sheet ? 16 : 7 }, () => ({
                 x: 40 + r() * (W - 80),
-                y: 26 + r() * (H - 52),
+                y: 26 + r() * (h - 52),
               }));
               return (
                 <>
                   {nodes.map((a, i) =>
                     nodes.slice(i + 1).map((b, j) => {
                       const d = Math.hypot(a.x - b.x, a.y - b.y);
-                      if (d > 96) return null;
+                      if (d > (sheet ? 150 : 96)) return null;
                       return (
                         <Line
                           key={`${i}-${j}`}
@@ -145,7 +211,7 @@ function BlueprintVisualBase({
                       cx={n.x}
                       cy={n.y}
                       r={i === highlight % 7 ? 5 : 3.2}
-                      fill={i === highlight % 7 ? accent : color.ink.mid}
+                      fill={i === highlight % 7 ? dot : dotQuiet}
                     />
                   ))}
                 </>
@@ -156,10 +222,10 @@ function BlueprintVisualBase({
 
         {motif === 'wave' && (
           <G>
-            {[0, 1, 2].map((k) => {
+            {(sheet ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2]).map((k) => {
               const amp = 14 + r() * 22;
               const freq = 1 + r() * 2.2;
-              const offset = H / 2 + (k - 1) * 22;
+              const offset = sheet ? 60 + k * 72 : h / 2 + (k - 1) * 22;
               const d = Array.from({ length: 33 }, (_, i) => {
                 const x = 20 + (i * (W - 40)) / 32;
                 const y = offset + Math.sin((i / 32) * Math.PI * 2 * freq) * amp * (1 - k * 0.25);
@@ -172,8 +238,8 @@ function BlueprintVisualBase({
 
         {motif === 'strata' && (
           <G>
-            {Array.from({ length: 9 }, (_, i) => {
-              const y = 20 + i * 13;
+            {Array.from({ length: sheet ? 22 : 9 }, (_, i) => {
+              const y = 20 + i * (sheet ? 24 : 13);
               const w = 60 + r() * (W - 130);
               return (
                 <Line
@@ -182,34 +248,34 @@ function BlueprintVisualBase({
                   y1={y}
                   x2={34 + w}
                   y2={y}
-                  stroke={i === highlight % 9 ? accent : color.gridLineMajor}
-                  strokeWidth={i === highlight % 9 ? 2.5 : 1.5}
+                  stroke={!sheet && i === highlight % 9 ? accent : color.gridLineMajor}
+                  strokeWidth={!sheet && i === highlight % 9 ? 2.5 : 1.5}
                 />
               );
             })}
-            <Line x1={26} y1={14} x2={26} y2={H - 14} stroke={color.ink.faint} strokeWidth={1} />
+            <Line x1={26} y1={14} x2={26} y2={h - 14} stroke={color.ink.faint} strokeWidth={1} />
           </G>
         )}
 
         {motif === 'radial' && (
           <G>
-            {Array.from({ length: 18 }, (_, i) => {
-              const a = (i / 18) * Math.PI * 2;
-              const inner = 18;
-              const outer = 32 + r() * 34;
+            {Array.from({ length: sheet ? 30 : 18 }, (_, i) => {
+              const a = (i / (sheet ? 30 : 18)) * Math.PI * 2;
+              const inner = sheet ? 40 : 18;
+              const outer = (sheet ? 90 : 32) + r() * (sheet ? 130 : 34);
               return (
                 <Line
                   key={i}
                   x1={W / 2 + Math.cos(a) * inner}
-                  y1={H / 2 + Math.sin(a) * inner}
+                  y1={h / 2 + Math.sin(a) * inner}
                   x2={W / 2 + Math.cos(a) * outer}
-                  y2={H / 2 + Math.sin(a) * outer}
-                  stroke={i % 6 === highlight % 6 ? accent : color.gridLineMajor}
-                  strokeWidth={i % 6 === highlight % 6 ? 2 : 1}
+                  y2={h / 2 + Math.sin(a) * outer}
+                  stroke={!sheet && i % 6 === highlight % 6 ? accent : color.gridLineMajor}
+                  strokeWidth={!sheet && i % 6 === highlight % 6 ? 2 : 1}
                 />
               );
             })}
-            <Circle cx={W / 2} cy={H / 2} r={14} {...line} />
+            <Circle cx={W / 2} cy={h / 2} r={sheet ? 30 : 14} {...line} />
           </G>
         )}
       </Svg>
@@ -219,6 +285,10 @@ function BlueprintVisualBase({
 
 const styles = StyleSheet.create({
   wrap: { width: '100%', overflow: 'hidden' },
+  // Hinter dem Inhalt, ueber dem Kartengrund. `overflow: hidden` ist
+  // Pflicht: "slice" schneidet zu, und ohne das laegen die
+  // ueberstehenden Linien auf der Nachbarkarte.
+  sheet: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
 });
 
 export const BlueprintVisual = memo(BlueprintVisualBase);

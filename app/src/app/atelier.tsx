@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
+import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { Button } from '@/components/Button';
 import { CardBlock } from '@/components/CardBlock';
 import { CardTypeBadge } from '@/components/CardTypeBadge';
@@ -127,6 +128,9 @@ function Karte({
 
   return (
     <View style={[styles.karte, { height }]}>
+      {/* Dasselbe Blatt wie im Feed: die Zeichnung ueber die ganze Karte,
+          hinter allem. */}
+      <BlueprintVisual seed={item.id} accentHex={accent} variant="sheet" />
       <View style={styles.kopf}>
         <View style={styles.kopfLinks}>
           <CardTypeBadge contentType={item.content_type} tint={accent} />
@@ -285,6 +289,7 @@ const styles = StyleSheet.create({
   zeileWert: { ...type.label, color: color.ink.mid },
 
   karte: {
+    overflow: 'hidden',
     padding: space.xl,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
