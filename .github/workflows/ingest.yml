@@ -277,11 +277,20 @@ jobs:
       # einer alten. Ist nichts uebrig, bricht das Skript nach dem ersten
       # Fehlversuch ab (gen.exhausted) und kostet Sekunden.
       #
-      # Nur EINMAL am Tag, nicht bei jedem der vier Laeufe. Der Grund ist
-      # das Minutenbudget: dieses Repo ist privat, GitHub gibt 2000 Minuten
-      # im Monat, und vier Laeufe sind schon der groessere Teil davon. Die
-      # Nachruestung arbeitet ueber Tage, nicht ueber Stunden - ein Lauf
-      # taeglich reicht dafuer voellig.
+      # Wie oft, entscheidet die Sichtbarkeit des Repos - und zwar von
+      # selbst.
+      #
+      # PRIVAT gibt GitHub 2000 Actions-Minuten im Monat, und vier Laeufe
+      # taeglich sind davon schon der groessere Teil. Dann laeuft die
+      # Nachruestung nur im 06:17-Lauf; sie arbeitet ueber Tage, nicht ueber
+      # Stunden, das reicht.
+      #
+      # OEFFENTLICH sind die Minuten unbegrenzt. Dann gibt es keinen Grund
+      # zu sparen, und sie laeuft in jedem Lauf.
+      #
+      # `github.event.repository.private` steht auch im schedule-Ereignis
+      # zur Verfuegung. Damit muss beim Umstellen niemand daran denken,
+      # diese Datei anzufassen - und genau daran denkt man nicht.
       - name: Erklaerkarten nachruesten
         continue-on-error: true
         timeout-minutes: 6
@@ -297,12 +306,15 @@ jobs:
           GEMINI_MODEL: gemini-3.5-flash
           MAX_GEMINI_CALLS_PER_RUN: "300"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+          REPO_PRIVAT: ${{ github.event.repository.private }}
         run: |
           set -o pipefail
           stunde=$(date -u +%H)
-          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$stunde" != "06" ]; then
-            echo "Nicht der Lauf fuer die Nachruestung (UTC-Stunde $stunde)."
-            echo "Sie laeuft im 06:17-Lauf und bei jedem Start von Hand."
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]              && [ "$REPO_PRIVAT" = "true" ] && [ "$stunde" != "06" ]; then
+            echo "Privates Repo, Minutenbudget: die Nachruestung laeuft nur"
+            echo "im 06:17-Lauf (jetzt ist es $stunde Uhr UTC) und bei jedem"
+            echo "Start von Hand. Wird das Repo oeffentlich, laeuft sie in"
+            echo "jedem Lauf - ohne dass hier etwas geaendert werden muss."
             exit 0
           fi
           # --limit deckelt die Versuche, nicht die Treffer: jede Karte
