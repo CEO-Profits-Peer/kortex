@@ -74,12 +74,42 @@ def check(entry: tuple[str, str, str]) -> tuple[str, str, int, str]:
         return (source_id, lang, 0, f'{type(exc).__name__}: {exc}'[:60])
 
 
+def feeds_aus_datenbank() -> list[tuple[str, str, str]] | None:
+    """Die aktiven Quellen samt ihrer Adressen - oder None.
+
+    Jeder Fehler fuehrt hier zu None, nicht zu einem Abbruch: fehlende
+    Zugangsdaten, kaputtes Netz, streikende Datenbank. Das Skript soll
+    seinen Zweck auch ohne sie erfuellen.
+    """
+    try:
+        from config import Config
+        from db import Database
+
+        cfg = Config.load()
+        with Database(cfg) as db:
+            rows = db._get('/sources', {'select': 'id,default_language,feed_urls',
+                                        'is_active': 'eq.true'})
+        out: list[tuple[str, str, str]] = []
+        for row in rows:
+            for url in row.get('feed_urls') or []:
+                out.append((row['id'], row.get('default_language') or 'de', url))
+        return out or None
+    except Exception:  # noqa: BLE001 - jeder Grund fuehrt zum Rueckfall
+        return None
+
+
 def main() -> int:
-    print(f'Pruefe {len(FEEDS)} Feeds …\n')
+    aus_db = feeds_aus_datenbank()
+    feeds = aus_db or FEEDS
+    herkunft = 'aus der Datenbank' if aus_db else 'aus der festen Liste (Stand 0019)'
+    print(f'Pruefe {len(feeds)} Feeds {herkunft}' + chr(10))
+    if not aus_db:
+        print('  Hinweis: die Datenbank war nicht erreichbar. Neuere Quellen')
+        print('  fehlen in dieser Pruefung.' + chr(10))
 
     # Parallel, sonst dauert es bei zwanzig Quellen eine Minute.
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(check, FEEDS))
+        results = list(pool.map(check, feeds))
 
     ok = [r for r in results if r[2] > 0]
     bad = [r for r in results if r[2] == 0]
@@ -88,17 +118,20 @@ def main() -> int:
         mark = 'OK  ' if n > 0 else 'TOT '
         print(f'  {mark} {source_id:<14} {lang}  {n:>3} Eintraege   {note}')
 
-    print(f'\n{len(ok)} von {len(FEEDS)} erreichbar, zusammen '
+    print(f'\n{len(ok)} von {len(feeds)} erreichbar, zusammen '
           f'{sum(r[2] for r in results)} Eintraege.')
 
     if bad:
         print('\nTote Quellen muessen raus oder ersetzt werden:')
         print('  update public.sources set is_active = false where id in (' +
-              ', '.join(f"'{r[0].split('-')[0]}'" for r in bad) + ');')
+              ', '.join(f"'{r[0]}'" for r in bad) + ');')
         return 1
     return 0
 
 
 if __name__ == '__main__':
-    sys.path.insert(0, __file__.rsplit('\\', 1)[0].rsplit('/', 1)[0])
+    # Vor dem Import von config/db: die liegen neben dieser Datei.
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent))
     raise SystemExit(main())

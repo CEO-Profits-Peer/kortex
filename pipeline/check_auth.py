@@ -35,6 +35,7 @@ nachsehen, ob die Mail ankommt.
 
 from __future__ import annotations
 
+import os
 import pathlib
 import sys
 import time
@@ -63,17 +64,29 @@ def env(pfad: pathlib.Path) -> dict[str, str]:
 
 
 def main() -> int:
-    wurzel = pathlib.Path(__file__).resolve().parent.parent
-    datei = wurzel / "app" / ".env"
-    if not datei.exists():
-        print(f"app/.env fehlt ({datei})")
-        return 1
+    # Zuerst die Umgebung, dann app/.env.
+    #
+    # Auf dem eigenen Rechner steht beides in app/.env; im Zeitplan gibt
+    # es diese Datei nicht (sie ist absichtlich nicht eingecheckt). Beide
+    # Werte sind oeffentlich - der anon-Schluessel steckt im
+    # ausgelieferten Bundle und ist genau dafuer gemacht. Geschuetzt wird
+    # in Supabase durch RLS, nicht durch Geheimhaltung dieses Werts.
+    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    anon = os.environ.get("SUPABASE_ANON_KEY", "")
 
-    werte = env(datei)
-    url = werte.get("EXPO_PUBLIC_SUPABASE_URL", "").rstrip("/")
-    anon = werte.get("EXPO_PUBLIC_SUPABASE_ANON_KEY", "")
     if not url or not anon:
-        print("EXPO_PUBLIC_SUPABASE_URL oder _ANON_KEY fehlt in app/.env")
+        wurzel = pathlib.Path(__file__).resolve().parent.parent
+        datei = wurzel / "app" / ".env"
+        if not datei.exists():
+            print("Weder SUPABASE_URL/SUPABASE_ANON_KEY in der Umgebung noch")
+            print(f"app/.env vorhanden ({datei}). Nichts zu pruefen.")
+            return 1
+        werte = env(datei)
+        url = url or werte.get("EXPO_PUBLIC_SUPABASE_URL", "").rstrip("/")
+        anon = anon or werte.get("EXPO_PUBLIC_SUPABASE_ANON_KEY", "")
+
+    if not url or not anon:
+        print("Projektadresse oder anon-Schluessel fehlt.")
         return 1
 
     print(f"Projekt: {url}\n")

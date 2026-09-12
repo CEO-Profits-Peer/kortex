@@ -1,0 +1,125 @@
+name: Gesundheit
+
+# Was still kaputtgeht, waehrend alles gruen aussieht.
+#
+# Der Ingest-Lauf meldet einen Fehlschlag nur, wenn er abstuerzt. Eine
+# Quelle, deren Adresse seit drei Wochen ins Leere zeigt, ist kein
+# Fehlschlag - sie liefert einfach nichts, und der Lauf endet gruen mit
+# ein paar Karten weniger. Genau so sind sechs Volltextquellen gestorben,
+# ohne dass es jemandem aufgefallen ist: nicht wegen des Genres, nicht
+# wegen der Lizenz, sondern nur wegen HTTP 404.
+#
+# Dieser Lauf braucht KEIN Gemini-Kontingent. Er kostet ausschliesslich
+# Actions-Minuten, und die sind bei einem oeffentlichen Repo unbegrenzt -
+# solange es privat war, waere er die erste Sache gewesen, die man
+# streicht. Jetzt ist er umsonst zu haben.
+
+on:
+  schedule:
+    # Einmal taeglich, kurz vor dem 06:17-Ingest. Wer morgens ins Log
+    # schaut, sieht damit den Zustand VOR dem Lauf, nicht danach.
+    - cron: "5 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: gesundheit
+  cancel-in-progress: true
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Abhaengigkeiten
+        run: pip install -r pipeline/requirements.txt
+
+      # --- Feeds ---------------------------------------------------------
+      #
+      # Holt die Quellenliste aus der Datenbank, nicht aus der fest
+      # verdrahteten Liste im Skript. Die kennt achtzehn Feeds, in der
+      # Datenbank stehen achtunddreissig - ein Test, der zwei Drittel
+      # prueft und "alles in Ordnung" meldet, beruhigt ueber genau das,
+      # was er nicht kennt.
+      #
+      # `continue-on-error`, weil eine tote Quelle kein Grund ist, die
+      # Themenpruefung danach ausfallen zu lassen. Rot wird der Lauf
+      # trotzdem - siehe den letzten Schritt.
+      - name: Feeds
+        id: feeds
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -o pipefail
+          python pipeline/check_feeds.py 2>&1 | tee "$RUNNER_TEMP/feeds.log"
+
+      # --- Wikipedia-Lemmas ----------------------------------------------
+      #
+      # Ein Tippfehler in topics.py faellt sonst nie auf: das Skript holt
+      # den Artikel nicht, zaehlt "kein Artikel" hoch und macht weiter.
+      # Bei 382 Themen sieht man eine einzelne Fehlstelle nicht.
+      - name: Themenliste
+        id: themen
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python pipeline/check_topics.py 2>&1 | tee "$RUNNER_TEMP/themen.log"
+
+      # --- Anmeldung ------------------------------------------------------
+      #
+      # Nur mit dem oeffentlichen anon-Key, kein Browser noetig. Prueft,
+      # ob Google-Anmeldung und E-Mail-Wege ueberhaupt erreichbar sind.
+      - name: Anmeldung
+        id: auth
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -o pipefail
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Kein SUPABASE_ANON_KEY hinterlegt - Anmeldepruefung uebersprungen."
+            echo "Der anon-Schluessel ist nicht geheim (er steckt im ausgelieferten"
+            echo "Bundle). Wer diese Pruefung will, legt ihn unter Settings ->"
+            echo "Secrets -> Actions als SUPABASE_ANON_KEY ab."
+            exit 0
+          fi
+          python pipeline/check_auth.py 2>&1 | tee "$RUNNER_TEMP/auth.log"
+
+      - name: Bilanz in die Uebersicht
+        if: always()
+        run: |
+          for datei in feeds themen auth; do
+            pfad="$RUNNER_TEMP/$datei.log"
+            [ -f "$pfad" ] || continue
+            echo "## $datei" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 25 "$pfad" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      # Am Ende EINMAL rot werden, wenn etwas nicht stimmt - nach der
+      # Bilanz, damit sie auf jeden Fall geschrieben ist. Ein Lauf, der in
+      # der Mitte stirbt, nimmt genau die Uebersicht mit, fuer die man ihn
+      # aufmacht.
+      - name: Ergebnis
+        if: always()
+        run: |
+          schlecht=""
+          [ "${{ steps.feeds.outcome }}" = "failure" ] && schlecht="$schlecht Feeds"
+          [ "${{ steps.themen.outcome }}" = "failure" ] && schlecht="$schlecht Themenliste"
+          [ "${{ steps.auth.outcome }}" = "failure" ] && schlecht="$schlecht Anmeldung"
+          if [ -n "$schlecht" ]; then
+            echo "::error::Nicht in Ordnung:$schlecht - Einzelheiten in der Uebersicht oben."
+            exit 1
+          fi
+          echo "Alles erreichbar."

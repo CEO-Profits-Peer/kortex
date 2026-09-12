@@ -11,22 +11,37 @@ name: Ingest
 
 on:
   schedule:
-    # Alle 6 Stunden, also vier Laeufe am Tag.
+    # Alle 3 Stunden, also acht Laeufe am Tag.
     #
-    # Hier stand "alle 3 Stunden" mit der Rechnung "acht Laeufe a rund
-    # fuenf Minuten sind etwa 1200 GitHub-Minuten im Monat". Die fuenf
-    # Minuten waren geraten, und der erste echte Lauf hat es widerlegt: er
-    # lief in das Zeitlimit von zwanzig Minuten. Acht mal zwanzig sind
-    # 4800 Minuten im Monat - das Gratiskontingent fuer private Repos
-    # liegt bei 2000. Nach zwei Wochen waere Schluss gewesen.
+    # Die Geschichte dieser Zeile, weil sie zweimal falsch war:
     #
-    # Vier Laeufe kosten nichts an Menge: das Gemini-Gratiskontingent
-    # sind 20 Anfragen pro Tag und Modell, der Tagesvorrat ist also fest.
-    # Haeufiger heisst nur: derselbe Vorrat in kleineren Portionen.
-    # Bezahlt wird mit Aktualitaet - eine Nachricht kann jetzt bis zu
-    # sechs Stunden alt sein, bevor sie im Feed auftaucht. Bei
-    # Wissenskarten ist das egal, bei Nachrichten spuerbar.
-    - cron: "17 */6 * * *"
+    # Zuerst standen hier drei Stunden mit der Rechnung "acht Laeufe a
+    # rund fuenf Minuten". Die fuenf Minuten waren geraten, der erste
+    # echte Lauf lief ins Zeitlimit von zwanzig. Acht mal zwanzig sind
+    # 4800 Minuten im Monat, und private Repos haben 2000 - also runter
+    # auf sechs Stunden.
+    #
+    # Seit das Repo OEFFENTLICH ist, sind die Actions-Minuten unbegrenzt.
+    # Damit faellt der einzige Grund fuer sechs Stunden weg.
+    #
+    # Was haeufigere Laeufe NICHT bringen: mehr Karten. Das
+    # Gemini-Gratiskontingent sind 20 Anfragen pro Tag, Modell und
+    # Projekt - bei sechs brauchbaren Modellen und fuenf Schluesseln also
+    # rund 600 am Tag, egal wie oft jemand fragt. Haeufiger heisst:
+    # derselbe Vorrat in kleineren Portionen.
+    #
+    # Was sie sehr wohl bringen, sind zwei Dinge:
+    #
+    #   Aktualitaet  Eine Nachricht ist hoechstens drei statt sechs
+    #                Stunden alt, bevor sie im Feed auftaucht.
+    #   Verteilung   Der Tagesvorrat wird ueber den Tag ausgegeben statt
+    #                im ersten Lauf. Vorher konnte der Lauf um 00:17 das
+    #                ganze Kontingent verbrauchen, und alles, was danach
+    #                veroeffentlicht wurde, kam erst am naechsten Tag
+    #                dran. Dafuer sind die Obergrenzen je Lauf unten
+    #                deutlich kleiner geworden - das ist der eigentliche
+    #                Hebel, nicht das Intervall.
+    - cron: "17 */3 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -211,7 +226,19 @@ jobs:
           # (MAX_GEMINI_CALLS_PER_RUN und die 20 Anfragen pro Modell und
           # Tag), nicht die Zahl der angesehenen Artikel.
           MAX_ITEMS_PER_RUN: "250"
-          MAX_GEMINI_CALLS_PER_RUN: "300"
+          # 45 statt 300 - und das ist eine Verschaerfung mit Absicht.
+          #
+          # Gezaehlt werden Karten-, Drehbuch- und Einbettungsaufrufe
+          # zusammen; gemessen sind das rund 3,8 je fertiger Karte (30
+          # Karten in 114 Aufrufen). Der Tagesvorrat liegt bei etwa 600
+          # Modellanfragen, verteilt auf acht Laeufe also rund 100 je
+          # Lauf fuer alle drei Schritte zusammen.
+          #
+          # 300 hiess in der Praxis: der erste Lauf des Tages nimmt
+          # alles. Was um zehn Uhr veroeffentlicht wird, kam dann erst am
+          # naechsten Tag dran - bei Nachrichten der Unterschied zwischen
+          # aktuell und egal.
+          MAX_GEMINI_CALLS_PER_RUN: "45"
           # Karten gehen live, OHNE dass jemand draufschaut - aber nur von
           # Quellen mit hohem Vertrauenswert (>= 80: Institutionen,
           # Forschungseinrichtungen). Alles darunter landet weiter auf
@@ -256,7 +283,10 @@ jobs:
           GEMINI_MODEL: gemini-3.5-flash
           GEMINI_EMBEDDING_MODEL: gemini-embedding-001
           INGEST_LANGUAGES: de,en
-          MAX_GEMINI_CALLS_PER_RUN: "300"
+          # Etwas weniger als die Nachrichten: die sind nur heute etwas
+          # wert, ein Wikipedia-Artikel auch morgen noch. Was hier nicht
+          # drankommt, holt der naechste Lauf - in drei Stunden.
+          MAX_GEMINI_CALLS_PER_RUN: "35"
           AUTO_APPROVE: "true"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: |
@@ -304,7 +334,10 @@ jobs:
           GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
           GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
           GEMINI_MODEL: gemini-3.5-flash
-          MAX_GEMINI_CALLS_PER_RUN: "300"
+          # Der Rest. Nachruesten ist die am wenigsten dringende Arbeit:
+          # eine neue Karte ist mehr wert als eine bessere Darstellung
+          # einer alten.
+          MAX_GEMINI_CALLS_PER_RUN: "20"
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
           REPO_PRIVAT: ${{ github.event.repository.private }}
         run: |
