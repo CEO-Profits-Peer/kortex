@@ -171,11 +171,26 @@ function Bar({
   );
 }
 
+const komma = (s: string) => s.replace('.', ',');
+
 /** Tausendertrennung mit schmalem Leerzeichen - liest sich besser als Punkt. */
 function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return '–';
-  if (Math.abs(n) >= 1e9) return `${(n / 1e9).toFixed(n >= 1e10 ? 0 : 1)} Mrd.`;
-  if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)} Mio.`;
+  // toFixed liefert immer einen PUNKT als Dezimaltrennzeichen. Das fiel
+  // erst auf, als bei `scale` "× 1.7 Mio." direkt neben "1,7 m" stand -
+  // zwei Schreibweisen in derselben Zeile.
+  if (Math.abs(n) >= 1e9) return `${komma((n / 1e9).toFixed(n >= 1e10 ? 0 : 1))} Mrd.`;
+  if (Math.abs(n) >= 1e6) return `${komma((n / 1e6).toFixed(n >= 1e7 ? 0 : 1))} Mio.`;
+  // Sehr kleine Werte NICHT ueber die Standardformatierung: toLocaleString
+  // rundet auf drei Nachkommastellen, und damit wurde aus 0,000001 eine
+  // glatte "0". Aufgefallen an der ersten scale-Karte - "Bakterium 0 m"
+  // stand da, und das ist keine Ungenauigkeit, sondern eine Falschaussage.
+  //
+  // Erst mit `scale` konnte es auffallen: vorher kamen Werte unter eins in
+  // keiner Bildart vor.
+  if (n !== 0 && Math.abs(n) < 0.01) {
+    return n.toLocaleString('de-DE', { maximumSignificantDigits: 3 });
+  }
   return n.toLocaleString('de-DE');
 }
 
@@ -796,8 +811,12 @@ function Scale({
     const faktoren = werte.map((v, i) => {
       if (i === 0) return null;
       const f = v / werte[i - 1];
+      // Unter Faktor zwei ist der Sprung keine Aussage, sondern Rauschen.
       if (f < 2) return null;
-      return f >= 1000 ? `× ${Math.round(f / 1000)} 000` : `× ${Math.round(f)}`;
+      // Ueber formatNumber, nicht selbst gerechnet. Der erste Versuch war
+      // `Math.round(f / 1000) + ' 000'`, und aus 1,7 Millionen wurde damit
+      // "× 1700 000" - eine Zahl, die es nicht gibt.
+      return `× ${formatNumber(Math.round(f))}`;
     });
     return { anteile, faktoren };
   }, [show.items]);
@@ -1071,18 +1090,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: color.ink.faint,
   },
-  // 44/28/28: die Beschriftung braucht mehr Platz als die Werte, weil dort
-  // ganze Woerter stehen ("Monatliche Kosten") und rechts meist Zahlen.
-  cmpLabel: { ...type.meta, color: color.ink.low, width: '44%' },
+  // flex statt Prozent, und das ist ein korrigierter Fehler: 44 % + 28 % +
+  // 28 % sind zusammen 100 %, und die zwei Abstaende von je acht Punkten
+  // kommen OBEN DRAUF. Die dritte Spalte stand damit ausserhalb der Karte -
+  // "EIGENTUM" wurde zu "EIGEN", "20 % Anzahlung" zu "20 % Anzah".
+  //
+  // flex teilt den Platz NACH den Abstaenden auf, also kann es nicht mehr
+  // passieren. 1.6 fuer die Beschriftung, weil dort ganze Woerter stehen
+  // ("Monatliche Kosten") und in den Spalten meist Zahlen.
+  cmpLabel: { ...type.meta, color: color.ink.low, flex: 1.6 },
   cmpHeadCell: {
     ...type.mono,
     fontSize: 11,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: color.ink.mid,
-    width: '28%',
+    flex: 1,
   },
-  cmpCell: { ...type.body, fontSize: 15, lineHeight: 20, color: color.ink.high, width: '28%' },
+  cmpCell: { ...type.body, fontSize: 15, lineHeight: 20, color: color.ink.high, flex: 1 },
 
   // --- Groessenordnungen ---
   scale: { gap: space.md },
