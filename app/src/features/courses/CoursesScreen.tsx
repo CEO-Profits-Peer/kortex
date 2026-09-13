@@ -12,7 +12,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BlueprintVisual } from '@/components/BlueprintVisual';
+import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
+import { TabHint, useTabHint } from '@/components/TabHint';
 import { DailyBanner } from '@/features/daily/DailyBanner';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
@@ -28,6 +30,7 @@ import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
  * kommen.
  */
 export function CoursesScreen() {
+  const hinweis = useTabHint('kurse');
   const insets = useSafeAreaInsets();
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -158,6 +161,15 @@ export function CoursesScreen() {
           ist technisch nichts anderes als eine feste Reihenfolge davon.
         </Text>
       </ScrollView>
+      {hinweis.zeigen ? (
+        <TabHint
+          icon="courses"
+          titel="Kurse sind eine Reihenfolge"
+          text="Anders als im Feed bauen die Karten aufeinander auf: Lektion 1 setzt nichts voraus, die letzte ist der Punkt, wegen dem sich die davor gelohnt haben."
+          bottom={TAB_BAR_HEIGHT}
+          onDone={hinweis.weg}
+        />
+      ) : null}
     </GridBackground>
   );
 }

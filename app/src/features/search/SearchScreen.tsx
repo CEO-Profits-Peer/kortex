@@ -16,7 +16,9 @@ import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 
 import { Appear } from '@/components/Appear';
+import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
+import { TabHint, useTabHint } from '@/components/TabHint';
 import { Icon } from '@/components/Icon';
 import { api } from '@/lib/supabase';
 import type { Category, SearchHit } from '@/lib/types.db';
@@ -47,6 +49,7 @@ const KIND_LABEL: Record<SearchHit['kind'], string> = {
 const KIND_ORDER: SearchHit['kind'][] = ['category', 'source', 'profile', 'course', 'content'];
 
 export function SearchScreen() {
+  const hinweis = useTabHint('suche');
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[] | null>(null);
@@ -301,6 +304,15 @@ export function SearchScreen() {
           )}
         </ScrollView>
       </View>
+      {hinweis.zeigen ? (
+        <TabHint
+          icon="search"
+          titel="Drei Arten zu suchen"
+          text="Ein Stichwort findet Karten. #Kategorie findet ein Thema, @name eine Person. Alles, was hier steht, kannst du sofort lesen."
+          bottom={TAB_BAR_HEIGHT}
+          onDone={hinweis.weg}
+        />
+      ) : null}
     </GridBackground>
   );
 }

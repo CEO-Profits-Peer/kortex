@@ -190,6 +190,63 @@ export type SearchHit = {
   score: number;
 };
 
+// --- Duelle ------------------------------------------------------------------
+
+export type DuelCard = {
+  id: string;
+  title: string;
+  deck: string | null;
+  body_blocks: BodyBlock[];
+  category: string;
+};
+
+/** Die Lernphase. `phase` wechselt auf 'quiz', sobald die Minute um ist. */
+export type DuelStudy = {
+  phase: 'study' | 'quiz';
+  seconds_left: number;
+  cards: DuelCard[];
+};
+
+/** Fragen OHNE correct_index - der Server behaelt die Loesung. */
+export type DuelQuestion = {
+  content_id: string;
+  title: string;
+  question: string;
+  options: string[];
+};
+
+export type DuelQuiz = {
+  seconds_left: number;
+  questions: DuelQuestion[];
+};
+
+export type DuelResult = {
+  correct: number;
+  total: number;
+  /** Abgegeben, nachdem die Zeit abgelaufen war - zaehlt null. */
+  late: boolean;
+  elapsed_ms: number;
+  /** Der andere hat noch nicht gespielt. */
+  waiting: boolean;
+};
+
+export type DuelListEntry = {
+  id: string;
+  gegner: {
+    handle: string;
+    name: string | null;
+    avatar_seed: string;
+    avatar_path: string | null;
+  };
+  ich_habe_gestartet: boolean;
+  laeuft: boolean;
+  endet: string;
+  mein_stand: 'offen' | 'laeuft' | 'fertig';
+  meine_punkte: number | null;
+  gegner_punkte: number | null;
+  gegner_fertig: boolean;
+};
+
 export type LeaderboardRow = {
   rank_pos: number;
   handle: string;

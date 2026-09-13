@@ -27,11 +27,27 @@
 --
 -- Vollstaendig aus 0002_rls.sql wiederholt, inklusive security_invoker = off:
 -- create or replace view ersetzt die Definition, es gibt kein Teil-Update.
+--
+-- avatar_path steht GANZ HINTEN, nicht neben avatar_seed, wo es hingehoert.
+-- Beim ersten Versuch stand es dort, und PostgreSQL hat abgelehnt:
+--
+--   ERROR: cannot change name of view column "region_code" to "avatar_path"
+--
+-- `create or replace view` darf Spalten nur ANHAENGEN. Wer eine in die Mitte
+-- setzt, benennt aus Sicht der Datenbank alle folgenden um - und das ist
+-- etwas anderes als eine neue Spalte.
+--
+-- Der saubere Weg waere drop view + create view. Dagegen spricht, dass drei
+-- Funktionen aus dieser Sicht lesen (search_all, get_leaderboard,
+-- search_content): waehrend des drop gibt es sie nicht, und ein Aufruf in
+-- genau diesem Moment scheitert. Eine huebschere Spaltenreihenfolge ist
+-- diesen Moment nicht wert.
 create or replace view public.public_profiles
 with (security_invoker = off) as
 select
-  p.id, p.handle, p.display_name, p.avatar_seed, p.avatar_path, p.region_code,
-  p.mastery_total, p.streak_current, p.leaderboard_opt_in
+  p.id, p.handle, p.display_name, p.avatar_seed, p.region_code,
+  p.mastery_total, p.streak_current, p.leaderboard_opt_in,
+  p.avatar_path
 from public.profiles p
 where p.leaderboard_opt_in;
 

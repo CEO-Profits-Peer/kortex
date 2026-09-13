@@ -22,6 +22,7 @@ import { Icon } from '@/components/Icon';
 import { COUNTRIES } from '@/features/onboarding/regions';
 import { BRAND } from '@/lib/brand';
 import { haptics } from '@/lib/haptics';
+import { resetTabHints } from '@/components/TabHint';
 import { resetFeedTutorial } from '@/features/feed/FeedTutorial';
 import { stopMusic } from '@/lib/music';
 import { sound } from '@/lib/sound';
@@ -539,10 +540,11 @@ export function SettingsScreen() {
             }
           />
           <Row
-            label={tutorialWieder ? 'Tutorial kommt beim nächsten Feed' : 'Tutorial nochmal zeigen'}
-            hint="Die drei Schritte über der ersten Karte"
+            label={tutorialWieder ? 'Erklärungen kommen wieder' : 'Erklärungen nochmal zeigen'}
+            hint="Die drei Schritte im Feed und die Hinweise in Profil, Suche und Kursen"
             onPress={() => {
               void resetFeedTutorial();
+              void resetTabHints(['profil', 'suche', 'kurse']);
               setTutorialWieder(true);
             }}
           />

@@ -435,6 +435,7 @@ NACHRICHT ODER WISSEN - content_type:
   Auch wenn der ANLASS aktuell ist: geht es um das Prinzip dahinter,
   ist es "knowledge".
 
+{auftrag}
 KATEGORIE: waehle genau eine ID aus dieser Liste:
 {categories}
 
@@ -617,13 +618,26 @@ class Generator:
         source_name: str,
         language: str,
         category_ids: list[str],
+        auftrag: str = "",
     ) -> dict[str, Any] | None:
+        """Eine Karte aus einem Quelltext.
+
+        `auftrag` engt ein, WORUEBER die Karte gehen soll - benutzt vom
+        Kursgenerator, der aus einem Artikel fuenf Lektionen zieht und jeder
+        eine eigene Frage zuweist. Steht er leer, ist der Prompt Zeichen fuer
+        Zeichen derselbe wie vorher.
+
+        Er steht bewusst VOR dem Quelltext. Alles nach dem Quelltext liest ein
+        Modell erfahrungsgemaess als Nachklapp; was den Auftrag bestimmt,
+        gehoert vor das Material.
+        """
         prompt = PROMPT.format(
             language="Deutsch" if language == "de" else "English",
             categories=", ".join(category_ids),
             source_name=source_name,
             title=title,
             text=text,
+            auftrag=auftrag,
         )
         try:
             response = self._generate(
@@ -730,3 +744,135 @@ class Generator:
                 self.retries += 1
                 time.sleep(BASE_DELAY * (2**attempt) + random.uniform(0, 1))
         return None
+
+
+# =============================================================================
+# Kurse: erst der Bogen, dann die Lektionen
+#
+# Ein Kurs ist kein Stapel Karten zum selben Thema, sondern eine Reihenfolge:
+# Lektion 1 setzt nichts voraus, Lektion 5 waere ohne die vier davor
+# unverstaendlich. Genau das kann ein einzelner Aufruf je Karte nicht leisten -
+# er weiss nicht, was die anderen vier sagen.
+#
+# Deshalb zwei Schritte:
+#
+#   1. EIN kleiner Aufruf fragt nur nach dem Bogen: fuenf Titel und je ein
+#      Satz, worum es in der Lektion geht.
+#   2. Danach fuenf ganz normale Kartenaufrufe, jeder mit seinem Auftrag aus
+#      Schritt 1 - dieselbe Funktion, dieselbe Pruefung, dieselbe Zeile in der
+#      Tabelle wie jede andere Karte.
+#
+# Der Umweg ueber zwei Schritte ist Absicht. Ein einziger Aufruf mit einem
+# Schema fuer fuenf vollstaendige Karten waere sechsmal so gross - und genau
+# an grossen Schemata ist hier schon einmal alles gescheitert (siehe
+# transform/kinetic.py: `maxItems` liess jedes einzelne Modell mit 400
+# antworten). Ein kleines Schema ist kein Geiz, sondern die Vermeidung eines
+# Fehlers, den man erst Tage spaeter bemerkt.
+# =============================================================================
+
+COURSE_ARC_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["usable", "title", "description", "difficulty", "lessons"],
+    "properties": {
+        "usable": {"type": "boolean"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "difficulty": {"type": "integer"},
+        "lessons": {
+            # minItems, aber KEIN maxItems - siehe oben. Wie viele es werden,
+            # steht im Prompt; die Pruefung danach schneidet ab.
+            "type": "array",
+            "minItems": 3,
+            "items": {
+                "type": "object",
+                "required": ["title", "focus"],
+                "properties": {
+                    "title": {"type": "string"},
+                    "focus": {"type": "string"},
+                },
+            },
+        },
+    },
+}
+
+COURSE_ARC_PROMPT = """Du planst einen Kurs aus {count} Lektionen in {language}.
+
+Grundlage ist AUSSCHLIESSLICH der Quelltext unten. Was nicht darin steht,
+kommt nicht vor - auch nicht in einem Lektionstitel.
+
+Ein Kurs ist eine REIHENFOLGE, kein Stapel:
+- Lektion 1 setzt nichts voraus. Sie beantwortet "worum geht es ueberhaupt".
+- Jede weitere darf voraussetzen, was vorher kam, und nur das.
+- Die letzte ist die Auszahlung: der Punkt, wegen dem sich die vier davor
+  gelohnt haben.
+- Keine zwei Lektionen behandeln dasselbe. Wenn der Text nur fuer drei
+  verschiedene Lektionen hergibt, plane drei - lieber kuerzer als doppelt.
+
+Fuer jede Lektion:
+- title: hoechstens 50 Zeichen, konkret, keine Frage.
+- focus: EIN Satz, der sagt, was diese Lektion behandelt und was NICHT. Er
+  ist der Auftrag fuer den, der die Lektion schreibt.
+
+Ausserdem fuer den Kurs:
+- title: hoechstens 55 Zeichen. Kein "Einfuehrung in", kein Doppelpunkt-Titel.
+- description: EIN Satz, hoechstens 130 Zeichen, sagt was man danach kann.
+- difficulty: 1 = Grundschule, 3 = Oberstufe, 5 = Studium.
+
+Gibt der Text keine sinnvolle Reihenfolge her - weil er eine Aufzaehlung ist,
+eine Begriffsklaerung oder schlicht zu duenn -, setze "usable": false und
+lass den Rest leer. Das ist ein gutes Ergebnis, kein Fehler.
+
+TITEL: {title}
+QUELLTEXT:
+{text}
+"""
+
+
+def make_course_arc(
+    gen: "Generator",
+    *,
+    text: str,
+    title: str,
+    language: str,
+    count: int = 5,
+) -> dict[str, Any] | None:
+    """Der Bogen eines Kurses: Titel, Beschreibung, und was in welcher Lektion steht."""
+    prompt = COURSE_ARC_PROMPT.format(
+        count=count,
+        language="Deutsch" if language == "de" else "English",
+        title=title,
+        text=text,
+    )
+    try:
+        response = gen.generate_raw(
+            prompt,
+            types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=COURSE_ARC_SCHEMA,
+                temperature=0.4,
+                max_output_tokens=MAX_OUTPUT_TOKENS,
+            ),
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.error("Kursbogen fehlgeschlagen: %s", " ".join(str(exc).split())[:160])
+        return None
+
+    raw = (response.text or "").strip()
+    if not raw:
+        return None
+    try:
+        arc = json.loads(raw)
+    except json.JSONDecodeError:
+        log.warning("Kursbogen: kein gueltiges JSON (%d Zeichen)", len(raw))
+        return None
+
+    if arc.get("usable") is False:
+        return None
+    lessons = [
+        lesson for lesson in (arc.get("lessons") or [])
+        if (lesson.get("title") or "").strip() and (lesson.get("focus") or "").strip()
+    ]
+    if len(lessons) < 3:
+        return None
+    arc["lessons"] = lessons[:count]
+    return arc

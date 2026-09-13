@@ -81,6 +81,32 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
     void load();
   }, [load]);
 
+  const [duellBusy, setDuellBusy] = useState(false);
+  const [duellFehler, setDuellFehler] = useState<string | null>(null);
+
+  /**
+   * Ein Duell starten.
+   *
+   * Die Fehlermeldungen kommen woertlich aus der Datenbank und werden hier
+   * nur weitergereicht. Sie sagen etwas Konkretes ("nicht genug gemeinsame
+   * Karten", "ihr habt schon ein offenes Duell") - das ist mehr wert als ein
+   * eigener Satz, der alle Faelle zu "hat nicht geklappt" verwischt.
+   */
+  const duellStarten = async () => {
+    if (!p || duellBusy) return;
+    setDuellBusy(true);
+    setDuellFehler(null);
+    try {
+      const id = await api.duelStart(p.id);
+      router.push(`/duel/${id}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      setDuellFehler(msg || 'Duell ging nicht');
+    } finally {
+      setDuellBusy(false);
+    }
+  };
+
   const toggleFollow = async () => {
     if (!p || p.is_me) return;
     const next = !p.i_follow;
@@ -195,13 +221,33 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
         </View>
 
         {!p.is_me ? (
-          <Button
-            label={p.i_follow ? 'Folge ich' : 'Folgen'}
-            variant={p.i_follow ? 'ghost' : 'primary'}
-            busy={busy}
-            onPress={toggleFollow}
-          />
+          <View style={styles.knoepfe}>
+            <View style={{ flex: 1 }}>
+              <Button
+                label={p.i_follow ? 'Folge ich' : 'Folgen'}
+                variant={p.i_follow ? 'ghost' : 'primary'}
+                busy={busy}
+                onPress={toggleFollow}
+              />
+            </View>
+            {/* Nur wenn man folgt. Ein Duell ist eine Einladung, und der
+                Server laesst es auch nur dann zu (Migration 0069) - ein
+                Knopf, der zuverlaessig eine Fehlermeldung bringt, ist
+                schlimmer als keiner. */}
+            {p.i_follow ? (
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Duell"
+                  variant="ghost"
+                  busy={duellBusy}
+                  onPress={duellStarten}
+                />
+              </View>
+            ) : null}
+          </View>
         ) : null}
+
+        {duellFehler ? <Text style={styles.duellFehler}>{duellFehler}</Text> : null}
 
         <View style={styles.tabs}>
           <Pressable
@@ -248,6 +294,9 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
 }
 
 const styles = StyleSheet.create({
+  knoepfe: { flexDirection: 'row', gap: space.sm },
+  duellFehler: { ...type.body, fontSize: 13.5, color: color.signal.warn },
+
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md, padding: space.xl },
 

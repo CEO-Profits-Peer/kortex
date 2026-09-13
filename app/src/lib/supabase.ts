@@ -20,6 +20,10 @@ import type {
   CategoryDetail,
   CollectionEntry,
   CommentQuestion,
+  DuelListEntry,
+  DuelQuiz,
+  DuelResult,
+  DuelStudy,
   DailyChallenge,
   DailyLeaderboard,
   DailySubmission,
@@ -303,6 +307,46 @@ export const api = {
     const { data, error } = await supabase.rpc('get_public_profile', { p_handle: handle });
     if (error) throw error;
     return data as PublicProfile;
+  },
+
+  // --- Duelle ----------------------------------------------------------
+  //
+  // Die Zeit wird serverseitig gestempelt und serverseitig geprueft (Migration
+  // 0069). Diese Aufrufe holen nur ab, was der Server hergibt - die Uhr auf
+  // dem Bildschirm zeigt an, sie entscheidet nichts.
+
+  async duelStart(userId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('duel_start', { p_opponent: userId });
+    if (error) throw error;
+    return data as string;
+  },
+
+  async duelCards(duelId: string): Promise<DuelStudy> {
+    const { data, error } = await supabase.rpc('duel_cards', { p_duel: duelId });
+    if (error) throw error;
+    return data as DuelStudy;
+  },
+
+  async duelQuestions(duelId: string): Promise<DuelQuiz> {
+    const { data, error } = await supabase.rpc('duel_questions', { p_duel: duelId });
+    if (error) throw error;
+    return data as DuelQuiz;
+  },
+
+  /** Unbeantwortet = -1. Der Server zaehlt das als falsch, nicht als fehlend. */
+  async duelSubmit(duelId: string, answers: number[]): Promise<DuelResult> {
+    const { data, error } = await supabase.rpc('duel_submit', {
+      p_duel: duelId,
+      p_answers: answers,
+    });
+    if (error) throw error;
+    return data as DuelResult;
+  },
+
+  async duelList(): Promise<DuelListEntry[]> {
+    const { data, error } = await supabase.rpc('duel_list');
+    if (error) throw error;
+    return (data ?? []) as DuelListEntry[];
   },
 
   async setFollowing(userId: string, follow: boolean): Promise<void> {

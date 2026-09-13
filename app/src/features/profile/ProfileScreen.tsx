@@ -13,7 +13,9 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
+import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
+import { TabHint, useTabHint } from '@/components/TabHint';
 import { Icon, type IconName } from '@/components/Icon';
 import { KnowledgeRadar } from '@/components/KnowledgeRadar';
 import { haptics } from '@/lib/haptics';
@@ -117,6 +119,7 @@ function Shortcut({
 }
 
 export function ProfileScreen() {
+  const hinweis = useTabHint('profil');
   const insets = useSafeAreaInsets();
   const [social, setSocial] = useState<MySocial | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -244,6 +247,7 @@ export function ProfileScreen() {
             onPress={() => router.push('/review')}
           />
           <Shortcut icon="profile" label="Deine Leute" onPress={() => router.push('/following')} />
+          <Shortcut icon="xp" label="Duelle" onPress={() => router.push('/duels')} />
           <Shortcut
             icon="leaderboard"
             label="Rangliste"
@@ -353,6 +357,15 @@ export function ProfileScreen() {
 
         <KnowledgeRadar data={stats?.radar ?? []} />
       </ScrollView>
+      {hinweis.zeigen ? (
+        <TabHint
+          icon="profile"
+          titel="Dein Stand"
+          text="Hier steht, was hängen geblieben ist: Empfohlenes, Likes, Streak und der Radar, der zeigt, wo du stark bist. Die Zahlen oben führen auf Listen."
+          bottom={TAB_BAR_HEIGHT}
+          onDone={hinweis.weg}
+        />
+      ) : null}
     </GridBackground>
   );
 }
