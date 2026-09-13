@@ -1,0 +1,8 @@
+{
+  "name": "decode-uri-component",
+  "version": "0.2.2-elycic.1",
+  "description": "Lokaler Ersatz ohne exponentiellen Rueckfallpfad (GHSA-vcc3-ghjq-m6fr), CommonJS wie das Original. Siehe index.js.",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true
+}
