@@ -23,6 +23,9 @@ import type {
   CollectionEntry,
   CommentQuestion,
   DuelListEntry,
+  InvitePreview,
+  MyInvite,
+  RedeemResult,
   DuelQuiz,
   DuelResult,
   DuelStudy,
@@ -313,6 +316,29 @@ export const api = {
     const { data, error } = await supabase.rpc('get_public_profile', { p_handle: handle });
     if (error) throw error;
     return data as PublicProfile;
+  },
+
+  // --- Einladungen ----------------------------------------------------
+  //
+  // Migration 0071. Die Vorschau geht auch ohne Anmeldung - der
+  // Startbildschirm soll zeigen, wer eingeladen hat, bevor es ein Konto gibt.
+
+  async invitePreview(code: string): Promise<InvitePreview | null> {
+    const { data, error } = await supabase.rpc('invite_preview', { p_code: code });
+    if (error) throw error;
+    return (data ?? null) as InvitePreview | null;
+  },
+
+  async redeemInvite(code: string): Promise<RedeemResult> {
+    const { data, error } = await supabase.rpc('redeem_invite', { p_code: code });
+    if (error) throw error;
+    return data as RedeemResult;
+  },
+
+  async myInvite(): Promise<MyInvite | null> {
+    const { data, error } = await supabase.rpc('my_invite');
+    if (error) throw error;
+    return (data ?? null) as MyInvite | null;
   },
 
   // --- Duelle ----------------------------------------------------------

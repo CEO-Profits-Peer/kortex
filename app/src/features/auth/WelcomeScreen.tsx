@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 
+import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
 import { EmailAuthForm } from '@/features/auth/EmailAuthForm';
 import { GoogleButton } from '@/features/auth/GoogleButton';
@@ -12,6 +13,9 @@ import { BRAND } from '@/lib/brand';
 import { takeOAuthError } from '@/lib/oauthReturn';
 import { signInAnonymously } from '@/lib/useSession';
 import { fehlerText } from '@/lib/fehler';
+import { offeneEinladung } from '@/lib/invite';
+import { api } from '@/lib/supabase';
+import type { InvitePreview } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -34,6 +38,27 @@ export function WelcomeScreen() {
   // Gehoert das Google-Konto schon jemandem, ist "anmelden" der Ausweg -
   // also gleich dorthin aufmachen.
   const [signin, setSignin] = useState(Boolean(oauthError?.alreadyLinked));
+
+  // Kommt jemand ueber einen Einladungslink, soll er sehen, VON WEM - ein
+  // Name, den man kennt, ist der Grund, auf "Los geht's" zu tippen. Scheitert
+  // die Vorschau, geht die Einladung trotzdem: eingeloest wird spaeter.
+  const [einlader, setEinlader] = useState<InvitePreview | null>(null);
+  useEffect(() => {
+    let lebt = true;
+    void (async () => {
+      const code = await offeneEinladung();
+      if (!code) return;
+      try {
+        const p = await api.invitePreview(code);
+        if (lebt && p) setEinlader(p);
+      } catch {
+        // ohne Vorschau geht es trotzdem
+      }
+    })();
+    return () => {
+      lebt = false;
+    };
+  }, []);
 
   const start = async () => {
     setBusy(true);
@@ -65,6 +90,17 @@ export function WelcomeScreen() {
         </View>
 
         <View style={styles.actions}>
+          {einlader ? (
+            <View style={styles.einladung}>
+              <Avatar seed={einlader.avatar_seed} path={einlader.avatar_path} size={34} />
+              <Text style={styles.einladungText}>
+                <Text style={styles.einladungName}>
+                  {einlader.name || `@${einlader.handle}`}
+                </Text>{' '}
+                hat dich eingeladen. Ihr folgt euch automatisch.
+              </Text>
+            </View>
+          ) : null}
           {oauthError ? <Text style={styles.oauthError}>{oauthError.message}</Text> : null}
           {signin ? (
             <>
@@ -118,6 +154,19 @@ export function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  einladung: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.signal.primary,
+    backgroundColor: color.bgElevated,
+  },
+  einladungText: { ...type.body, fontSize: 14.5, lineHeight: 20, color: color.ink.high, flex: 1 },
+  einladungName: { color: color.ink.max },
+
   root: { flex: 1, paddingHorizontal: space.xl, justifyContent: 'space-between' },
   hero: { flex: 1, justifyContent: 'center', gap: space.lg },
   wordmark: {

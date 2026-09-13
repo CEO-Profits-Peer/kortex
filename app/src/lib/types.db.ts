@@ -190,6 +190,26 @@ export type SearchHit = {
   score: number;
 };
 
+// --- Einladungen ------------------------------------------------------------
+
+/** Wer hat eingeladen? Nur, was ohnehin oeffentlich ist. */
+export type InvitePreview = {
+  handle: string;
+  name: string | null;
+  avatar_seed: string;
+  avatar_path: string | null;
+};
+
+export type MyInvite = {
+  code: string;
+  /** Wie viele ueber diesen Code ein Konto angelegt haben. */
+  eingeladen: number;
+};
+
+export type RedeemResult = {
+  status: 'ok' | 'ungueltig' | 'selbst' | 'schon_eingeladen' | 'zu_alt' | 'kein_profil';
+};
+
 // --- Duelle ------------------------------------------------------------------
 
 export type DuelCard = {

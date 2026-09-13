@@ -27,6 +27,7 @@ import { WhatsNew, useWhatsNew } from '@/features/whatsnew/WhatsNew';
 import { analytics } from '@/lib/analytics';
 import { eventBuffer } from '@/lib/eventBuffer';
 import { beiWiederOnline } from '@/lib/online';
+import { einladungEinloesen } from '@/lib/invite';
 import { loadPrefs } from '@/lib/prefs';
 import '@/lib/i18n';
 import { api, configError } from '@/lib/supabase';
@@ -46,6 +47,9 @@ function Gate() {
       // Nur die UUID plus Region und Sprache - nichts Personenbezogenes.
       if (p) analytics.identify(p.id, { region: p.region_code, language: p.language });
       setOnboarded(Boolean(p?.onboarding_completed_at));
+      // Eine Einladung aus dem Link einloesen - einmal, still, und erst
+      // jetzt: vorher gibt es kein Profil, an dem sie haengen koennte.
+      if (p) void einladungEinloesen();
     } catch {
       // Profil nicht ladbar (kein Netz, Migration fehlt): den Nutzer nicht
       // aussperren - lieber in den Feed lassen, der zeigt den Fehler selbst.

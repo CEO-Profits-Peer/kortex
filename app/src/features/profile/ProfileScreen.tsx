@@ -21,6 +21,7 @@ import { KnowledgeRadar } from '@/components/KnowledgeRadar';
 import { haptics } from '@/lib/haptics';
 import { InstallBanner } from '@/components/InstallBanner';
 import { personName } from '@/lib/name';
+import { shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
@@ -127,6 +128,30 @@ export function ProfileScreen() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [tab, setTab] = useState<'reposts' | 'likes'>('reposts');
   const [refreshing, setRefreshing] = useState(false);
+  const [einladeNotiz, setEinladeNotiz] = useState<string | null>(null);
+
+  /**
+   * Freunde einladen.
+   *
+   * Der Code wird erst beim Tippen geholt, nicht beim Laden des Profils: die
+   * meisten oeffnen das Profil, um ihren Stand zu sehen, und eine Anfrage
+   * mehr bei jedem Oeffnen fuer einen Knopf, den selten jemand drueckt, ist
+   * ein schlechter Tausch.
+   */
+  const einladen = useCallback(async () => {
+    haptics.light();
+    setEinladeNotiz(null);
+    try {
+      const mein = await api.myInvite();
+      if (!mein?.code) throw new Error('kein Code');
+      const res = await shareInvite({ code: mein.code });
+      if (res === 'copied') setEinladeNotiz('Link kopiert. Wer darüber startet, folgt dir automatisch.');
+      if (res === 'failed') setEinladeNotiz('Teilen ging nicht.');
+    } catch (e) {
+      setEinladeNotiz(fehlerText(e, 'Einladen geht gerade nicht.'));
+    }
+    setTimeout(() => setEinladeNotiz(null), 4000);
+  }, []);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -238,12 +263,30 @@ export function ProfileScreen() {
           <Count value={p?.mastery_total ?? 0} label="Mastery" tint={color.signal.mastery} />
         </View>
 
-        <Pressable
-          onPress={() => router.push('/account')}
-          style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.75 }]}
-        >
-          <Text style={styles.editText}>Profil bearbeiten</Text>
-        </Pressable>
+        <View style={styles.knopfReihe}>
+          <Pressable
+            onPress={() => router.push('/account')}
+            style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.editText}>Profil bearbeiten</Text>
+          </Pressable>
+          {/* Neben "Profil bearbeiten", nicht in den Kacheln darunter: die
+              Kacheln fuehren an Orte in der App, dieser Knopf fuehrt hinaus. */}
+          <Pressable
+            onPress={() => void einladen()}
+            style={({ pressed }) => [
+              styles.editButton,
+              styles.inviteButton,
+              pressed && { opacity: 0.75 },
+            ]}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.editText, { color: color.signal.primary }]}>
+              Freunde einladen
+            </Text>
+          </Pressable>
+        </View>
+        {einladeNotiz ? <Text style={styles.einladeNotiz}>{einladeNotiz}</Text> : null}
 
         {/* --- Drei Wege, kompakt ----------------------------------------- */}
         <View style={styles.shortcuts}>
@@ -395,7 +438,11 @@ const styles = StyleSheet.create({
   countLabel: { ...type.meta, fontSize: 9.5, color: color.ink.low },
   divider: { width: StyleSheet.hairlineWidth, height: 22, backgroundColor: color.ink.faint },
 
+  knopfReihe: { flexDirection: 'row', gap: space.sm },
+  inviteButton: { borderColor: color.signal.primary },
+  einladeNotiz: { ...type.meta, fontSize: 10, color: color.ink.mid, marginTop: -space.sm },
   editButton: {
+    flex: 1,
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
