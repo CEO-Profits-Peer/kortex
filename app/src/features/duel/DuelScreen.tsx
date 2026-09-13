@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { CardBlock } from '@/components/CardBlock';
 import { GridBackground } from '@/components/GridBackground';
+import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { usePrefs } from '@/lib/prefs';
@@ -195,6 +196,36 @@ export function DuelScreen({ duelId }: { duelId: string }) {
   }, [phase, fragen.length, frageRest, weiter]);
 
   // --- Anzeige -------------------------------------------------------------
+  /**
+   * Blaettern in der Lernphase.
+   *
+   * Gemeldet wurde, dass man nicht versteht, wie man zur naechsten Karte
+   * kommt. Kein Wunder: der Feed wischt nach OBEN, das Duell zur SEITE, und
+   * nichts auf dem Bildschirm sagte das. Auf dem Desktop kommt dazu, dass man
+   * mit der Maus gar nicht wischen kann - dort gab es schlicht keinen Weg.
+   *
+   * Deshalb unten eine Leiste mit drei Dingen, die sich gegenseitig
+   * erklaeren: Punkte (wie viele Karten, wo bin ich), Pfeile (fuer die Maus,
+   * und als Zeichen, dass es seitlich weitergeht) und ein Satz, der beim
+   * ersten Blick sagt, was zu tun ist. Auf der letzten Karte wird aus dem
+   * Pfeil "Zu den Fragen": wer fertig ist, soll nicht auf die Uhr warten.
+   * Die restliche Lernzeit verfaellt dabei - das ist die eigene Wahl und
+   * gegenueber dem Gegner fair, denn gewertet wird nur die Fragezeit.
+   */
+  const [seite, setSeite] = useState(0);
+  const liste = useRef<FlatList<(typeof karten)[number]>>(null);
+
+  const blaettern = useCallback(
+    (richtung: number) => {
+      const ziel = Math.max(0, Math.min(karten.length - 1, seite + richtung));
+      if (ziel === seite) return;
+      liste.current?.scrollToIndex({ index: ziel, animated: true });
+      setSeite(ziel);
+      haptics.select();
+    },
+    [seite, karten.length],
+  );
+
   if (phase === 'laden') {
     return (
       <GridBackground>
@@ -229,15 +260,21 @@ export function DuelScreen({ duelId }: { duelId: string }) {
         </Text>
 
         <FlatList
+          ref={liste}
           data={karten}
           keyExtractor={(k) => k.id}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          style={{ flex: 1 }}
+          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          onMomentumScrollEnd={(e) =>
+            setSeite(Math.round(e.nativeEvent.contentOffset.x / Math.max(1, width)))
+          }
           renderItem={({ item, index }) => (
             <ScrollView
               style={{ width }}
-              contentContainerStyle={[styles.lernKarte, { paddingBottom: insets.bottom + space.xl }]}
+              contentContainerStyle={[styles.lernKarte, { paddingBottom: space.xl }]}
               showsVerticalScrollIndicator={false}
             >
               <Text style={styles.zaehler}>
@@ -251,6 +288,56 @@ export function DuelScreen({ duelId }: { duelId: string }) {
             </ScrollView>
           )}
         />
+
+        <View style={[styles.lernFuss, { paddingBottom: insets.bottom + space.md }]}>
+          <Text style={styles.wischHinweis}>
+            {seite < karten.length - 1
+              ? 'Nach links wischen oder Pfeil tippen: nächste Karte'
+              : 'Letzte Karte. Die Fragen kommen, wenn die Minute um ist, oder jetzt.'}
+          </Text>
+          <View style={styles.lernLeiste}>
+            <Pressable
+              onPress={() => blaettern(-1)}
+              disabled={seite === 0}
+              hitSlop={10}
+              style={[styles.pfeil, seite === 0 && styles.pfeilAus]}
+              accessibilityRole="button"
+              accessibilityLabel="Vorige Karte"
+            >
+              <Icon name="back" size={18} color={color.ink.high} />
+            </Pressable>
+
+            <View style={styles.seitenPunkte}>
+              {karten.map((k, i) => (
+                <View key={k.id} style={[styles.seitenPunkt, i === seite && styles.seitenPunktAn]} />
+              ))}
+            </View>
+
+            {seite < karten.length - 1 ? (
+              <Pressable
+                onPress={() => blaettern(1)}
+                hitSlop={10}
+                style={[styles.pfeil, styles.pfeilWeiter]}
+                accessibilityRole="button"
+                accessibilityLabel="Nächste Karte"
+              >
+                <Icon name="chevron" size={18} color={color.signal.primary} />
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => {
+                  haptics.medium();
+                  setRest(0);
+                }}
+                hitSlop={8}
+                style={styles.bereit}
+                accessibilityRole="button"
+              >
+                <Text style={styles.bereitText}>Zu den Fragen</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
       </GridBackground>
     );
   }
@@ -387,6 +474,42 @@ const styles = StyleSheet.create({
     paddingTop: space.xs,
     paddingBottom: space.sm,
   },
+
+  lernFuss: {
+    gap: space.sm,
+    paddingHorizontal: space.xl,
+    paddingTop: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.ink.faint,
+  },
+  wischHinweis: { ...type.meta, fontSize: 9.5, color: color.ink.low, textAlign: 'center' },
+  lernLeiste: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pfeil: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  pfeilWeiter: { borderColor: color.signal.primary },
+  pfeilAus: { opacity: 0.25 },
+  // Nicht "punkte": so heisst weiter unten schon die grosse Ergebniszahl.
+  // Der erste Versuch hat sie ueberschrieben, und ein Textstil landete an
+  // einer View.
+  seitenPunkte: { flexDirection: 'row', gap: 6 },
+  seitenPunkt: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.ink.faint },
+  seitenPunktAn: { width: 18, backgroundColor: color.signal.primary },
+  bereit: {
+    height: 44,
+    paddingHorizontal: space.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: color.signal.primary,
+  },
+  bereitText: { ...type.label, fontSize: 14, color: color.bg },
 
   lernKarte: { paddingHorizontal: space.xl, paddingTop: space.md, gap: space.md },
   zaehler: { ...type.meta, fontSize: 9.5, color: color.ink.low, letterSpacing: 1.4 },
