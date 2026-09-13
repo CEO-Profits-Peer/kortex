@@ -35,8 +35,19 @@ let online = true;
 const listeners = new Set<(on: boolean) => void>();
 let probe: ReturnType<typeof setTimeout> | null = null;
 
-/** Wie oft nachgefragt wird, solange keine Verbindung besteht. */
-const PROBE_MS = 4000;
+/**
+ * Wie oft nachgefragt wird, solange keine Verbindung besteht.
+ *
+ * Mit wachsendem Abstand: 4, 8, 16, dann alle 30 Sekunden. Die erste Fassung
+ * fragte stur alle vier Sekunden - eine Stunde im Funkloch waeren 900
+ * Anfragen gewesen, und auf dem Handy haelt jede davon das Funkmodul wach.
+ * Schneller wiederzufinden ist die Verbindung dadurch nicht: im Browser loest
+ * das "online"-Ereignis ohnehin sofort eine Nachfrage aus, und jede echte
+ * Anfrage, die durchgeht, beendet den Offline-Zustand auf der Stelle.
+ */
+const PROBE_MIN_MS = 4000;
+const PROBE_MAX_MS = 30000;
+let abstand = PROBE_MIN_MS;
 
 const HEALTH =
   (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '') + '/auth/v1/health';
@@ -46,7 +57,8 @@ function setzen(on: boolean) {
   online = on;
   listeners.forEach((fn) => fn(on));
   if (!on) {
-    planeProbe(PROBE_MS);
+    abstand = PROBE_MIN_MS;
+    planeProbe(abstand);
   } else if (probe) {
     clearTimeout(probe);
     probe = null;
@@ -74,7 +86,8 @@ function planeProbe(ms: number) {
       await fetch(HEALTH, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
       setzen(true);
     } catch {
-      if (!online) planeProbe(PROBE_MS);
+      abstand = Math.min(abstand * 2, PROBE_MAX_MS);
+      if (!online) planeProbe(abstand);
     }
   }, ms);
 }
@@ -117,7 +130,7 @@ export const beobachteterFetch: typeof fetch = async (input, init) => {
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     online = false;
-    planeProbe(PROBE_MS);
+    planeProbe(PROBE_MIN_MS);
   }
   // "offline" glauben wir dem Browser sofort - er weiss es verlaesslich.
   window.addEventListener('offline', () => setzen(false));
