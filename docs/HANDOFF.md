@@ -32,7 +32,7 @@ source document, and nothing is generated from model memory.
   expo-router. Ships as a PWA to Cloudflare Pages (`elycic.pages.dev`).
   Native build exists but web is the live target.
 - **Backend** — Supabase (Postgres + RLS + SECURITY DEFINER RPCs + Storage +
-  Auth + Edge Functions). 69 migrations, 0065-0069 still to be applied.
+  Auth + Edge Functions). 71 migrations, 0070-0071 still to be applied.
 - **Pipeline** — Python. Pulls RSS feeds and Wikipedia articles, asks Gemini
   for a card with structured output, validates deterministically, writes to
   Supabase. Runs in GitHub Actions every 3 hours.
@@ -57,7 +57,7 @@ pipeline/
   transform/      generate.py (cards), kinetic.py (animated "specials")
   validate/       checks.py, relevance.py, overclaim.py
 supabase/
-  migrations/     0001–0069, each with a long header explaining WHY
+  migrations/     0001–0071, each with a long header explaining WHY
   functions/push/ Edge Function, delivers notifications in ~3 s
 docs/             ARCHITECTURE, CONTENT-SOURCING, SETUP, DEPLOY, SMTP,
                   GOOGLE-LOGIN, PRODUKT-IDEEN
@@ -251,25 +251,21 @@ Deliberately not relaxed — checking only the mantissa would make
 
 ## Open items for the user (not you)
 
-- **Five migrations are written but not applied.** There is no Supabase CLI
-  and no psql in this environment, so DDL has to be pasted into the SQL
-  editor by hand, in this order:
-  - `0065_profile_lists.sql` — `get_my_social()` sends EVERY repost and like.
-    The `limit 24` in 0018 sits behind the `jsonb_agg` and therefore limits
-    the one aggregate row, not the rows going into it. Valid SQL that does
-    nothing. Also adds `get_my_collection()` for the "Alle ansehen" screen.
-  - `0066_leaderboard_friends.sql` — friends become mutual follows; the view
-    `public_profiles` gains `avatar_path`. **The first version of this file
-    failed** with `cannot change name of view column "region_code" to
-    "avatar_path"`: `create or replace view` may only APPEND columns. Fixed
-    by putting `avatar_path` last.
-  - `0067_likes_nudge_feed.sql` — at most +25 % score for likes, log-damped.
-  - `0068_admin_people_categories.sql` — admin person search and the
-    category table. Until it runs, those two tabs show an error.
-  - `0069_duels.sql` — duels. Five cards, one minute, five questions; the
-    clock is stamped and checked server-side. **Not yet verified against a
-    real database** — there is no psql here, so it has only been read, not
-    run. If it fails, the error message says where.
+- **0065-0069 are applied** (checked against the schema on 2026-09-13).
+  0067 only changes a function body and cannot be seen from outside.
+- **Two migrations are written but not applied**, in this order:
+  - `0070_reading_speed.sql` - read-validation at 4 words/s (was 3), max 15 s
+    (was 20). Measured first: engaged readers take LONGER than the old target
+    (liked text cards: 2.4 words/s, 22.7 s); the low read rate comes from
+    swiping, not from the threshold. Simulated on 387 pairs: 37.0 % -> 39.5 %.
+    The column is generated; the file switches between `set expression`
+    (PG >= 17) and drop/add, because the version is not visible from here.
+  - `0071_invites.sql` - `?einladung=CODE` links. Redeeming sets
+    `referred_by`, writes `referrals` and creates the MUTUAL follow, so friends
+    ranking and duels work from minute one. No reward yet (farming), only in
+    the first 7 days, only once.
+- **`0069` (duels) has never been played end to end.** It needs two accounts
+  that follow each other.
 - **SMTP** — the one thing nobody but you can do. If "Enable custom SMTP" is
   on with empty fields, *no* auth mail goes out at all, not even through the
   built-in sender. Two options: fill it in (`docs/SMTP.md`, Brevo, ~10 min)
