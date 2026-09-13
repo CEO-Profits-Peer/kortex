@@ -52,6 +52,37 @@ export function CardBlock({
       return <Text style={styles.para}>{block.text}</Text>;
 
     case 'bullet':
+      if (hero) {
+        /**
+         * Die Liste als Geruest der Karte.
+         *
+         * Die dritte Form, die eine Karte tragen kann - nach Kennzahl und
+         * Zitat. Der Unterschied zur normalen Aufzaehlung ist nicht "groesser",
+         * sondern eine andere Ordnung: die Ziffer steht ueber dem Punkt statt
+         * daneben, jeder Punkt bekommt seine eigene Zeile ueber die volle
+         * Breite, und eine Haarlinie trennt sie. Das liest sich wie ein
+         * Inhaltsverzeichnis - und genau das ist eine Karte, deren erster
+         * Block "drei Dinge, die ..." sagt.
+         *
+         * Nebeneinander waere es eine Tabelle geworden. Tabellen vergleichen;
+         * hier gibt es nichts zu vergleichen, sondern eine Reihenfolge.
+         */
+        return (
+          <View style={styles.heroListe}>
+            {block.items.slice(0, 4).map((line, i) => (
+              <View key={i} style={[styles.heroPunkt, i > 0 && styles.heroPunktLinie]}>
+                {/* ink.faint ist die Linienfarbe und fuer Text zu dunkel -
+                    nachgemessen steht das in tokens.ts sogar dabei. ink.low
+                    ist die blasseste Stufe, die noch Text sein darf. */}
+                <Text style={[styles.heroZiffer, { color: i === 0 ? accent : color.ink.low }]}>
+                  {String(i + 1).padStart(2, '0')}
+                </Text>
+                <Text style={styles.heroText}>{line}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      }
       return (
         <View style={styles.bullets}>
           {block.items.slice(0, 4).map((line, i) => (
@@ -129,6 +160,21 @@ export function CardBlock({
 
 const styles = StyleSheet.create({
   para: { ...type.body, color: color.ink.high, flex: 1 },
+
+  heroListe: { paddingTop: space.sm },
+  heroPunkt: { gap: 2, paddingVertical: space.md },
+  heroPunktLinie: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.ink.faint,
+  },
+  heroZiffer: { ...type.meta, fontSize: 10, letterSpacing: 1.6 },
+  heroText: {
+    ...type.body,
+    fontSize: 19,
+    lineHeight: 26,
+    letterSpacing: -0.3,
+    color: color.ink.max,
+  },
 
   bullets: { gap: space.md },
   bulletRow: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },

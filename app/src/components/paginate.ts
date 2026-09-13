@@ -64,7 +64,11 @@ function weigh(block: BodyBlock, hero = false): number {
       // ~34 Zeichen pro Zeile bei 17 px auf einem üblichen Handy.
       return Math.ceil(block.text.length / 34);
     case 'bullet':
-      return block.items.reduce((n, l) => n + Math.ceil(l.length / 30), 0) + 0.5;
+      // Als Gerüst: je Punkt eine Haarlinie, mehr Zeilenabstand und 17 statt
+      // 15 px. Das kostet ungefähr die Hälfte mehr Platz je Punkt.
+      return hero
+        ? block.items.reduce((n, l) => n + Math.ceil(l.length / 26), 0) * 1.5 + 1
+        : block.items.reduce((n, l) => n + Math.ceil(l.length / 30), 0) + 0.5;
     case 'stat':
       return hero ? 5 : 3;
     case 'quote':
@@ -77,9 +81,43 @@ function weigh(block: BodyBlock, hero = false): number {
   }
 }
 
-/** Trägt der erste Block die Karte? Dieselbe Regel wie in ContentCard. */
-function isHero(blocks: BodyBlock[], i: number): boolean {
-  return i === 0 && (blocks[0]?.type === 'stat' || blocks[0]?.type === 'quote');
+/**
+ * Trägt dieser Block die Karte?
+ *
+ * Exportiert, weil ContentCard dieselbe Frage stellt. Vorher stand die Regel
+ * an zwei Stellen — und beim Hinzufügen der Liste wäre genau das der Fehler
+ * gewesen, den man erst zwei Wochen später sieht: die Seitenaufteilung
+ * rechnet mit einem kleinen Block, die Karte zeichnet einen großen, FitBox
+ * zieht alles zusammen, und der Fließtext ist auf Listenkarten kleiner als
+ * sonst. Nicht benennbar, aber sichtbar.
+ *
+ * Drei Formen können eine Karte tragen: eine Kennzahl, ein Zitat und eine
+ * kurze Liste. Ein Absatz nicht — ein Absatz ist ein Absatz.
+ */
+export function isHero(blocks: BodyBlock[], i: number): boolean {
+  if (i !== 0) return false;
+  const b = blocks[0];
+  if (!b) return false;
+  if (b.type === 'stat' || b.type === 'quote') return true;
+  return b.type === 'bullet' && istGeruest(b.items);
+}
+
+/**
+ * Eine Liste trägt die Karte nur, wenn sie ein Gerüst ist und kein Text.
+ *
+ * Zwei bis vier Punkte, jeder kurz genug für eine Zeile. Sechs lange
+ * Stichpunkte groß gesetzt wären keine Gestaltung, sondern eine Wand — und
+ * die zweite Seite wäre sicher. Die Grenze bei 72 Zeichen ist gemessen: bei
+ * 17 px passen auf ein übliches Handy etwa 34 Zeichen je Zeile, groß gesetzt
+ * entsprechend weniger, zwei Zeilen je Punkt sind noch Gerüst, drei nicht
+ * mehr.
+ */
+export function istGeruest(items: string[]): boolean {
+  return (
+    items.length >= 2 &&
+    items.length <= 4 &&
+    items.every((l) => l.length <= 72)
+  );
 }
 
 const HEADER_LINES = 5; // Titel und Unterzeile

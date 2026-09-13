@@ -24,7 +24,7 @@ import { CommentSheet } from '@/features/comments/CommentSheet';
 import { KineticCard } from '@/features/kinetic/KineticCard';
 import { isKineticScript } from '@/features/kinetic/types';
 import { Icon } from '@/components/Icon';
-import { paginate } from '@/components/paginate';
+import { isHero, paginate } from '@/components/paginate';
 import { SourceBadge } from '@/components/SourceBadge';
 import { Interaction, isInteractionBuilt } from '@/features/interactions';
 import { reportSeenNow } from '@/features/feed/useDwellTracking';
@@ -372,8 +372,12 @@ function ContentCardBase({
    * darf der Hauptblock sein. Zwei grosse Zahlen untereinander waeren zwei
    * Hauptsachen, also keine.
    */
-  const heroKind = page === 0 ? current.blocks[0]?.type : undefined;
-  const hasHero = heroKind === 'stat' || heroKind === 'quote';
+  //
+  // Die Regel selbst steht in paginate.ts und wird von dort geholt: die
+  // Seitenaufteilung muss mit DERSELBEN Antwort rechnen, mit der hier
+  // gezeichnet wird. Zwei Kopien derselben Bedingung waren schon einmal der
+  // Grund dafuer, dass eine Karte anders geschaetzt als gezeichnet wurde.
+  const hasHero = page === 0 && isHero(current.blocks, 0);
 
   return (
     <Animated.View style={[styles.card, { height }, shell]}>

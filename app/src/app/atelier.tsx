@@ -5,6 +5,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { Button } from '@/components/Button';
 import { CardBlock } from '@/components/CardBlock';
+import { isHero } from '@/components/paginate';
 import { CardTypeBadge } from '@/components/CardTypeBadge';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -70,6 +71,20 @@ const BLOCKS: Record<string, BodyBlock[]> = {
       ],
     },
   ],
+  geruest: [
+    {
+      type: 'bullet',
+      items: [
+        'Lang statt kompliziert',
+        'Fuer jeden Dienst ein eigenes',
+        'Aufgeschrieben schlaegt vergessen',
+      ],
+    },
+    {
+      type: 'para',
+      text: 'Sonderzeichen stehen in keiner der drei Bedingungen - sie machen ein Passwort schwer zu merken und kaum schwerer zu raten.',
+    },
+  ],
   absatz: [
     {
       type: 'para',
@@ -118,6 +133,7 @@ const KARTEN = [
   { key: 'kennzahl', titel: 'Wohin das Haushaltsgeld geht', deck: 'Der groesste Posten ist keine Ueberraschung - seine Groesse schon.' },
   { key: 'zitat', titel: 'Warum Multitasking teuer ist', deck: 'Ein zweitausend Jahre alter Satz beschreibt es genauer als jeder Ratgeber.' },
   { key: 'aufzaehlung', titel: 'Was ein gutes Passwort ausmacht', deck: 'Drei Bedingungen, und Sonderzeichen sind keine davon.' },
+  { key: 'geruest', titel: 'Drei Bedingungen', deck: 'Woran ein Passwort wirklich haengt.' },
   { key: 'absatz', titel: 'Zinseszins', deck: 'Der Unterschied zeigt sich nicht im ersten Jahr, sondern im zwanzigsten.' },
 ];
 
@@ -132,8 +148,12 @@ function Karte({
   height: number;
 }) {
   const blocks = item.body_blocks;
-  const heroKind = blocks[0]?.type;
-  const hasHero = heroKind === 'stat' || heroKind === 'quote';
+  // Dieselbe Regel wie im Feed, aus derselben Datei. Hier stand eine dritte
+  // Kopie der Bedingung - und prompt zeigte die Werkstatt beim Hinzufuegen
+  // der Listen-Karte noch die alte Darstellung, waehrend der Feed schon die
+  // neue zeichnete. Eine Werkstatt, die etwas anderes zeigt als der Laden,
+  // ist schlimmer als keine.
+  const hasHero = isHero(blocks, 0);
 
   return (
     <View style={[styles.karte, { height }]}>
@@ -182,13 +202,6 @@ function Karte({
   );
 }
 
-/**
- * Erfundene Zahlen fuer das Kontrollzentrum.
- *
- * Sie sehen den echten aehnlich (gezogen am 2026-09-12), sind aber von
- * Hand gesetzt: die Werkstatt darf nicht ans Netz und schon gar nicht an
- * Nutzungsdaten.
- */
 /**
  * Erfundene Zahlen fuer die drei Ansichten des Kontrollzentrums.
  *
