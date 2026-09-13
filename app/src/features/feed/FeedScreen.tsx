@@ -267,10 +267,16 @@ export function FeedScreen({
       // Der Server rankt nach Relevanz, arrangeBatch sorgt fuer Abwechslung.
       // Zwei getrennte Ziele, zwei getrennte Stellen.
       setItems((prev) => {
+        // Zurueckhalten nur im Hauptfeed und nur bei vollem Batch: dann gibt
+        // es mehr, und was draussen bleibt, kommt beim naechsten Nachladen
+        // wieder (es fehlt in loadedIds). Ein eigener `loader` - etwa eine
+        // Kategorie zum Durchsurfen - schickt keine IDs mit und ist ohnehin
+        // eine einzige Kategorie; dort wuerde es Karten verlieren.
+        const zurueckhalten = !loader && batch.length >= BATCH_SIZE;
         const next =
           prev.length === 0
-            ? arrangeBatch(batch, seenNow)
-            : appendArranged(prev, batch, seenNow);
+            ? arrangeBatch(batch, seenNow, zurueckhalten)
+            : appendArranged(prev, batch, seenNow, zurueckhalten);
         /**
          * Die erste Karte ist ab jetzt die aktive - ohne auf eine
          * Sichtbarkeitsmeldung zu warten.

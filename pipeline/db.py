@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -78,10 +79,36 @@ class Database:
     # --- Lesen ---------------------------------------------------------------
 
     def _get(self, path: str, params: dict[str, str]) -> list[dict[str, Any]]:
-        response = self.http.get(path, params=params)
-        if response.status_code >= 400:
-            raise RuntimeError(f"{path}: {response.status_code} {response.text[:300]}")
-        return response.json()
+        """Lesen, mit zwei weiteren Anlaeufen bei einem Aussetzer.
+
+        Anlass: der Lauf vom 2026-09-13 12:00 starb an EINEM 504 auf
+        known_hashes - eine Abfrage ueber acht Hashes auf einem Unique-Index,
+        die sonst Millisekunden braucht. Das war ein Schluckauf von Supabase,
+        kein Fehler der Abfrage, und er hat den ganzen Lauf gekostet: keine
+        Nachrichten, und Evergreen danach wurde gar nicht erst gestartet.
+
+        Nur bei GET: Lesen laesst sich gefahrlos wiederholen. Schreiben nicht
+        ohne weiteres - ein POST, dessen Antwort verloren ging, kann trotzdem
+        angekommen sein. 4xx wird nicht wiederholt, das aendert sich nicht.
+        """
+        for versuch in range(3):
+            letzter = versuch == 2
+            try:
+                response = self.http.get(path, params=params)
+            except httpx.TransportError as exc:
+                if letzter:
+                    raise
+                log.warning("%s: %s - neuer Versuch in %d s", path, type(exc).__name__, 3 * 2**versuch)
+                time.sleep(3 * 2**versuch)
+                continue
+            if response.status_code in (500, 502, 503, 504) and not letzter:
+                log.warning("%s: HTTP %d - neuer Versuch in %d s", path, response.status_code, 3 * 2**versuch)
+                time.sleep(3 * 2**versuch)
+                continue
+            if response.status_code >= 400:
+                raise RuntimeError(f"{path}: {response.status_code} {response.text[:300]}")
+            return response.json()
+        raise AssertionError("unerreichbar")
 
     def fetchable_sources(self) -> list[Source]:
         langs = ",".join(self.cfg.languages)

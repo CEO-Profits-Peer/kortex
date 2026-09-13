@@ -31,6 +31,23 @@ import type { ContentItem } from '@/lib/types.db';
  * Greedy statt optimal: bei zehn Karten wäre die perfekte Anordnung
  * berechenbar, aber der Unterschied ist unsichtbar und der Code doppelt so
  * lang. Was zählt, ist dass keine zwei Gleichen aufeinander folgen.
+ *
+ * Regel 1 war trotzdem an zwei Stellen löchrig — gemeldet als "zweimal
+ * derselbe Hashtag hintereinander":
+ *
+ *   - An der Naht zwischen zwei Batches. appendArranged hat die letzten
+ *     zwei Karten des alten Batches mit umsortiert und danach wieder
+ *     herausgefiltert. Landeten sie dabei nicht vorn, wurde die erste neue
+ *     Karte gegen gar nichts geprüft — und konnte genau die Kategorie der
+ *     letzten sichtbaren Karte haben.
+ *   - Am Ende eines Batches. Greedy verbraucht die gut passenden Karten
+ *     zuerst; übrig bleiben oft zwei aus derselben Kategorie, und die
+ *     müssen dann nebeneinander.
+ *
+ * Das erste behebt ein fester Kontext (die schon sichtbaren Karten werden
+ * nicht mehr angefasst, nur mitgezählt). Das zweite ein Zurückhalten: was
+ * am Ende nur noch als Wiederholung passt, bleibt draußen und kommt mit dem
+ * nächsten Batch wieder, wo es Nachbarn zur Auswahl hat.
  */
 
 const INTERACTIVE_EVERY = 4;
@@ -120,34 +137,67 @@ function penalty(
   return p;
 }
 
-export function arrangeBatch(
+/**
+ * Ordnet `items` so an, dass sie hinter `context` passen.
+ *
+ * `context` wird nicht verändert, nur für die Regeln mitgezählt — das sind
+ * die Karten, die schon auf dem Bildschirm stehen.
+ *
+ * Mit `zurueckhalten` endet die Anordnung, sobald nur noch eine
+ * Kategorie-Wiederholung übrig bliebe. Die restlichen Karten fehlen dann im
+ * Ergebnis; wer sie nicht in die geladenen IDs aufnimmt, bekommt sie vom
+ * Server mit dem nächsten Batch wieder.
+ */
+function arrange(
   items: ContentItem[],
-  /** Welche davon hat der Nutzer schon gelesen? */
-  repeats: ReadonlySet<string> = new Set(),
+  repeats: ReadonlySet<string>,
+  context: ContentItem[],
+  zurueckhalten: boolean,
 ): ContentItem[] {
-  if (items.length < 3) return items;
-
   const pool: Scored[] = items.map((item, index) => ({ item, index }));
   const out: ContentItem[] = [];
   let sinceInteractive = INTERACTIVE_EVERY; // erste Aufgabe darf sofort kommen
   let sinceKinetic = KINETIC_EVERY;         // die erste Karte darf eine Erklärkarte sein
+  for (const c of context) {
+    sinceInteractive = c.content_type === 'interactive' ? 0 : sinceInteractive + 1;
+    sinceKinetic = c.presentation_mode === 'kinetic' ? 0 : sinceKinetic + 1;
+  }
+
+  // Nie mehr als die Hälfte zurückhalten. Sonst kann ein Batch aus lauter
+  // Karten einer Kategorie komplett draußen bleiben, der Server liefert
+  // dieselben zehn wieder, und der Feed lädt im Kreis, ohne zu wachsen.
+  const mindestens = Math.ceil(items.length / 2);
 
   while (pool.length > 0) {
-    const prev = out[out.length - 1];
-    const prev2 = out[out.length - 2];
+    const reihe = [...context.slice(-2), ...out.slice(-2)];
+    const prev = reihe[reihe.length - 1];
+    const prev2 = reihe[reihe.length - 2];
 
     let bestAt = 0;
     let bestScore = Infinity;
     for (let i = 0; i < pool.length; i++) {
-      // out.length ist die Zielposition - danach entscheidet sich Regel 0.
+      // Die Zielposition zählt den Kontext mit - Regel 0 gilt nur für die
+      // allererste Karte des Feeds, nicht für die erste eines Nachschubs.
       const s = penalty(
-        pool[i].item, prev, prev2, pool[i].index, sinceInteractive, out.length, sinceKinetic,
-        repeats.has(pool[i].item.id),
+        pool[i].item, prev, prev2, pool[i].index, sinceInteractive,
+        context.length + out.length, sinceKinetic, repeats.has(pool[i].item.id),
       );
       if (s < bestScore) {
         bestScore = s;
         bestAt = i;
       }
+    }
+
+    // Greedy nimmt die Karte mit der kleinsten Strafe. Hat selbst die noch
+    // dieselbe Kategorie wie die Vorgängerin, gibt es im Rest keine andere
+    // mehr, die besser passt - also lieber aufhören als nebeneinanderstellen.
+    if (
+      zurueckhalten &&
+      prev &&
+      out.length >= mindestens &&
+      pool[bestAt].item.primary_category_id === prev.primary_category_id
+    ) {
+      break;
     }
 
     const [chosen] = pool.splice(bestAt, 1);
@@ -159,6 +209,17 @@ export function arrangeBatch(
   return out;
 }
 
+export function arrangeBatch(
+  items: ContentItem[],
+  /** Welche davon hat der Nutzer schon gelesen? */
+  repeats: ReadonlySet<string> = new Set(),
+  /** Karten am Ende zurückhalten, statt Kategorien doppelt zu stellen. */
+  zurueckhalten = false,
+): ContentItem[] {
+  if (items.length < 3) return items;
+  return arrange(items, repeats, [], zurueckhalten);
+}
+
 /**
  * Beim Anhängen eines neuen Batches muss die letzte Karte des alten mitzählen —
  * sonst entsteht genau an der Naht eine Wiederholung.
@@ -167,14 +228,11 @@ export function appendArranged(
   existing: ContentItem[],
   incoming: ContentItem[],
   repeats: ReadonlySet<string> = new Set(),
+  zurueckhalten = false,
 ): ContentItem[] {
   const known = new Set(existing.map((i) => i.id));
   const fresh = incoming.filter((i) => !known.has(i.id));
   if (fresh.length === 0) return existing;
 
-  const tail = existing.slice(-2);
-  const arranged = arrangeBatch([...tail, ...fresh], repeats);
-  // Die zwei Übergabekarten wieder abziehen — sie stehen schon in der Liste.
-  const withoutTail = arranged.filter((i) => !tail.some((t) => t.id === i.id));
-  return [...existing, ...withoutTail];
+  return [...existing, ...arrange(fresh, repeats, existing.slice(-2), zurueckhalten)];
 }

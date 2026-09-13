@@ -238,7 +238,16 @@ def main() -> int:
 
         stats["seen"] += len(items)
 
-        known = db.known_hashes([i.hash for i in items])
+        # Scheitert das auch nach den Wiederholungen in db._get, nur diese
+        # Quelle auslassen. Ohne Abgleich weiterzumachen hiesse, bekannte
+        # Artikel erneut an Gemini zu schicken; den ganzen Lauf abzubrechen
+        # hiess bisher, dass auch Evergreen danach ausfiel.
+        try:
+            known = db.known_hashes([i.hash for i in items])
+        except Exception as exc:  # noqa: BLE001
+            log.warning("%s: Abgleich mit der Datenbank gescheitert, Quelle ausgelassen: %s",
+                        src.id, exc)
+            continue
         fresh = [i for i in items if i.hash not in known]
         stats["already_known"] += len(items) - len(fresh)
 

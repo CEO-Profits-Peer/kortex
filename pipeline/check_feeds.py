@@ -15,6 +15,7 @@ geholt: dieses Skript soll auch dann laufen, wenn die Datenbank streikt.
 from __future__ import annotations
 
 import concurrent.futures
+import os
 import sys
 
 import feedparser
@@ -81,14 +82,26 @@ def feeds_aus_datenbank() -> list[tuple[str, str, str]] | None:
     Zugangsdaten, kaputtes Netz, streikende Datenbank. Das Skript soll
     seinen Zweck auch ohne sie erfuellen.
     """
+    # Direkt per HTTP statt ueber Config.load(): das verlangt auch
+    # GEMINI_API_KEY und beendet bei Fehlen das Skript mit SystemExit. Das ist
+    # KEINE Exception-Unterklasse, lief also am `except Exception` unten
+    # vorbei - und die Feed-Pruefung im Gesundheits-Lauf starb mit
+    # "GEMINI_API_KEY fehlt", obwohl sie Gemini nie braucht. Den Schluessel
+    # dort einzutragen waere die falsche Loesung: ein Geheimnis mehr in einem
+    # Schritt, der es nicht benutzt.
     try:
-        from config import Config
-        from db import Database
-
-        cfg = Config.load()
-        with Database(cfg) as db:
-            rows = db._get('/sources', {'select': 'id,default_language,feed_urls',
-                                        'is_active': 'eq.true'})
+        url = os.getenv('SUPABASE_URL', '').strip().rstrip('/')
+        key = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '').strip()
+        if not url or not key:
+            return None
+        response = httpx.get(
+            f'{url}/rest/v1/sources',
+            params={'select': 'id,default_language,feed_urls', 'is_active': 'eq.true'},
+            headers={'apikey': key, 'Authorization': f'Bearer {key}', 'User-Agent': USER_AGENT},
+            timeout=20,
+        )
+        response.raise_for_status()
+        rows = response.json()
         out: list[tuple[str, str, str]] = []
         for row in rows:
             for url in row.get('feed_urls') or []:
