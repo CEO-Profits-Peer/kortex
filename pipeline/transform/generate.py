@@ -371,6 +371,24 @@ Das Budget, streng:
 Im Zweifel weniger. Eine Karte, die einen Gedanken ganz bringt, ist besser
 als eine, die drei anreisst.
 
+WOMIT EINE KARTE ANFAENGT
+Der erste Block traegt die Karte: die App setzt ihn gross, wenn er eine
+Zahl, ein Zitat oder eine kurze Liste ist. Bisher fing jede einzelne Karte
+mit 'para' an - damit sehen alle gleich aus, obwohl sie es nicht sind.
+
+Fang mit dem an, was die Karte BEHAUPTET:
+- Die Aussage ist EINE Zahl -> 'stat' zuerst. value knapp, hoechstens 16
+  Zeichen ("38 %", "1,4 Mio", "3 von 4", "40 Mrd. Euro"), label ein
+  Halbsatz bis 60 Zeichen. Danach ein 'para', der sie einordnet.
+- Die Aussage ist ein Satz von jemandem -> 'quote' zuerst.
+- Es sind zwei bis vier gleichrangige Punkte -> 'bullet' zuerst, jeder
+  hoechstens 60 Zeichen, ohne Punkt am Ende.
+- Sonst 'para'.
+
+Nicht erzwingen. Eine Zahl vorn, die nicht die Hauptsache ist, macht die
+Karte falsch und nicht schoener - und wenn ein Fachbegriff erklaert werden
+muss (siehe unten), geht das vor: dann faengt die Karte mit 'para' an.
+
 WAS EINE KARTE INTERESSANT MACHT
 Nicht der Anlass, sondern die Ueberraschung. Jede Karte braucht EINEN
 Satz, bei dem jemand innehaelt - eine Zahl, die groesser ist als erwartet,

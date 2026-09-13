@@ -280,6 +280,37 @@ def validate(card: dict[str, Any], source_text: str) -> Result:
     if not (35 <= words <= 110):
         return Result(False, f"Laenge {words} Woerter ausserhalb 35-110")
 
+    # --- Der erste Block traegt die Karte ------------------------------------
+    #
+    # Steht vorn eine Zahl, ein Zitat oder eine kurze Liste, setzt die App den
+    # Block gross (components/CardBlock.tsx, "hero"). Das geht nur gut, wenn er
+    # auch dafuer taugt.
+    #
+    # Gemessen an 302 Karten: die Haelfte der 'stat'-Werte ist fuenf Zeichen
+    # kurz, elf Prozent sind laenger als vierzehn. "40 Milliarden Euro" gross
+    # gesetzt ist keine Kennzahl mehr, sondern eine Schlagzeile in drei Zeilen
+    # - und die App verkleinert sie, bis sie wieder aussieht wie Fliesstext.
+    # "40 Mrd. Euro" traegt dieselbe Aussage.
+    #
+    # Geprueft wird NUR die erste Position. Weiter hinten ist ein langer Wert
+    # unproblematisch, und eine sonst richtige Karte dafuer wegzuwerfen waere
+    # Verschwendung.
+    erster = body[0]
+    art = erster.get("type")
+    if art == "stat":
+        wert = (erster.get("value") or "").strip()
+        if len(wert) > 16:
+            return Result(False, f"Kennzahl vorn zu lang ({len(wert)} Zeichen): '{wert}'")
+        if not wert:
+            return Result(False, "Kennzahl ohne Wert")
+    elif art == "bullet":
+        punkte = erster.get("items") or []
+        if not (2 <= len(punkte) <= 4):
+            return Result(False, f"Liste vorn hat {len(punkte)} Punkte, erlaubt sind 2-4")
+        zu_lang = [p for p in punkte if len(p) > 72]
+        if zu_lang:
+            return Result(False, f"Listenpunkt vorn zu lang ({len(zu_lang[0])} Zeichen)")
+
     quiz = card.get("quiz") or {}
     options = quiz.get("options") or []
     if len(options) != 3:
