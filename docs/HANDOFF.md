@@ -281,6 +281,16 @@ Deliberately not relaxed — checking only the mantissa would make
   BEFORE it (no gaps in a sequence); fewer than 3 in a row = no course. Runs
   in `ingest.yml` step "Kurse" at 09:17 and 18:17 UTC only (6-12 calls each).
   Dry run on "Immunsystem": 3 lessons, all passed, 4 calls.
+  - `0076_home.sql` - `get_home(limit)`: the Home tab in one call. Reposts,
+    questions, new follows of people I follow; course completions and badges
+    only if that person has `leaderboard_opt_in`; duel results only if BOTH
+    have it. Plus "who was active" and follow suggestions.
+- **Tabs are now Home · Studio · Feed · Suche · Profil** (start route stays
+  `index` = Feed). Studio replaced the Kurse tab (courses + duels + review +
+  daily). The tab bar is a floating glass pill (`backdropFilter`, web only)
+  that lies OVER the content: every tab screen reserves
+  `insets.bottom + TAB_BAR_HEIGHT`; FeedScreen keeps that strip free so cards
+  still snap to the visible height.
 - **Topics are no longer a wall.** `pipeline/topic_discovery.py` finds new
   evergreen topics from the link graph of topics that already have a card:
   articles linked by >= 2 topics of the SAME category, >= 60 % of their inbound

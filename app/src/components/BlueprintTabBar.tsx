@@ -1,39 +1,61 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { haptics } from '@/lib/haptics';
 
 import { TabIcon, type TabName } from '@/components/TabIcon';
-import { color, space, type } from '@/theme/tokens';
+import { color, type } from '@/theme/tokens';
 
 /**
- * Die untere Leiste im Blueprint-Stil.
+ * Die untere Leiste: eine schwebende Glas-Pille.
  *
- * Statt der Standard-Tab-Bar: eine Skala. Ueber jedem Tab sitzen feine
- * Teilstriche wie auf einem Lineal, und der aktive Tab bekommt einen
- * leuchtenden Messschieber-Marker, der beim Wechsel weiterfaehrt.
+ * Vorher eine Skala ueber die ganze Breite mit Teilstrichen wie auf einem
+ * Lineal. Mit fuenf Tabs und dem Wunsch nach "Liquid Glass" jetzt eine Pille,
+ * die ueber dem Inhalt schwebt: halb durchsichtig, weichgezeichnet, mit einer
+ * helleren Linse hinter dem aktiven Tab, die beim Wechsel hinuebergleitet.
  *
- * Das ist der eine Ort, an dem Signalfarbe dauerhaft zu sehen ist - deshalb
- * traegt er die visuelle Identitaet: monochrome Skala, ein heller Marker.
+ * Was von der Blaupause bleibt: der duenne Strich in Signalfarbe oben auf der
+ * Linse, der zu beiden Seiten ins Transparente auslaeuft. Die Teilstriche
+ * sind weg - in einer Pille lesen sie sich als Rauschen, nicht als Skala.
  *
- * Der Marker war ein harter Block von 28 Pixeln mit einer Feder, die leicht
- * ueber das Ziel hinausschwang. Gewuenscht war: weich, und nach links und
- * rechts auslaufend. Deshalb jetzt eine Linie mit Verlauf zu beiden Seiten
- * ins Transparente, ein Schein als Ellipse, die nach unten und zur Seite
- * auslaeuft, und eine Bewegung mit Abbremsen statt Nachfedern - ein
- * Messschieber schwingt nicht nach.
+ * Schwebend heisst: die Leiste liegt UEBER dem Inhalt, nicht darunter. Jeder
+ * Bildschirm in einem Tab muss unten TAB_BAR_HEIGHT (plus Sicherheitsabstand)
+ * frei lassen, sonst verschwindet sein letztes Element unter dem Glas. Der
+ * Feed haelt den Platz ganz frei (FeedScreen), weil seine Karten auf die
+ * sichtbare Hoehe einrasten muessen.
  *
- * Kein Abdecken der Raender in Leistenfarbe: das haette die Teilstriche
- * unter dem Marker mit verdeckt. Die Ellipse blendet von selbst aus.
+ * Die Weichzeichnung gibt es nur im Browser (backdropFilter). Die App laeuft
+ * dort; nativ faellt die Pille auf eine fast deckende Flaeche zurueck.
  */
 
-export const TAB_BAR_HEIGHT = 60;
+/** So viel muss ein Tab-Bildschirm unten frei lassen, zusaetzlich zu insets.bottom. */
+export const TAB_BAR_HEIGHT = 72;
 
-/** Breite des Markers, hoechstens so breit wie ein Tab. */
-const MARKER_MAX = 88;
-const SCHEIN_HOEHE = 18;
+const PILLE = 58;
+const ABSTAND_UNTEN = 8;
+const RAND = 14;
+const LINSE_INNEN = 5;
+
+const GLAS: ViewStyle =
+  Platform.OS === 'web'
+    ? ({
+        backgroundColor: 'rgba(11, 12, 14, 0.58)',
+        // react-native-web reicht beides durch und setzt die Praefixe selbst.
+        backdropFilter: 'blur(22px) saturate(170%)',
+        boxShadow: '0 10px 34px rgba(0, 0, 0, 0.45)',
+      } as unknown as ViewStyle)
+    : { backgroundColor: 'rgba(11, 12, 14, 0.94)' };
 
 /**
  * Nur die Felder, die diese Leiste wirklich benutzt.
@@ -55,7 +77,8 @@ export type TabBarProps = {
 };
 
 const ROUTE_ICONS: Record<string, TabName> = {
-  courses: 'courses',
+  home: 'home',
+  studio: 'studio',
   index: 'feed',
   search: 'search',
   profile: 'profile',
@@ -63,115 +86,139 @@ const ROUTE_ICONS: Record<string, TabName> = {
 
 export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const tabWidth = width / state.routes.length;
-  const marker = Math.min(MARKER_MAX, tabWidth * 0.8);
+  // Die Breite der Pille, nicht des Fensters: sie hat seitlich Abstand, und
+  // die Linse muss genau unter dem Tab stehen.
+  const [breite, setBreite] = useState(0);
+  const tabBreite = breite / Math.max(1, state.routes.length);
+  const strich = Math.min(40, tabBreite * 0.5);
 
-  const slide = useRef(new Animated.Value(state.index * tabWidth)).current;
+  const slide = useRef(new Animated.Value(0)).current;
+  const erstesMal = useRef(true);
 
   useEffect(() => {
+    if (!breite) return;
+    const ziel = state.index * tabBreite;
+    // Beim ersten Messen hinspringen, nicht hingleiten: sonst faehrt die
+    // Linse bei jedem Start einmal von links durch die ganze Leiste.
+    if (erstesMal.current) {
+      erstesMal.current = false;
+      slide.setValue(ziel);
+      return;
+    }
     Animated.timing(slide, {
-      toValue: state.index * tabWidth,
-      duration: 320,
+      toValue: ziel,
+      duration: 340,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
-  }, [state.index, tabWidth, slide]);
+  }, [state.index, tabBreite, breite, slide]);
 
   return (
-    <View style={[styles.bar, { height: TAB_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom }]}>
-      {/* Skala: feine Teilstriche ueber die ganze Breite */}
-      <View style={styles.scale} pointerEvents="none">
-        {Array.from({ length: Math.ceil(width / 8) }).map((_, i) => (
-          <View key={i} style={[styles.tick, i % 5 === 0 && styles.tickMajor]} />
-        ))}
-      </View>
+    <View
+      pointerEvents="box-none"
+      style={[styles.huelle, { paddingBottom: insets.bottom + ABSTAND_UNTEN }]}
+    >
+      <View style={[styles.pille, GLAS]} onLayout={(e) => setBreite(e.nativeEvent.layout.width)}>
+        {/* Lichtkante: ein Hauch Helligkeit oben, wie eine Glaskante. */}
+        <View pointerEvents="none" style={styles.lichtkante} />
 
-      {/* Der Messschieber */}
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.cursor, { width: tabWidth, transform: [{ translateX: slide }] }]}
-      >
-        <Svg width={marker} height={SCHEIN_HOEHE}>
-          <Defs>
-            {/* Waagrecht: aus dem Nichts, volle Farbe in der Mitte, ins Nichts. */}
-            <LinearGradient id="tabMarkerLinie" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={color.signal.primary} stopOpacity={0} />
-              <Stop offset="0.5" stopColor={color.signal.primary} stopOpacity={1} />
-              <Stop offset="1" stopColor={color.signal.primary} stopOpacity={0} />
-            </LinearGradient>
-            {/* Oben in der Mitte am hellsten, nach unten und zu beiden
-                Seiten auslaufend. */}
-            <RadialGradient id="tabMarkerSchein" cx="0.5" cy="0" rx="0.5" ry="1" fx="0.5" fy="0">
-              <Stop offset="0" stopColor={color.signal.primary} stopOpacity={0.22} />
-              <Stop offset="1" stopColor={color.signal.primary} stopOpacity={0} />
-            </RadialGradient>
-          </Defs>
-          <Rect x={0} y={0} width={marker} height={SCHEIN_HOEHE} fill="url(#tabMarkerSchein)" />
-          <Rect x={0} y={0} width={marker} height={2} fill="url(#tabMarkerLinie)" />
-        </Svg>
-      </Animated.View>
+        {breite > 0 ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.linse, { width: tabBreite, transform: [{ translateX: slide }] }]}
+          >
+            <View style={styles.linseInnen}>
+              <Svg width={strich} height={2}>
+                <Defs>
+                  <LinearGradient id="tabLinsenStrich" x1="0" y1="0" x2="1" y2="0">
+                    <Stop offset="0" stopColor={color.signal.primary} stopOpacity={0} />
+                    <Stop offset="0.5" stopColor={color.signal.primary} stopOpacity={1} />
+                    <Stop offset="1" stopColor={color.signal.primary} stopOpacity={0} />
+                  </LinearGradient>
+                </Defs>
+                <Rect x={0} y={0} width={strich} height={2} fill="url(#tabLinsenStrich)" />
+              </Svg>
+            </View>
+          </Animated.View>
+        ) : null}
 
-      <View style={styles.row}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const focused = state.index === index;
-          const label = options.title ?? route.name;
-          const icon = ROUTE_ICONS[route.name] ?? 'feed';
+        <View style={styles.row}>
+          {state.routes.map((route, index) => {
+            const { options } = descriptors[route.key];
+            const focused = state.index === index;
+            const label = options.title ?? route.name;
+            const icon = ROUTE_ICONS[route.name] ?? 'feed';
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (focused || event.defaultPrevented) return;
-            haptics.select();
-            navigation.navigate(route.name);
-          };
+            const onPress = () => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+              if (focused || event.defaultPrevented) return;
+              haptics.select();
+              navigation.navigate(route.name);
+            };
 
-          return (
-            <Pressable
-              key={route.key}
-              onPress={onPress}
-              style={styles.tab}
-              accessibilityRole="button"
-              accessibilityState={{ selected: focused }}
-              accessibilityLabel={label}
-            >
-              <TabIcon name={icon} color={focused ? color.signal.primary : color.ink.low} />
-              <Text style={[styles.label, focused && styles.labelOn]}>{label}</Text>
-            </Pressable>
-          );
-        })}
+            return (
+              <Pressable
+                key={route.key}
+                onPress={onPress}
+                style={styles.tab}
+                accessibilityRole="button"
+                accessibilityState={{ selected: focused }}
+                accessibilityLabel={label}
+              >
+                <TabIcon name={icon} color={focused ? color.signal.primary : color.ink.mid} />
+                <Text style={[styles.label, focused && styles.labelOn]} numberOfLines={1}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: {
-    backgroundColor: color.bgSunken,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: color.ink.faint,
-  },
-
-  scale: {
+  huelle: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
-    height: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    bottom: 0,
+    paddingHorizontal: RAND,
   },
-  tick: { width: 1, height: 3, backgroundColor: color.gridLineMajor },
-  tickMajor: { height: 6, backgroundColor: color.ink.faint },
+  pille: {
+    height: PILLE,
+    borderRadius: PILLE / 2,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+  },
+  lichtkante: {
+    position: 'absolute',
+    top: 0,
+    left: PILLE / 2,
+    right: PILLE / 2,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+  },
 
-  cursor: { position: 'absolute', top: 0, left: 0, alignItems: 'center' },
+  linse: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: LINSE_INNEN },
+  linseInnen: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: (PILLE - 2 * LINSE_INNEN) / 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    overflow: 'hidden',
+  },
 
   row: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingTop: space.xs },
-  label: { ...type.meta, fontSize: 11, color: color.ink.low },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: PILLE },
+  label: { ...type.meta, fontSize: 10, color: color.ink.mid },
   labelOn: { color: color.signal.primary },
 });

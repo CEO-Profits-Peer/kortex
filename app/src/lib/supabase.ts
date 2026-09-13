@@ -24,6 +24,7 @@ import type {
   CollectionEntry,
   CommentQuestion,
   DuelListEntry,
+  HomeData,
   InvitePreview,
   MyInvite,
   RedeemResult,
@@ -394,6 +395,13 @@ export const api = {
       p_comment: comment ?? null,
     });
     if (error) throw error;
+  },
+
+  /** Home: was die Leute machen, denen ich folge (Migration 0076). */
+  async home(limit = 50): Promise<HomeData> {
+    const { data, error } = await supabase.rpc('get_home', { p_limit: limit });
+    if (error) throw error;
+    return data as HomeData;
   },
 
   async followingFeed(limit = 30): Promise<FollowingItem[]> {

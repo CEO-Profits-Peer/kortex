@@ -408,7 +408,15 @@ export function FeedScreen({
 
   return (
     <GridBackground>
-      <View style={styles.listWrap} {...listProps}>
+      {/* Die Tab-Leiste schwebt ueber dem Inhalt (BlueprintTabBar). Die
+          Karten muessen trotzdem darueber enden: sonst misst die Liste den
+          Platz unter dem Glas mit, jede Karte wird so hoch wie der ganze
+          Bildschirm, und ihr unterer Teil liegt unter der Leiste. Also wird
+          der Streifen hier freigehalten - darin sieht man das Raster. */}
+      <View
+        style={[styles.listWrap, reserveBottom > 0 && { marginBottom: reserveBottom + insets.bottom }]}
+        {...listProps}
+      >
       <Animated.FlatList
         data={items}
         onScroll={onScroll}

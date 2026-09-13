@@ -1,6 +1,7 @@
 {
   "tabs": {
-    "courses": "Kurse",
+    "home": "Home",
+    "studio": "Studio",
     "feed": "Feed",
     "search": "Suche",
     "profile": "Profil"

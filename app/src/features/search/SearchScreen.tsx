@@ -143,7 +143,8 @@ export function SearchScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
+          // Die Tab-Leiste schwebt ueber dem Inhalt - darueber hinaus scrollen.
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space.xl }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

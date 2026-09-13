@@ -200,7 +200,8 @@ export function ProfileScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xxxl },
+          // Unten: die Tab-Leiste schwebt ueber dem Inhalt.
+          { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space.xl },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={

@@ -11,9 +11,9 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
  * konsistenter Strich mehr.
  */
 
-export type TabName = 'courses' | 'feed' | 'search' | 'profile';
+export type TabName = 'home' | 'studio' | 'courses' | 'feed' | 'search' | 'profile';
 
-const SIZE = 24;
+const SIZE = 22;
 const STROKE = 1.5;
 
 export function TabIcon({ name, color }: { name: TabName; color: ColorValue }) {
@@ -27,6 +27,22 @@ export function TabIcon({ name, color }: { name: TabName; color: ColorValue }) {
 
   return (
     <Svg width={SIZE} height={SIZE} viewBox="0 0 24 24">
+      {name === 'home' && (
+        // Ein Haus mit Tuer - das Zeichen, das jeder als "Start" liest.
+        <Path
+          d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5h-6v5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z"
+          {...common}
+        />
+      )}
+
+      {name === 'studio' && (
+        <>
+          {/* Ein Plus im Rahmen: hier macht man selbst etwas. */}
+          <Rect x={4} y={4} width={16} height={16} rx={4.5} {...common} />
+          <Path d="M12 8.5v7M8.5 12h7" {...common} />
+        </>
+      )}
+
       {name === 'courses' && (
         <>
           {/* Gestapelte Lektionen */}

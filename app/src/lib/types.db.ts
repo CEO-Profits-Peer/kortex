@@ -399,6 +399,41 @@ export type PersonHit = {
   is_me: boolean;
 };
 
+/** Eine Person, wie get_home (Migration 0076) sie mitschickt. */
+export type HomePerson = {
+  handle: string;
+  name: string;
+  avatar_seed: string;
+  avatar_path: string | null;
+};
+
+type HomeBasis = { at: string; wer: HomePerson };
+
+export type HomeEntry =
+  | (HomeBasis & {
+      art: 'repost';
+      was: { content_id: string; title: string; deck: string | null; category: string; comment: string | null };
+    })
+  | (HomeBasis & { art: 'frage'; was: { content_id: string; title: string; body: string } })
+  | (HomeBasis & {
+      art: 'duell';
+      was: {
+        a: HomePerson & { punkte: number; ich: boolean };
+        b: HomePerson & { punkte: number; ich: boolean };
+      };
+    })
+  | (HomeBasis & { art: 'kurs'; was: { slug: string; title: string; lessons: number } })
+  | (HomeBasis & { art: 'abzeichen'; was: { title: string; emoji: string | null } })
+  | (HomeBasis & { art: 'folgt'; was: HomePerson & { bin_ich: boolean } });
+
+export type HomeData = {
+  eintraege: HomeEntry[];
+  /** Wer von meinen Leuten zuletzt etwas gemacht hat, neueste zuerst. */
+  leute: (HomePerson & { zuletzt: string })[];
+  folge_ich: number;
+  vorschlaege: (HomePerson & { id: string; follower_count: number; grund: string | null })[];
+};
+
 export type FollowingItem = {
   kind: 'repost';
   content_id: string;

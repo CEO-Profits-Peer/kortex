@@ -575,10 +575,10 @@ export function SettingsScreen() {
           />
           <Row
             label={tutorialWieder ? 'Erklärungen kommen wieder' : 'Erklärungen nochmal zeigen'}
-            hint="Die drei Schritte im Feed und die Hinweise in Profil, Suche und Kursen"
+            hint="Die drei Schritte im Feed und die Hinweise in Home, Studio, Suche und Profil"
             onPress={() => {
               void resetFeedTutorial();
-              void resetTabHints(['profil', 'suche', 'kurse']);
+              void resetTabHints(['home', 'studio', 'profil', 'suche']);
               setTutorialWieder(true);
             }}
           />
