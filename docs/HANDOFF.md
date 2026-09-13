@@ -32,7 +32,7 @@ source document, and nothing is generated from model memory.
   expo-router. Ships as a PWA to Cloudflare Pages (`elycic.pages.dev`).
   Native build exists but web is the live target.
 - **Backend** — Supabase (Postgres + RLS + SECURITY DEFINER RPCs + Storage +
-  Auth + Edge Functions). 71 migrations, 0070-0071 still to be applied.
+  Auth + Edge Functions). 73 migrations, 0070-0073 still to be applied.
 - **Pipeline** — Python. Pulls RSS feeds and Wikipedia articles, asks Gemini
   for a card with structured output, validates deterministically, writes to
   Supabase. Runs in GitHub Actions every 3 hours.
@@ -57,7 +57,7 @@ pipeline/
   transform/      generate.py (cards), kinetic.py (animated "specials")
   validate/       checks.py, relevance.py, overclaim.py
 supabase/
-  migrations/     0001–0071, each with a long header explaining WHY
+  migrations/     0001–0073, each with a long header explaining WHY
   functions/push/ Edge Function, delivers notifications in ~3 s
 docs/             ARCHITECTURE, CONTENT-SOURCING, SETUP, DEPLOY, SMTP,
                   GOOGLE-LOGIN, PRODUKT-IDEEN
@@ -253,19 +253,29 @@ Deliberately not relaxed — checking only the mantissa would make
 
 - **0065-0069 are applied** (checked against the schema on 2026-09-13).
   0067 only changes a function body and cannot be seen from outside.
-- **Two migrations are written but not applied**, in this order:
+- **Four migrations are written but not applied**, in this order:
   - `0070_reading_speed.sql` - read-validation at 4 words/s (was 3), max 15 s
     (was 20). Measured first: engaged readers take LONGER than the old target
     (liked text cards: 2.4 words/s, 22.7 s); the low read rate comes from
     swiping, not from the threshold. Simulated on 387 pairs: 37.0 % -> 39.5 %.
-    The column is generated; the file switches between `set expression`
-    (PG >= 17) and drop/add, because the version is not visible from here.
-  - `0071_invites.sql` - `?einladung=CODE` links. Redeeming sets
-    `referred_by`, writes `referrals` and creates the MUTUAL follow, so friends
-    ranking and duels work from minute one. No reward yet (farming), only in
-    the first 7 days, only once.
-- **`0069` (duels) has never been played end to end.** It needs two accounts
-  that follow each other.
+  - `0071_invites.sql` - `?einladung=CODE` links; redeeming creates the MUTUAL
+    follow. No reward yet (farming), first 7 days only, once.
+  - `0072_duel_xp_kinds.sql` - **fixes "Abgabe ging nicht" in duels.** 0069
+    awarded `duel_win`/`duel_draw`, which `xp_ledger_kind_check` does not
+    allow, so the SECOND submission of every duel rolled back. The list is
+    the one from 0024 plus the two kinds. Also closes duels stuck on it.
+  - `0073_topic_memory.sql` - remembers how each evergreen topic ended, so
+    discovered topics are never retried with Gemini once they are done.
+- **Topics are no longer a wall.** `pipeline/topic_discovery.py` finds new
+  evergreen topics from the link graph of topics that already have a card:
+  articles linked by >= 2 topics of the SAME category, >= 60 % of their inbound
+  topic links from that category, >= 12 kB, and not (transitively, via Wikidata
+  P31/P279*) a person, organisation, country, settlement, building, war,
+  language or creative work. Runs inside `evergreen.py` when fewer than 60
+  topics per language are open; zero Gemini quota. For discovered topics the
+  MODEL picks the category (the link graph put "Reelle Zahl" under tech.code).
+- **`0069` (duels) was played once and exposed the 0072 bug.** Play again
+  after 0072.
 - **SMTP** — the one thing nobody but you can do. If "Enable custom SMTP" is
   on with empty fields, *no* auth mail goes out at all, not even through the
   built-in sender. Two options: fill it in (`docs/SMTP.md`, Brevo, ~10 min)
