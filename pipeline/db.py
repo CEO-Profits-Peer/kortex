@@ -249,6 +249,58 @@ class Database:
                 return counts
             page += 1
 
+    def topic_memory(self) -> dict[tuple[str, str], dict[str, Any]] | None:
+        """Wie ist jedes bisher versuchte Evergreen-Thema ausgegangen?
+
+        Schluessel ist (Sprache, Titel in Kleinschreibung) - Wikipedia
+        unterscheidet "Aktie" und "aktie" nicht, und die Themensuche liefert
+        Titel in der Schreibweise des Artikels, die Liste in der von Hand.
+
+        None heisst: die Tabelle gibt es noch nicht (Migration 0073 nicht
+        eingespielt). Dann laeuft Evergreen wie vorher, nur ohne Gedaechtnis -
+        ein fehlendes Hilfsmittel ist kein Grund, keine Karten zu machen.
+
+        Seitenweise aus demselben Grund wie card_counts: ein stilles
+        Abschneiden bei tausend Zeilen waere hier besonders teuer, denn jedes
+        vergessene Thema wird erneut mit Gemini versucht.
+        """
+        out: dict[tuple[str, str], dict[str, Any]] = {}
+        page = 0
+        while True:
+            try:
+                rows = self._get(
+                    "/topic_memory",
+                    {
+                        "select": "language,title,category_id,herkunft,status,versuche,score",
+                        "order": "language.asc,title.asc",
+                        "limit": "1000",
+                        "offset": str(page * 1000),
+                    },
+                )
+            except RuntimeError as exc:
+                if page == 0 and ("topic_memory" in str(exc) or ": 404" in str(exc)):
+                    return None
+                raise
+            for row in rows:
+                out[(row["language"], row["title"].casefold())] = row
+            if len(rows) < 1000:
+                return out
+            page += 1
+
+    def remember_topics(self, rows: list[dict[str, Any]]) -> None:
+        """Themen anlegen oder ihren Ausgang festhalten (Upsert auf Sprache + Titel)."""
+        for i in range(0, len(rows), 500):
+            response = self.http.post(
+                "/topic_memory",
+                params={"on_conflict": "language,title"},
+                headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+                json=rows[i : i + 500],
+            )
+            if response.status_code >= 400:
+                raise RuntimeError(
+                    f"topic_memory: {response.status_code} {response.text[:300]}"
+                )
+
     def presentation_counts(self) -> tuple[int, int]:
         """(freigegebene Karten, davon Erklaerkarten).
 

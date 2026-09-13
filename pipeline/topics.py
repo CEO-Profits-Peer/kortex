@@ -1,5 +1,12 @@
 """Die Themenliste fuer Evergreen-Karten.
 
+Seit topic_discovery.py ist diese Liste nicht mehr die Grenze, sondern die
+Saat: der Lauf findet selbst neue Themen, sobald die offenen knapp werden, und
+zwar aus dem Linkgraphen DIESER Themen. Was hier steht, bestimmt also weiter,
+wonach der Feed aussieht - nur nicht mehr, wie lang er reicht. Der Absatz
+unten gilt deshalb unveraendert fuer die Auswahl hier, und er ist der Grund,
+warum die Entdeckung von hier ausgeht und nicht von Wikipedia-Kategorien.
+
 Warum eine Liste von Hand und kein Automatismus
 -----------------------------------------------
 Man koennte Wikipedia-Kategorien abgrasen und daraus Themen ziehen. Das
