@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config import USER_AGENT, Config          # noqa: E402
 from db import Database, Source                # noqa: E402
+from laufbilanz import Laufbilanz, hauptprogramm  # noqa: E402
 # Privat, und trotzdem hier benutzt: das ist dieselbe Aufgabe wie beim
 # Erstabruf - Adresse rein, sauberer Artikeltext raus. Eine zweite Fassung
 # waere eine zweite Stelle, an der sich trafilatura-Eigenheiten zeigen.
@@ -151,6 +152,8 @@ def main() -> int:
     dry = args.dry_run or cfg.dry_run
 
     stats: Counter[str] = Counter()
+    bilanz = Laufbilanz(cfg, "backfill", dry)
+    bilanz.beobachte(stats=stats)
     with Database(cfg) as db:
         # Wie viele fehlen ueberhaupt noch?
         #
@@ -162,19 +165,23 @@ def main() -> int:
         # sich wiederholen.
         total, kinetic = db.presentation_counts()
         needed = max(0, round(args.target * total) - kinetic)
+        bilanz.extra["fehlend"] = needed
         log.info("Bestand: %d freigegeben, davon %d Erklaerkarten (%.0f %%). "
                  "Fuer %.0f %% fehlen %d.",
                  total, kinetic, 100 * kinetic / max(1, total), 100 * args.target, needed)
         if needed == 0:
             log.info("Ziel schon erreicht - nichts zu tun.")
+            bilanz.stopp = "ziel"
             return 0
 
         cards = db.text_cards(args.limit, args.language)
         if not cards:
             log.info("Keine Textkarten offen - nichts zu tun.")
+            bilanz.stopp = "nichts_offen"
             return 0
 
         gen = Generator(cfg.gemini_api_keys, cfg.gemini_model)
+        bilanz.beobachte(gen=gen)
         sources: dict[str, Source | None] = {}
 
         log.info("%d Textkarten · %s · %d Schluessel",
@@ -200,14 +207,17 @@ def main() -> int:
         ) as http:
             for card in cards:
                 if stats["ok"] >= needed:
+                    bilanz.stopp = "ziel"
                     log.info("Ziel erreicht.")
                     break
                 if time.monotonic() >= frist:
+                    bilanz.stopp = "zeit"
                     log.warning("Zeitbudget von %d Minuten aufgebraucht - der "
                                 "naechste Lauf macht bei den aeltesten "
                                 "Textkarten weiter", cfg.max_run_minutes)
                     break
                 if gen.calls >= cfg.max_gemini_calls_per_run:
+                    bilanz.stopp = "aufrufe"
                     log.warning("Gemini-Limit erreicht, breche ab")
                     break
 
@@ -245,6 +255,7 @@ def main() -> int:
                     log.info("  %-12s %s%s", attempt.outcome, card["title"][:44],
                              f"  ({attempt.detail})" if attempt.detail else "")
                     if gen.exhausted:
+                        bilanz.stopp = "kontingent"
                         log.warning("Tageskontingent aufgebraucht. Der naechste Lauf "
                                     "faengt wieder bei den aeltesten Textkarten an - "
                                     "die hier bereits umgewandelten sind dann raus.")
@@ -264,6 +275,7 @@ def main() -> int:
 
         changed.close()
 
+    bilanz.karten = stats["geschrieben"]
     log.info("Fertig.")
     for label, key in [
         ("umgewandelt", "ok"),
@@ -284,4 +296,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # Schliesst die Laufbilanz auch bei Absturz oder Abschuss.
+    hauptprogramm(main)

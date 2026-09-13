@@ -16,7 +16,8 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { AdminCategories } from '@/features/admin/AdminCategories';
 import { AdminOverview } from '@/features/admin/AdminOverview';
 import { AdminPeople } from '@/features/admin/AdminPeople';
-import type { AdminCategory, AdminData } from '@/features/admin/types';
+import { AdminPipeline } from '@/features/admin/AdminPipeline';
+import type { AdminCategory, AdminData, AdminRuns } from '@/features/admin/types';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import { fehlerText } from '@/lib/fehler';
@@ -46,10 +47,11 @@ import { color, radius, space, type } from '@/theme/tokens';
  * unter der Fussmatte.
  */
 
-type Reiter = 'uebersicht' | 'kategorien' | 'personen';
+type Reiter = 'uebersicht' | 'pipeline' | 'kategorien' | 'personen';
 
 const REITER: { key: Reiter; label: string }[] = [
   { key: 'uebersicht', label: 'Übersicht' },
+  { key: 'pipeline', label: 'Pipeline' },
   { key: 'kategorien', label: 'Kategorien' },
   { key: 'personen', label: 'Personen' },
 ];
@@ -63,6 +65,7 @@ export default function Admin() {
 
   const [daten, setDaten] = useState<AdminData | null>(null);
   const [kategorien, setKategorien] = useState<AdminCategory[] | null>(null);
+  const [laeufe, setLaeufe] = useState<AdminRuns | null>(null);
   const [busy, setBusy] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
 
@@ -96,6 +99,7 @@ export default function Admin() {
     setOffen(false);
     setDaten(null);
     setKategorien(null);
+    setLaeufe(null);
     setReiter('uebersicht');
   }, []);
 
@@ -105,6 +109,23 @@ export default function Admin() {
       setReiter(k);
       // Erst beim Ansehen laden. Drei Abfragen beim Oeffnen waeren drei
       // Gelegenheiten, dass eine haengt und die Seite halb dasteht.
+      if (k === 'pipeline' && !laeufe) {
+        setBusy(true);
+        try {
+          setLaeufe(await api.adminRuns(pin.current));
+        } catch (e) {
+          // Eine fehlende Funktion meldet PostgREST als eigenen Fehler, nicht
+          // als "kein Zugang". Dann ist es fast immer die Migration.
+          const msg = e instanceof Error ? e.message : '';
+          setFehler(
+            /admin_runs|PGRST202|schema cache/i.test(msg)
+              ? 'Pipeline nicht ladbar – ist 0074_pipeline_runs.sql eingespielt?'
+              : fehlerText(e, 'Pipeline nicht ladbar'),
+          );
+        } finally {
+          setBusy(false);
+        }
+      }
       if (k === 'kategorien' && !kategorien) {
         setBusy(true);
         try {
@@ -188,6 +209,11 @@ export default function Admin() {
         keyboardShouldPersistTaps="handled"
       >
         {reiter === 'uebersicht' && daten ? <AdminOverview data={daten} /> : null}
+
+        {reiter === 'pipeline' && laeufe ? <AdminPipeline data={laeufe} /> : null}
+        {reiter === 'pipeline' && !laeufe && busy ? (
+          <ActivityIndicator color={color.signal.primary} style={{ marginTop: space.xxl }} />
+        ) : null}
 
         {reiter === 'kategorien' ? (
           kategorien ? (

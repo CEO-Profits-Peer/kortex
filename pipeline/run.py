@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config import Config                      # noqa: E402
 from db import Database                        # noqa: E402
+from laufbilanz import Laufbilanz, hauptprogramm  # noqa: E402
 from sources.feeds import fetch_feed           # noqa: E402
 from transform.generate import Generator       # noqa: E402
 from transform.kinetic import make_script
@@ -157,9 +158,11 @@ def main() -> int:
 
     cfg = Config.load()
     dry = args.dry_run or cfg.dry_run
+    bilanz = Laufbilanz(cfg, "ingest", dry)
 
     db = Database(cfg)
     gen = Generator(cfg.gemini_api_keys, cfg.gemini_model)
+    bilanz.beobachte(gen=gen)
 
     sources = db.fetchable_sources()
     if args.source:
@@ -175,6 +178,7 @@ def main() -> int:
              len(sources), ",".join(cfg.languages), "TROCKENLAUF" if dry else "schreibend")
 
     stats: Counter[str] = Counter()
+    bilanz.beobachte(stats=stats)
     rows: list[dict] = []
     # Wortdeckung ALLER Karten, auch der bestandenen. Nur damit laesst sich
     # sagen, ob die Schwelle von 55 Prozent richtig sitzt - eine Schwelle,
@@ -221,10 +225,12 @@ def main() -> int:
 
     for src in nutzbar:
         if zeit_um():
+            bilanz.stopp = "zeit"
             log.warning("Zeitbudget von %d Minuten aufgebraucht - Rest beim "
                         "naechsten Lauf", cfg.max_run_minutes)
             break
         if stats["seen"] >= cfg.max_items_per_run:
+            bilanz.stopp = "artikel"
             log.info("Limit von %d Artikeln erreicht", cfg.max_items_per_run)
             break
 
@@ -253,9 +259,11 @@ def main() -> int:
 
         for item in fresh:
             if zeit_um():
+                bilanz.stopp = "zeit"
                 log.warning("Zeitbudget aufgebraucht, breche ab")
                 break
             if gen.calls >= cfg.max_gemini_calls_per_run:
+                bilanz.stopp = "aufrufe"
                 log.warning("Gemini-Limit erreicht, breche ab")
                 break
 
@@ -295,6 +303,7 @@ def main() -> int:
                             'waere ein zweiter Satz Kontingente (GEMINI_API_KEY_2).',
                             len(gen.models), len(gen.api_keys),
                         )
+                        bilanz.stopp = "kontingent"
                         break
                     log.error(
                         'Drei Gemini-Aufrufe in Folge fehlgeschlagen. Abbruch.\n'
@@ -302,6 +311,8 @@ def main() -> int:
                         '  Zum Eingrenzen:  python pipeline/probe_gemini.py',
                         gen.first_error,
                     )
+                    bilanz.stopp = "gemini_fehler"
+                    bilanz.fehler = gen.first_error
                     return 2
                 continue
 
@@ -420,6 +431,7 @@ def main() -> int:
     #
     # Deshalb jetzt eine Zeile pro Wert. Laenger, dafuer kann sich beim
     # naechsten neuen Zaehler nichts mehr verschieben.
+    bilanz.karten = written
     log.info("Fertig.")
     for label, value in [
         ("gesehen", stats["seen"]),
@@ -497,4 +509,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # Schliesst die Laufbilanz auch bei Absturz oder Abschuss.
+    hauptprogramm(main)

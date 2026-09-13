@@ -74,6 +74,41 @@ export type AdminCategory = {
   neuste: string | null;
 };
 
+/** Eine Zeile aus pipeline_runs (Migration 0074). */
+export type AdminRun = {
+  id: number;
+  skript: 'ingest' | 'evergreen' | 'backfill' | string;
+  ausloeser: 'schedule' | 'workflow_dispatch' | 'lokal' | string;
+  github_run_id: number | null;
+  gestartet_at: string;
+  beendet_at: string | null;
+  /** 'abgebrochen' setzt admin_runs() fuer Zeilen, die nach 45 min noch 'laeuft' sind. */
+  status: 'laeuft' | 'fertig' | 'fehler' | 'abgebrochen' | string;
+  stopp: string | null;
+  karten: number;
+  gemini_aufrufe: number;
+  wiederholungen: number;
+  modell: string | null;
+  schluessel: number | null;
+  zahlen: Record<string, number | string | null>;
+  fehler: string | null;
+  trockenlauf: boolean;
+};
+
+export type AdminRuns = {
+  laeufe: AdminRun[];
+  tage: {
+    tag: string;
+    geplant: number;
+    laeufe: number;
+    aufrufe: number;
+    kontingent_leer: number;
+    fehler: number;
+    karten_db: number;
+  }[];
+  stand: string;
+};
+
 export type AdminPersonHit = {
   handle: string;
   name: string | null;

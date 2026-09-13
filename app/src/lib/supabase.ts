@@ -16,6 +16,7 @@ import type {
   AdminData,
   AdminPerson,
   AdminPersonHit,
+  AdminRuns,
 } from '@/features/admin/types';
 import type {
   Category,
@@ -528,6 +529,13 @@ export const api = {
     });
     if (error) throw error;
     return data as AdminPerson;
+  },
+
+  /** Laufbilanzen der Pipeline (Migration 0074). */
+  async adminRuns(pin: string): Promise<AdminRuns> {
+    const { data, error } = await supabase.rpc('admin_runs', { p_pin: pin });
+    if (error) throw error;
+    return data as AdminRuns;
   },
 
   // --- Kommentare ------------------------------------------------------

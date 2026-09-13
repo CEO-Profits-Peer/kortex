@@ -32,7 +32,7 @@ source document, and nothing is generated from model memory.
   expo-router. Ships as a PWA to Cloudflare Pages (`elycic.pages.dev`).
   Native build exists but web is the live target.
 - **Backend** — Supabase (Postgres + RLS + SECURITY DEFINER RPCs + Storage +
-  Auth + Edge Functions). 73 migrations, 0070-0073 still to be applied.
+  Auth + Edge Functions). 74 migrations, 0070-0074 still to be applied.
 - **Pipeline** — Python. Pulls RSS feeds and Wikipedia articles, asks Gemini
   for a card with structured output, validates deterministically, writes to
   Supabase. Runs in GitHub Actions every 3 hours.
@@ -57,7 +57,7 @@ pipeline/
   transform/      generate.py (cards), kinetic.py (animated "specials")
   validate/       checks.py, relevance.py, overclaim.py
 supabase/
-  migrations/     0001–0073, each with a long header explaining WHY
+  migrations/     0001–0074, each with a long header explaining WHY
   functions/push/ Edge Function, delivers notifications in ~3 s
 docs/             ARCHITECTURE, CONTENT-SOURCING, SETUP, DEPLOY, SMTP,
                   GOOGLE-LOGIN, PRODUKT-IDEEN
@@ -266,6 +266,10 @@ Deliberately not relaxed — checking only the mantissa would make
     the one from 0024 plus the two kinds. Also closes duels stuck on it.
   - `0073_topic_memory.sql` - remembers how each evergreen topic ended, so
     discovered topics are never retried with Gemini once they are done.
+  - `0074_pipeline_runs.sql` - every pipeline script writes its run balance
+    (cards, Gemini calls, WHY it stopped, error) via `pipeline/laufbilanz.py`;
+    `admin_runs(pin)` shows it in the control centre, tab "Pipeline". Without
+    the table the scripts only warn and run as before.
 - **Topics are no longer a wall.** `pipeline/topic_discovery.py` finds new
   evergreen topics from the link graph of topics that already have a card:
   articles linked by >= 2 topics of the SAME category, >= 60 % of their inbound

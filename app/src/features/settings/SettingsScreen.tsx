@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -26,7 +26,7 @@ import { resetTabHints } from '@/components/TabHint';
 import { resetFeedTutorial } from '@/features/feed/FeedTutorial';
 import { stopMusic } from '@/lib/music';
 import { sound } from '@/lib/sound';
-import { SUPPORTED, type Language } from '@/lib/i18n';
+import i18n, { SUPPORTED, type Language } from '@/lib/i18n';
 import { setPref, usePrefs } from '@/lib/prefs';
 import { type PushState, disablePush, enablePush, pushState } from '@/lib/push';
 import { api } from '@/lib/supabase';
@@ -200,13 +200,42 @@ export function SettingsScreen() {
       .finally(() => setPushBusy(false));
   };
 
+  /**
+   * Speichern - und die Auswahl SOFORT zeigen.
+   *
+   * Vorher wartete die Anzeige auf die Antwort des Servers. Wer schnell zwei
+   * Stufen hintereinander antippt, sah erst nichts und dann die Antworten in
+   * der Reihenfolge, in der sie ankamen - nicht unbedingt der, in der getippt
+   * wurde. Jetzt steht die Auswahl sofort da, und nur die Antwort auf den
+   * LETZTEN Tipp darf sie noch ueberschreiben.
+   *
+   * Die Sprache der Oberflaeche wechselt mit. Das fehlte ganz: `language`
+   * wurde gespeichert, aber die App las beim Start nur die Geraetesprache
+   * und nie das Profil - wer "EN" waehlte, sah weiter alles auf Deutsch.
+   */
+  const letzteAnfrage = useRef(0);
   const patch = useCallback(async (p: Record<string, unknown>) => {
+    const nr = ++letzteAnfrage.current;
+    setProfile((alt) => (alt ? ({ ...alt, ...p } as Profile) : alt));
+    if (typeof p.language === 'string') void i18n.changeLanguage(p.language);
+    haptics.select();
     setBusy(true);
     try {
-      setProfile(await api.updateSettings(p));
-      haptics.select();
+      const neu = await api.updateSettings(p);
+      if (nr === letzteAnfrage.current) setProfile(neu);
     } catch (e) {
       setNote(fehlerText(e, 'Speichern fehlgeschlagen'));
+      // Die sofortige Anzeige zuruecknehmen: lieber den echten Stand zeigen
+      // als eine Auswahl, die nie gespeichert wurde.
+      void api
+        .getMyProfile()
+        .then((echt) => {
+          if (echt && nr === letzteAnfrage.current) {
+            setProfile(echt);
+            void i18n.changeLanguage(echt.language);
+          }
+        })
+        .catch(() => undefined);
     } finally {
       setBusy(false);
     }
@@ -304,7 +333,11 @@ export function SettingsScreen() {
 
         {/* --- Inhalte -------------------------------------------------- */}
         <Section title="Inhalte">
-          <Row erste label="Sprache" hint="Bestimmt, welche Karten du bekommst" right={
+          {/* Stand hier als "Bestimmt, welche Karten du bekommst" - das
+              stimmte nie: welche Karten kommen, entscheidet allein die
+              Mischung darunter (get_feed liest nur feed_english_pct). Diese
+              Zeile ist die Sprache der Oberflaeche. */}
+          <Row erste label="App-Sprache" hint="Menüs und Beschriftungen – noch nicht überall übersetzt" right={
             <View style={styles.choices}>
               {SUPPORTED.map((lang: Language) => (
                 <Pressable

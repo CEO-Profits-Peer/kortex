@@ -63,6 +63,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config import Config                      # noqa: E402
 from db import Database                        # noqa: E402
+from laufbilanz import Laufbilanz, hauptprogramm  # noqa: E402
 from run import (AUTO_APPROVE_MIN_TRUST, WRITE_EVERY, buffered_twin,  # noqa: E402
                  build_row)
 from sources.wikipedia import fetch_article     # noqa: E402
@@ -121,6 +122,7 @@ def main() -> int:
 
     cfg = Config.load()
     dry = args.dry_run or cfg.dry_run
+    bilanz = Laufbilanz(cfg, "evergreen", dry)
 
     topics = topics_for(cfg.languages)
     if args.category:
@@ -130,6 +132,7 @@ def main() -> int:
         return 1
 
     stats: Counter[str] = Counter()
+    bilanz.beobachte(stats=stats)
     rows: list[dict] = []
     written = 0
 
@@ -162,6 +165,7 @@ def main() -> int:
 
         category_ids = [c["id"] for c in db.categories() if c["parent_id"]]
         gen = Generator(cfg.gemini_api_keys, cfg.gemini_model)
+        bilanz.beobachte(gen=gen)
 
         # --- Gedaechtnis ---------------------------------------------------
         #
@@ -229,6 +233,8 @@ def main() -> int:
                     log.info("Themensuche %s: %d offen, %d neu gefunden", sprache, offen, len(zeilen))
 
         if args.nur_entdecken:
+            bilanz.stopp = "nur_entdecken"
+            bilanz.extra["neu_gefunden"] = neu_gefunden
             log.info("Nur entdecken: %d neue Themen %s.", neu_gefunden,
                      "gemerkt" if not dry else "gefunden (Trockenlauf, nichts geschrieben)")
             return 0
@@ -272,14 +278,17 @@ def main() -> int:
         with httpx.Client(timeout=25.0, follow_redirects=True) as http:
             for topic in topics:
                 if time.monotonic() >= frist:
+                    bilanz.stopp = "zeit"
                     log.warning("Zeitbudget von %d Minuten aufgebraucht - der "
                                 "naechste Lauf macht hier weiter",
                                 cfg.max_run_minutes)
                     break
                 if args.limit and stats["accepted"] >= args.limit:
+                    bilanz.stopp = "limit"
                     log.info("Grenze von %d Karten erreicht", args.limit)
                     break
                 if gen.calls >= cfg.max_gemini_calls_per_run:
+                    bilanz.stopp = "aufrufe"
                     log.warning("Gemini-Limit erreicht, breche ab")
                     break
 
@@ -320,6 +329,7 @@ def main() -> int:
                         merken(topic, "unbrauchbar", versuch=True)
                     if gen.consecutive_failures >= 3:
                         if gen.exhausted:
+                            bilanz.stopp = "kontingent"
                             log.warning(
                                 "Tageskontingent aufgebraucht - alle %d Modelle, "
                                 "alle %d Schluessel. Der naechste Lauf macht da "
@@ -330,6 +340,8 @@ def main() -> int:
                         else:
                             log.error("Drei Gemini-Aufrufe in Folge fehlgeschlagen.\n"
                                       "  Ursache: %s", gen.first_error)
+                            bilanz.stopp = "gemini_fehler"
+                            bilanz.fehler = gen.first_error
                         break
                     continue
 
@@ -407,6 +419,8 @@ def main() -> int:
         if ergebnisse and not dry:
             db.remember_topics(ergebnisse)
 
+    bilanz.karten = written
+    bilanz.extra.update({"themen_offen": len(topics), "neu_gefunden": neu_gefunden})
     log.info("Fertig.")
     for label, value in [
         ("Themen offen", len(topics)),
@@ -442,4 +456,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # Schliesst die Laufbilanz auch bei Absturz oder Abschuss.
+    hauptprogramm(main)

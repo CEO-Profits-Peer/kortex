@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { haptics } from '@/lib/haptics';
 
@@ -16,9 +17,23 @@ import { color, space, type } from '@/theme/tokens';
  *
  * Das ist der eine Ort, an dem Signalfarbe dauerhaft zu sehen ist - deshalb
  * traegt er die visuelle Identitaet: monochrome Skala, ein heller Marker.
+ *
+ * Der Marker war ein harter Block von 28 Pixeln mit einer Feder, die leicht
+ * ueber das Ziel hinausschwang. Gewuenscht war: weich, und nach links und
+ * rechts auslaufend. Deshalb jetzt eine Linie mit Verlauf zu beiden Seiten
+ * ins Transparente, ein Schein als Ellipse, die nach unten und zur Seite
+ * auslaeuft, und eine Bewegung mit Abbremsen statt Nachfedern - ein
+ * Messschieber schwingt nicht nach.
+ *
+ * Kein Abdecken der Raender in Leistenfarbe: das haette die Teilstriche
+ * unter dem Marker mit verdeckt. Die Ellipse blendet von selbst aus.
  */
 
 export const TAB_BAR_HEIGHT = 60;
+
+/** Breite des Markers, hoechstens so breit wie ein Tab. */
+const MARKER_MAX = 88;
+const SCHEIN_HOEHE = 18;
 
 /**
  * Nur die Felder, die diese Leiste wirklich benutzt.
@@ -50,16 +65,16 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const tabWidth = width / state.routes.length;
+  const marker = Math.min(MARKER_MAX, tabWidth * 0.8);
 
   const slide = useRef(new Animated.Value(state.index * tabWidth)).current;
 
   useEffect(() => {
-    Animated.spring(slide, {
+    Animated.timing(slide, {
       toValue: state.index * tabWidth,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
-      damping: 18,
-      stiffness: 220,
-      mass: 0.9,
     }).start();
   }, [state.index, tabWidth, slide]);
 
@@ -77,8 +92,24 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
         pointerEvents="none"
         style={[styles.cursor, { width: tabWidth, transform: [{ translateX: slide }] }]}
       >
-        <View style={styles.cursorLine} />
-        <View style={styles.cursorGlow} />
+        <Svg width={marker} height={SCHEIN_HOEHE}>
+          <Defs>
+            {/* Waagrecht: aus dem Nichts, volle Farbe in der Mitte, ins Nichts. */}
+            <LinearGradient id="tabMarkerLinie" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={color.signal.primary} stopOpacity={0} />
+              <Stop offset="0.5" stopColor={color.signal.primary} stopOpacity={1} />
+              <Stop offset="1" stopColor={color.signal.primary} stopOpacity={0} />
+            </LinearGradient>
+            {/* Oben in der Mitte am hellsten, nach unten und zu beiden
+                Seiten auslaufend. */}
+            <RadialGradient id="tabMarkerSchein" cx="0.5" cy="0" rx="0.5" ry="1" fx="0.5" fy="0">
+              <Stop offset="0" stopColor={color.signal.primary} stopOpacity={0.22} />
+              <Stop offset="1" stopColor={color.signal.primary} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect x={0} y={0} width={marker} height={SCHEIN_HOEHE} fill="url(#tabMarkerSchein)" />
+          <Rect x={0} y={0} width={marker} height={2} fill="url(#tabMarkerLinie)" />
+        </Svg>
       </Animated.View>
 
       <View style={styles.row}>
@@ -138,14 +169,6 @@ const styles = StyleSheet.create({
   tickMajor: { height: 6, backgroundColor: color.ink.faint },
 
   cursor: { position: 'absolute', top: 0, left: 0, alignItems: 'center' },
-  cursorLine: { width: 28, height: 2, backgroundColor: color.signal.primary },
-  cursorGlow: {
-    width: 28,
-    height: 16,
-    marginTop: -1,
-    backgroundColor: color.signal.primary,
-    opacity: 0.1,
-  },
 
   row: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingTop: space.xs },

@@ -29,7 +29,7 @@ import { eventBuffer } from '@/lib/eventBuffer';
 import { beiWiederOnline } from '@/lib/online';
 import { einladungEinloesen } from '@/lib/invite';
 import { loadPrefs } from '@/lib/prefs';
-import '@/lib/i18n';
+import i18n from '@/lib/i18n';
 import { api, configError } from '@/lib/supabase';
 import { useSession } from '@/lib/useSession';
 import { useAppFonts } from '@/theme/fonts';
@@ -46,6 +46,10 @@ function Gate() {
       const p = await api.getMyProfile();
       // Nur die UUID plus Region und Sprache - nichts Personenbezogenes.
       if (p) analytics.identify(p.id, { region: p.region_code, language: p.language });
+      // Die Sprache aus dem Profil gilt, nicht die des Geraets. Vorher las
+      // i18n nur die Geraetesprache - wer in den Einstellungen "EN" waehlte,
+      // speicherte es, sah aber nie eine Wirkung.
+      if (p?.language && i18n.language !== p.language) void i18n.changeLanguage(p.language);
       setOnboarded(Boolean(p?.onboarding_completed_at));
       // Eine Einladung aus dem Link einloesen - einmal, still, und erst
       // jetzt: vorher gibt es kein Profil, an dem sie haengen koennte.
