@@ -10,7 +10,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { haptics } from '@/lib/haptics';
 
@@ -20,14 +19,13 @@ import { color, type } from '@/theme/tokens';
 /**
  * Die untere Leiste: eine schwebende Glas-Pille.
  *
- * Vorher eine Skala ueber die ganze Breite mit Teilstrichen wie auf einem
- * Lineal. Mit fuenf Tabs und dem Wunsch nach "Liquid Glass" jetzt eine Pille,
- * die ueber dem Inhalt schwebt: halb durchsichtig, weichgezeichnet, mit einer
- * helleren Linse hinter dem aktiven Tab, die beim Wechsel hinuebergleitet.
+ * Halb durchsichtig, weichgezeichnet, mit einer helleren Linse hinter dem
+ * aktiven Tab, die beim Wechsel hinuebergleitet.
  *
- * Was von der Blaupause bleibt: der duenne Strich in Signalfarbe oben auf der
- * Linse, der zu beiden Seiten ins Transparente auslaeuft. Die Teilstriche
- * sind weg - in einer Pille lesen sie sich als Rauschen, nicht als Skala.
+ * Der duenne Strich in Signalfarbe oben auf der Linse ist wieder weg: auf der
+ * Pille sah er aus wie ein verrutschter Rest der alten Skala ("sieht doof
+ * aus"). Den aktiven Tab zeigen jetzt Linse und Farbe von Symbol und Text -
+ * das reicht, und es ist genau das, was man von Liquid Glass erwartet.
  *
  * Schwebend heisst: die Leiste liegt UEBER dem Inhalt, nicht darunter. Jeder
  * Bildschirm in einem Tab muss unten TAB_BAR_HEIGHT (plus Sicherheitsabstand)
@@ -90,7 +88,6 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
   // die Linse muss genau unter dem Tab stehen.
   const [breite, setBreite] = useState(0);
   const tabBreite = breite / Math.max(1, state.routes.length);
-  const strich = Math.min(40, tabBreite * 0.5);
 
   const slide = useRef(new Animated.Value(0)).current;
   const erstesMal = useRef(true);
@@ -127,18 +124,7 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
             pointerEvents="none"
             style={[styles.linse, { width: tabBreite, transform: [{ translateX: slide }] }]}
           >
-            <View style={styles.linseInnen}>
-              <Svg width={strich} height={2}>
-                <Defs>
-                  <LinearGradient id="tabLinsenStrich" x1="0" y1="0" x2="1" y2="0">
-                    <Stop offset="0" stopColor={color.signal.primary} stopOpacity={0} />
-                    <Stop offset="0.5" stopColor={color.signal.primary} stopOpacity={1} />
-                    <Stop offset="1" stopColor={color.signal.primary} stopOpacity={0} />
-                  </LinearGradient>
-                </Defs>
-                <Rect x={0} y={0} width={strich} height={2} fill="url(#tabLinsenStrich)" />
-              </Svg>
-            </View>
+            <View style={styles.linseInnen} />
           </Animated.View>
         ) : null}
 
@@ -209,12 +195,10 @@ const styles = StyleSheet.create({
   linse: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: LINSE_INNEN },
   linseInnen: {
     flex: 1,
-    alignItems: 'center',
     borderRadius: (PILLE - 2 * LINSE_INNEN) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255, 255, 255, 0.12)',
-    overflow: 'hidden',
   },
 
   row: { flex: 1, flexDirection: 'row', alignItems: 'center' },

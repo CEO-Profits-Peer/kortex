@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,67 +15,93 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
-import { Icon, type IconName } from '@/components/Icon';
+import { Icon } from '@/components/Icon';
 import { TabHint, useTabHint } from '@/components/TabHint';
+import { CommentSheet } from '@/features/comments/CommentSheet';
+import { Aktionen, Kopf, KartenVerweis, PostKarte, zuProfil } from '@/features/posts/PostParts';
+import { contentState, setContentState } from '@/lib/contentState';
+import { track } from '@/lib/eventBuffer';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { beiWiederOnline } from '@/lib/online';
-import { shareInvite } from '@/lib/share';
+import { shareCard, shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
-import type { HomeData, HomeEntry, HomePerson } from '@/lib/types.db';
+import type { HomeData, HomeEntry } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
- * Home - was die Leute machen, denen du folgst.
+ * Home - was die Leute machen, denen du folgst. Nach unten ohne Ende.
  *
- * Absichtlich NICHT der eigene Stand (Streak, faellige Wiederholungen): der
- * steht im Profil. Home zeigt die anderen, und zwar so, dass man selbst
- * mitmachen will - deshalb stehen die drei Wege, selbst etwas beizutragen,
- * oben und nicht unter der Liste.
+ * Absichtlich NICHT der eigene Stand: der steht im Profil. Home zeigt die
+ * anderen, und zwar so, dass man selbst mitmachen will - deshalb steht das
+ * Schreibfeld ganz oben und jeder Beitrag hat Like, Kommentar, Repost und
+ * Teilen.
  *
- * Die Daten kommen in einem Aufruf (get_home, Migration 0076). Was dort
- * hinein darf, steht im Kopf der Migration - Kurse, Abzeichen und
- * Duellergebnisse nur von Leuten, die auf der Rangliste stehen wollen.
+ * Zwei Arten von Eintraegen:
+ *   - Beitraege und Karten-Empfehlungen: gross, mit Knoepfen.
+ *   - Aktivitaeten (Duell gewonnen, Kurs abgeschlossen, folgt jetzt): eine
+ *     Zeile. Einen Like auf "folgt jetzt" braucht niemand.
  *
- * Ein leeres Home ist der Normalfall, solange die App jung ist: bei 29 Konten
- * folgen 13 niemandem. Deshalb stehen darunter Vorschlaege, wem man folgen
- * kann, mit dem Knopf direkt daneben - der Weg aus dem leeren Zustand darf
- * nicht erst ueber die Suche fuehren.
+ * Nachgeladen wird seitenweise ueber die Zeit des letzten Eintrags
+ * (get_home, Migration 0077). Was darin sichtbar ist - und warum Duelle nur
+ * den Sieger zeigen -, steht im Kopf der Migration.
  */
 
-function wann(iso: string): string {
-  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (min < 1) return 'gerade';
-  if (min < 60) return `${min} min`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h} h`;
-  const d = Math.round(h / 24);
-  return d === 1 ? 'gestern' : `${d} T`;
-}
+const SEITE = 25;
 
-function zuProfil(handle: string) {
-  haptics.light();
-  router.push(`/u/${encodeURIComponent(handle)}`);
-}
+const schluessel = (e: HomeEntry) => `${e.art}:${e.wer.handle}:${e.at}`;
 
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const hinweis = useTabHint('home');
   const [daten, setDaten] = useState<HomeData | null>(null);
+  const [eintraege, setEintraege] = useState<HomeEntry[]>([]);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laedt, setLaedt] = useState(false);
+  const [mehr, setMehr] = useState(true);
+  const [nachLaedt, setNachLaedt] = useState(false);
+  const nachladen = useRef(false);
   const [notiz, setNotiz] = useState<string | null>(null);
   const [gefolgt, setGefolgt] = useState<Set<string>>(new Set());
+  const [kommentare, setKommentare] = useState<{ id: string; titel: string } | null>(null);
+
+  const zeige = useCallback((text: string) => {
+    if (!text) return;
+    setNotiz(text);
+    setTimeout(() => setNotiz(null), 3500);
+  }, []);
 
   const laden = useCallback(async () => {
     try {
-      setDaten(await api.home(50));
+      const d = await api.home(SEITE);
+      setDaten(d);
+      setEintraege(d.eintraege);
+      setMehr(d.eintraege.length >= SEITE);
       setFehler(null);
     } catch (e) {
       setFehler(fehlerText(e, 'Home nicht ladbar'));
       setDaten((alt) => alt ?? { eintraege: [], leute: [], folge_ich: 0, vorschlaege: [] });
     }
   }, []);
+
+  const weiter = useCallback(async () => {
+    if (nachladen.current || !mehr || eintraege.length === 0) return;
+    nachladen.current = true;
+    setNachLaedt(true);
+    try {
+      const d = await api.home(SEITE, eintraege[eintraege.length - 1].at);
+      setEintraege((alt) => {
+        const schon = new Set(alt.map(schluessel));
+        return [...alt, ...d.eintraege.filter((e) => !schon.has(schluessel(e)))];
+      });
+      setMehr(d.eintraege.length >= SEITE);
+    } catch {
+      // Still: beim naechsten Erreichen des Endes wird es erneut versucht.
+    } finally {
+      nachladen.current = false;
+      setNachLaedt(false);
+    }
+  }, [mehr, eintraege]);
 
   useEffect(() => {
     void laden();
@@ -91,33 +118,26 @@ export function HomeScreen() {
       const mein = await api.myInvite();
       if (!mein?.code) throw new Error('kein Code');
       const res = await shareInvite({ code: mein.code });
-      if (res === 'copied') setNotiz('Link kopiert. Wer darüber startet, folgt dir automatisch.');
-      if (res === 'failed') setNotiz('Teilen ging nicht.');
+      if (res === 'copied') zeige('Link kopiert. Wer darüber startet, folgt dir automatisch.');
+      if (res === 'failed') zeige('Teilen ging nicht.');
     } catch (e) {
-      setNotiz(fehlerText(e, 'Einladen geht gerade nicht.'));
+      zeige(fehlerText(e, 'Einladen geht gerade nicht.'));
     }
-    setTimeout(() => setNotiz(null), 4000);
-  }, []);
+  }, [zeige]);
 
-  const folgen = useCallback(
-    async (id: string) => {
-      haptics.select();
-      setGefolgt((s) => new Set(s).add(id));
-      try {
-        await api.setFollowing(id, true);
-        // Nicht sofort neu laden: der Vorschlag soll als "Folgst du" stehen
-        // bleiben, statt unter dem Finger zu verschwinden. Beim naechsten
-        // Ziehen ist er weg und seine Aktivitaet da.
-      } catch {
-        setGefolgt((s) => {
-          const n = new Set(s);
-          n.delete(id);
-          return n;
-        });
-      }
-    },
-    [],
-  );
+  const folgen = useCallback(async (id: string) => {
+    haptics.select();
+    setGefolgt((s) => new Set(s).add(id));
+    try {
+      await api.setFollowing(id, true);
+    } catch {
+      setGefolgt((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
+  }, []);
 
   if (!daten) {
     return (
@@ -129,17 +149,124 @@ export function HomeScreen() {
     );
   }
 
-  const { eintraege, leute, folge_ich, vorschlaege } = daten;
+  const kopf = (
+    <View style={styles.kopfBereich}>
+      <View style={styles.titelZeile}>
+        <Text style={styles.titel}>Home</Text>
+        <Pressable onPress={() => void einladen()} hitSlop={8} style={styles.einladen}>
+          <Icon name="plus" size={14} color={color.signal.primary} />
+          <Text style={styles.einladenText}>Einladen</Text>
+        </Pressable>
+      </View>
+
+      {/* Das Schreibfeld - der wichtigste Knopf auf dem Bildschirm. */}
+      <Pressable
+        onPress={() => {
+          haptics.light();
+          router.push('/compose');
+        }}
+        style={({ pressed }) => [styles.schreiben, pressed && { opacity: 0.85 }]}
+      >
+        <Text style={styles.schreibenText}>Was hast du heute gelernt?</Text>
+        <View style={styles.schreibenKnopf}>
+          <Text style={styles.schreibenKnopfText}>Posten</Text>
+        </View>
+      </Pressable>
+
+      {daten.leute.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.leute}
+          style={styles.bleed}
+        >
+          {daten.leute.map((p) => (
+            <Pressable key={p.handle} onPress={() => zuProfil(p.handle)} style={styles.leutePerson}>
+              <Avatar seed={p.avatar_seed} path={p.avatar_path} size={52} ring={color.signal.primary} />
+              <Text style={styles.leuteName} numberOfLines={1}>
+                {p.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+
+      {/* --- Vorschlaege: waagrecht, wie bei Instagram ------------------------- */}
+      {daten.vorschlaege.length > 0 ? (
+        <View style={{ gap: space.sm }}>
+          <Text style={styles.abschnitt}>Vorschläge für dich</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.vorschlaege}
+            style={styles.bleed}
+            decelerationRate="fast"
+          >
+            {daten.vorschlaege.map((v) => {
+              const an = gefolgt.has(v.id);
+              return (
+                <View key={v.id} style={styles.vorschlag}>
+                  <Pressable onPress={() => zuProfil(v.handle)} style={styles.vorschlagWer}>
+                    <Avatar seed={v.avatar_seed} path={v.avatar_path} size={56} />
+                    <Text style={styles.vorschlagName} numberOfLines={1}>
+                      {v.name}
+                    </Text>
+                    <Text style={styles.vorschlagGrund} numberOfLines={1}>
+                      {v.grund ?? `${v.follower_count} Follower`}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => (an ? undefined : void folgen(v.id))}
+                    style={[styles.folgenKnopf, an && styles.folgenKnopfAn]}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.folgenText, an && styles.folgenTextAn]}>
+                      {an ? 'Folgst du' : 'Folgen'}
+                    </Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
+      {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
+    </View>
+  );
 
   return (
     <GridBackground>
-      <ScrollView
+      <FlatList
+        data={eintraege}
+        keyExtractor={schluessel}
+        renderItem={({ item }) => (
+          <Eintrag e={item} onNotiz={zeige} onKommentare={(id, titel) => setKommentare({ id, titel })} />
+        )}
+        ListHeaderComponent={kopf}
+        ListEmptyComponent={
+          <Text style={styles.leer}>
+            {daten.folge_ich === 0
+              ? 'Du folgst noch niemandem. Folge jemandem aus den Vorschlägen - oder schreib den ersten Beitrag selbst.'
+              : 'Hier ist noch nichts. Mach den Anfang: Was du postest oder im Feed repostest, sehen deine Follower hier.'}
+          </Text>
+        }
+        ListFooterComponent={
+          eintraege.length === 0 ? null : nachLaedt ? (
+            <ActivityIndicator color={color.ink.low} style={{ marginVertical: space.lg }} />
+          ) : !mehr ? (
+            <Text style={styles.ende}>Das ist alles von deinen Leuten.</Text>
+          ) : null
+        }
+        ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
+        onEndReached={() => void weiter()}
+        onEndReachedThreshold={0.6}
         contentContainerStyle={[
           styles.body,
           {
             paddingTop: insets.top + space.xl,
-            // Die Tab-Leiste schwebt ueber dem Inhalt: das Letzte in der
-            // Liste muss darueber hinaus scrollen koennen.
+            // Die Tab-Leiste schwebt ueber dem Inhalt.
             paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space.xl,
           },
         ]}
@@ -156,104 +283,22 @@ export function HomeScreen() {
             tintColor={color.ink.low}
           />
         }
-      >
-        <View>
-          <Text style={styles.titel}>Home</Text>
-          <Text style={styles.unter}>Was deine Leute gerade lernen und empfehlen.</Text>
-        </View>
+      />
 
-        {/* --- Wer zuletzt etwas gemacht hat -------------------------------- */}
-        {leute.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.leute}
-            style={styles.bleed}
-          >
-            {leute.map((p) => (
-              <Pressable key={p.handle} onPress={() => zuProfil(p.handle)} style={styles.leutePerson}>
-                <Avatar seed={p.avatar_seed} path={p.avatar_path} size={52} ring={color.signal.primary} />
-                <Text style={styles.leuteName} numberOfLines={1}>
-                  {p.name}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        ) : null}
-
-        {/* --- Selbst etwas beitragen --------------------------------------- */}
-        <View style={styles.mitmachen}>
-          <Aktion
-            icon="refresh"
-            label="Empfehlen"
-            unter="im Feed reposten"
-            onPress={() => {
-              haptics.light();
-              router.push('/');
-            }}
-          />
-          <Aktion icon="xp" label="Duell" unter="jemanden fordern" onPress={() => router.push('/duels')} />
-          <Aktion icon="plus" label="Einladen" unter="Freunde holen" onPress={() => void einladen()} />
-        </View>
-        {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
-
-        {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
-
-        {/* --- Aktivitaet ---------------------------------------------------- */}
-        {eintraege.length === 0 ? (
-          <Text style={styles.leer}>
-            {folge_ich === 0
-              ? 'Du folgst noch niemandem. Sobald du jemandem folgst, siehst du hier, was sie empfehlen, fragen, gewinnen und abschließen.'
-              : 'Deine Leute waren die letzten 30 Tage still. Mach den Anfang: Was du im Feed repostest, sehen deine Follower hier.'}
-          </Text>
-        ) : (
-          <View style={styles.liste}>
-            {eintraege.map((e, i) => (
-              <Eintrag key={`${e.art}-${e.wer.handle}-${e.at}-${i}`} e={e} />
-            ))}
-          </View>
-        )}
-
-        {/* --- Vorschlaege ---------------------------------------------------- */}
-        {vorschlaege.length > 0 && eintraege.length < 8 ? (
-          <View style={styles.vorschlaege}>
-            <Text style={styles.abschnitt}>Wem du folgen könntest</Text>
-            {vorschlaege.map((v) => {
-              const an = gefolgt.has(v.id);
-              return (
-                <View key={v.id} style={styles.vorschlag}>
-                  <Pressable onPress={() => zuProfil(v.handle)} style={styles.vorschlagWer}>
-                    <Avatar seed={v.avatar_seed} path={v.avatar_path} size={38} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.vorschlagName} numberOfLines={1}>
-                        {v.name}
-                      </Text>
-                      <Text style={styles.vorschlagGrund} numberOfLines={1}>
-                        {v.grund ?? `${v.follower_count} Follower`}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => (an ? undefined : void folgen(v.id))}
-                    style={[styles.folgenKnopf, an && styles.folgenKnopfAn]}
-                    accessibilityRole="button"
-                  >
-                    <Text style={[styles.folgenText, an && styles.folgenTextAn]}>
-                      {an ? 'Folgst du' : 'Folgen'}
-                    </Text>
-                  </Pressable>
-                </View>
-              );
-            })}
-          </View>
-        ) : null}
-      </ScrollView>
+      {kommentare ? (
+        <CommentSheet
+          contentId={kommentare.id}
+          cardTitle={kommentare.titel}
+          visible
+          onClose={() => setKommentare(null)}
+        />
+      ) : null}
 
       {hinweis.zeigen ? (
         <TabHint
           icon="comment"
           titel="Home: deine Leute"
-          text="Hier erscheint, was die Leute machen, denen du folgst: Empfehlungen, Fragen, Duelle, abgeschlossene Kurse. Was du im Feed repostest, sehen deine Follower hier."
+          text="Hier stehen die Beiträge und Empfehlungen der Leute, denen du folgst - mit Like, Kommentar, Repost und Teilen. Was du postest, sehen deine Follower hier."
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />
@@ -262,278 +307,228 @@ export function HomeScreen() {
   );
 }
 
-function Aktion({
-  icon,
-  label,
-  unter,
-  onPress,
+/** Eine Karten-Empfehlung mit Knoepfen. Like und Repost wirken auf die Karte. */
+function KartenEmpfehlung({
+  e,
+  onNotiz,
+  onKommentare,
 }: {
-  icon: IconName;
-  label: string;
-  unter: string;
-  onPress: () => void;
+  e: Extract<HomeEntry, { art: 'repost' }>;
+  onNotiz: (t: string) => void;
+  onKommentare: (id: string, titel: string) => void;
 }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.aktion, pressed && { opacity: 0.8 }]}
-      accessibilityRole="button"
-    >
-      <Icon name={icon} size={18} color={color.signal.primary} />
-      <Text style={styles.aktionLabel}>{label}</Text>
-      <Text style={styles.aktionUnter} numberOfLines={1}>
-        {unter}
-      </Text>
-    </Pressable>
-  );
-}
+  const k = e.was;
+  const [ichLike, setIchLike] = useState(k.ich_like);
+  const [likes, setLikes] = useState(k.likes);
+  const [ichRepost, setIchRepost] = useState(k.ich_repost);
 
-/** Kopfzeile eines Eintrags: wer, was, wann. */
-function Kopf({ wer, verb, at }: { wer: HomePerson; verb: string; at: string }) {
-  return (
-    <Pressable onPress={() => zuProfil(wer.handle)} style={styles.kopf}>
-      <Avatar seed={wer.avatar_seed} path={wer.avatar_path} size={32} />
-      <Text style={styles.kopfText} numberOfLines={2}>
-        <Text style={styles.kopfName}>{wer.name}</Text> {verb}
-      </Text>
-      <Text style={styles.kopfWann}>{wann(at)}</Text>
-    </Pressable>
-  );
-}
+  const like = () => {
+    const next = !ichLike;
+    setIchLike(next);
+    setLikes((l) => Math.max(0, l + (next ? 1 : -1)));
+    if (next) haptics.medium();
+    else haptics.light();
+    // Derselbe Weg wie im Feed (ContentCard.applyLike), damit das Herz dort
+    // stimmt, wenn man die Karte gleich danach oeffnet.
+    if (contentState(k.content_id).liked !== next) {
+      setContentState(k.content_id, {
+        liked: next,
+        delta: contentState(k.content_id).delta + (next ? 1 : -1),
+      });
+    }
+    track(k.content_id, next ? 'like' : 'unlike');
+  };
 
-/** Verweis auf eine Karte oder einen Kurs. */
-function Verweis({
-  titel,
-  unter,
-  meta,
-  onPress,
-}: {
-  titel: string;
-  unter?: string | null;
-  meta?: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.verweis, pressed && { opacity: 0.85 }]}>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.verweisTitel} numberOfLines={2}>
-          {titel}
-        </Text>
-        {unter ? (
-          <Text style={styles.verweisUnter} numberOfLines={1}>
-            {unter}
-          </Text>
-        ) : null}
-        {meta ? <Text style={styles.verweisMeta}>{meta}</Text> : null}
-      </View>
-      <Icon name="chevron" size={14} color={color.ink.low} />
-    </Pressable>
-  );
-}
-
-function Eintrag({ e }: { e: HomeEntry }) {
-  switch (e.art) {
-    case 'repost':
-      return (
-        <View style={styles.karte}>
-          <Kopf wer={e.wer} verb="empfiehlt" at={e.at} />
-          {e.was.comment ? <Text style={styles.zitat}>„{e.was.comment}"</Text> : null}
-          <Verweis
-            titel={e.was.title}
-            unter={e.was.deck}
-            meta={`#${e.was.category.split('.').pop()}`}
-            // Die Karte selbst, danach die weiteren Empfehlungen dieser
-            // Person - nicht die Kategorie wie bisher in "Deine Leute".
-            onPress={() =>
-              router.push(
-                `/reel/${encodeURIComponent(e.was.content_id)}?from=${encodeURIComponent(e.wer.handle)}`,
-              )
-            }
-          />
-        </View>
+  const repost = async () => {
+    const next = !ichRepost;
+    setIchRepost(next);
+    haptics.light();
+    try {
+      await api.setRepost(k.content_id, next);
+      setContentState(k.content_id, { reposted: next });
+      if (next) onNotiz('Empfohlen - deine Follower sehen es jetzt.');
+    } catch (err) {
+      setIchRepost(!next);
+      const msg = err instanceof Error ? err.message : '';
+      onNotiz(
+        /not read/i.test(msg)
+          ? 'Empfehlen geht erst, wenn du die Karte selbst angesehen hast - tipp sie an.'
+          : fehlerText(err, 'Empfehlen ging nicht.'),
       );
+    }
+  };
+
+  const teilen = async () => {
+    const r = await shareCard({ contentId: k.content_id, title: k.title, categorySlug: k.category });
+    if (r === 'copied') onNotiz('Link kopiert.');
+  };
+
+  return (
+    <View style={styles.karte}>
+      <Kopf wer={e.wer} verb="empfiehlt" at={e.at} />
+      {k.comment ? <Text style={styles.zitat}>„{k.comment}"</Text> : null}
+      <KartenVerweis karte={k} von={e.wer.handle} />
+      <Aktionen
+        likes={likes}
+        ichLike={ichLike}
+        kommentare={k.kommentare}
+        repostAn={ichRepost}
+        onLike={like}
+        onKommentar={() => onKommentare(k.content_id, k.title)}
+        onRepost={() => void repost()}
+        onTeilen={() => void teilen()}
+      />
+    </View>
+  );
+}
+
+function Eintrag({
+  e,
+  onNotiz,
+  onKommentare,
+}: {
+  e: HomeEntry;
+  onNotiz: (t: string) => void;
+  onKommentare: (id: string, titel: string) => void;
+}) {
+  switch (e.art) {
+    case 'post':
+      return <PostKarte post={e.was} onNotiz={onNotiz} />;
+    case 'repost':
+      return <KartenEmpfehlung e={e} onNotiz={onNotiz} onKommentare={onKommentare} />;
     case 'frage':
       return (
         <View style={styles.karte}>
-          <Kopf wer={e.wer} verb="fragt zu einer Karte" at={e.at} />
+          <Kopf wer={e.wer} verb="kommentiert eine Karte" at={e.at} />
           <Text style={styles.zitat}>„{e.was.body}"</Text>
-          <Verweis
-            titel={e.was.title}
-            onPress={() => router.push(`/reel/${encodeURIComponent(e.was.content_id)}`)}
-          />
+          <KartenVerweis karte={{ content_id: e.was.content_id, title: e.was.title, deck: null, category: '' }} />
         </View>
       );
-    case 'duell': {
-      const { a, b } = e.was;
-      const sieger = a.punkte === b.punkte ? null : a.punkte > b.punkte ? a : b;
+    case 'duell':
       return (
-        <View style={styles.karte}>
-          <Kopf
-            wer={e.wer}
-            verb={sieger ? (sieger.handle === e.wer.handle ? 'hat ein Duell gewonnen' : 'hat ein Duell gespielt') : 'hat unentschieden gespielt'}
-            at={e.at}
-          />
-          <Pressable
-            onPress={() => (a.ich || b.ich ? router.push('/duels') : zuProfil(a.handle === e.wer.handle ? b.handle : a.handle))}
-            style={styles.duell}
-          >
-            <DuellSeite p={a} vorn={sieger === a} />
-            <Text style={styles.duellStand}>
-              {a.punkte} : {b.punkte}
-            </Text>
-            <DuellSeite p={b} vorn={sieger === b} rechts />
-          </Pressable>
-        </View>
+        <Zeile wer={e.wer} at={e.at} icon="xp" text={`hat ein Duell gewonnen · ${e.was.punkte} : ${e.was.gegner_punkte}`} />
       );
-    }
     case 'kurs':
       return (
-        <View style={styles.karte}>
-          <Kopf wer={e.wer} verb="hat einen Kurs abgeschlossen" at={e.at} />
-          <Verweis
-            titel={e.was.title}
-            meta={`${e.was.lessons} Lektionen`}
-            onPress={() => router.push(`/course/${encodeURIComponent(e.was.slug)}`)}
-          />
-        </View>
+        <Zeile
+          wer={e.wer}
+          at={e.at}
+          icon="lesson"
+          text={`hat „${e.was.title}" abgeschlossen`}
+          onPress={() => router.push(`/course/${encodeURIComponent(e.was.slug)}`)}
+        />
       );
     case 'abzeichen':
       return (
-        <View style={styles.karte}>
-          <Kopf wer={e.wer} verb="hat ein Abzeichen" at={e.at} />
-          <Text style={styles.abzeichen}>
-            {e.was.emoji ? `${e.was.emoji}  ` : ''}
-            {e.was.title}
-          </Text>
-        </View>
+        <Zeile wer={e.wer} at={e.at} icon="mastery" text={`hat ein Abzeichen: ${e.was.emoji ?? ''} ${e.was.title}`} />
       );
     case 'folgt':
       return (
-        <View style={[styles.karte, styles.karteLeise]}>
-          <Kopf wer={e.wer} verb={e.was.bin_ich ? 'folgt dir jetzt' : 'folgt jetzt'} at={e.at} />
-          {e.was.bin_ich ? null : (
-            <Pressable onPress={() => zuProfil(e.was.handle)} style={styles.folgtWen}>
-              <Avatar seed={e.was.avatar_seed} path={e.was.avatar_path} size={24} />
-              <Text style={styles.folgtName} numberOfLines={1}>
-                {e.was.name}
-              </Text>
-              <Icon name="chevron" size={12} color={color.ink.low} />
-            </Pressable>
-          )}
-        </View>
+        <Zeile
+          wer={e.wer}
+          at={e.at}
+          icon="profile"
+          text={e.was.bin_ich ? 'folgt dir jetzt' : `folgt jetzt ${e.was.name}`}
+          onPress={e.was.bin_ich ? undefined : () => zuProfil(e.was.handle)}
+        />
       );
     default:
       return null;
   }
 }
 
-function DuellSeite({
-  p,
-  vorn,
-  rechts,
+/** Eine Aktivitaet in einer Zeile - ohne Knoepfe. */
+function Zeile({
+  wer,
+  at,
+  icon,
+  text,
+  onPress,
 }: {
-  p: HomePerson & { punkte: number; ich: boolean };
-  vorn: boolean;
-  rechts?: boolean;
+  wer: HomeEntry['wer'];
+  at: string;
+  icon: 'xp' | 'lesson' | 'mastery' | 'profile';
+  text: string;
+  onPress?: () => void;
 }) {
   return (
-    <View style={[styles.duellSeite, rechts && { flexDirection: 'row-reverse' }]}>
-      <Avatar seed={p.avatar_seed} path={p.avatar_path} size={28} ring={vorn ? color.signal.success : undefined} />
-      <Text style={[styles.duellName, vorn && { color: color.ink.max }, rechts && { textAlign: 'right' }]} numberOfLines={1}>
-        {p.ich ? 'Du' : p.name}
+    <Pressable
+      onPress={onPress ?? (() => zuProfil(wer.handle))}
+      style={({ pressed }) => [styles.zeile, pressed && { opacity: 0.8 }]}
+    >
+      <Avatar seed={wer.avatar_seed} path={wer.avatar_path} size={28} />
+      <Text style={styles.zeileText} numberOfLines={2}>
+        <Text style={styles.zeileName}>{wer.name}</Text> {text}
       </Text>
-    </View>
+      <Icon name={icon} size={14} color={color.ink.low} />
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: space.xl, gap: space.lg },
+  body: { paddingHorizontal: space.xl },
 
+  kopfBereich: { gap: space.lg, paddingBottom: space.lg },
+  titelZeile: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titel: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
-  unter: { ...type.body, fontSize: 15, color: color.ink.mid, marginTop: space.xs },
+  einladen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  einladenText: { ...type.meta, color: color.signal.primary },
 
-  // Die Personenleiste laeuft bis an den Bildschirmrand - der Rand gehoert
-  // in den Inhalt, sonst schneidet die Kante die erste Person ab.
+  schreiben: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingLeft: space.lg,
+    paddingRight: space.sm,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  schreibenText: { ...type.body, fontSize: 15, color: color.ink.low, flex: 1 },
+  schreibenKnopf: {
+    paddingHorizontal: space.lg,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: color.signal.primary,
+  },
+  schreibenKnopfText: { ...type.label, fontSize: 13, color: color.bg },
+
+  // Waagrechte Leisten laufen bis an den Bildschirmrand.
   bleed: { marginHorizontal: -space.xl },
   leute: { paddingHorizontal: space.xl, gap: space.lg },
   leutePerson: { width: 60, alignItems: 'center', gap: 6 },
   leuteName: { ...type.meta, fontSize: 10, color: color.ink.mid, maxWidth: 60 },
 
-  mitmachen: { flexDirection: 'row', gap: space.sm },
-  aktion: {
-    flex: 1,
-    gap: 3,
-    paddingVertical: space.md,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
-    backgroundColor: color.bgElevated,
-    alignItems: 'center',
-  },
-  aktionLabel: { ...type.label, fontSize: 13, color: color.ink.high },
-  aktionUnter: { ...type.meta, fontSize: 9.5, color: color.ink.low },
-  notiz: { ...type.meta, color: color.signal.primary },
-
-  fehler: { ...type.body, fontSize: 14, color: color.signal.error },
-  leer: { ...type.body, fontSize: 15, lineHeight: 22, color: color.ink.mid },
-
-  liste: { gap: space.md },
-  karte: {
-    gap: space.sm,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
-    backgroundColor: color.bgElevated,
-  },
-  karteLeise: { backgroundColor: 'transparent', paddingVertical: space.md },
-
-  kopf: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  kopfText: { ...type.body, fontSize: 14, color: color.ink.mid, flex: 1 },
-  kopfName: { color: color.ink.max, fontWeight: '600' },
-  kopfWann: { ...type.meta, color: color.ink.low },
-
-  zitat: { ...type.body, fontSize: 15, lineHeight: 21, color: color.signal.primary, fontStyle: 'italic' },
-
-  verweis: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.md,
-    borderRadius: radius.md,
-    backgroundColor: color.bgSunken,
-  },
-  verweisTitel: { ...type.body, fontSize: 15, color: color.ink.high },
-  verweisUnter: { ...type.meta, color: color.ink.mid },
-  verweisMeta: { ...type.meta, color: color.ink.low },
-
-  duell: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.md,
-    borderRadius: radius.md,
-    backgroundColor: color.bgSunken,
-  },
-  duellSeite: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  duellName: { ...type.body, fontSize: 14, color: color.ink.mid, flex: 1 },
-  duellStand: { ...type.mono, fontSize: 18, color: color.ink.max },
-
-  abzeichen: { ...type.body, fontSize: 16, color: color.ink.high },
-
-  folgtWen: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingLeft: 44 },
-  folgtName: { ...type.body, fontSize: 14, color: color.ink.high, flex: 1 },
-
-  vorschlaege: { gap: space.sm, paddingTop: space.md },
   abschnitt: { ...type.meta, color: color.ink.low },
-  vorschlag: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
-  vorschlagWer: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.md },
-  vorschlagName: { ...type.body, fontSize: 15, color: color.ink.high },
-  vorschlagGrund: { ...type.meta, color: color.ink.low },
+  vorschlaege: { paddingHorizontal: space.xl, gap: space.md },
+  vorschlag: {
+    width: 140,
+    alignItems: 'center',
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  vorschlagWer: { alignItems: 'center', gap: 4, width: '100%' },
+  vorschlagName: { ...type.body, fontSize: 14, color: color.ink.high, maxWidth: '100%' },
+  vorschlagGrund: { ...type.meta, fontSize: 10, color: color.ink.low, maxWidth: '100%' },
   folgenKnopf: {
-    paddingHorizontal: space.lg,
+    alignSelf: 'stretch',
+    alignItems: 'center',
     paddingVertical: 7,
     borderRadius: radius.pill,
     backgroundColor: color.signal.primary,
@@ -545,4 +540,29 @@ const styles = StyleSheet.create({
   },
   folgenText: { ...type.label, fontSize: 13, color: color.bg },
   folgenTextAn: { color: color.ink.mid },
+
+  notiz: { ...type.meta, color: color.signal.primary },
+  fehler: { ...type.body, fontSize: 14, color: color.signal.error },
+  leer: { ...type.body, fontSize: 15, lineHeight: 22, color: color.ink.mid },
+  ende: { ...type.meta, color: color.ink.low, textAlign: 'center', marginVertical: space.xl },
+
+  karte: {
+    gap: space.sm,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  zitat: { ...type.body, fontSize: 15, lineHeight: 21, color: color.signal.primary, fontStyle: 'italic' },
+
+  zeile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.xs,
+  },
+  zeileText: { ...type.body, fontSize: 14, color: color.ink.mid, flex: 1 },
+  zeileName: { color: color.ink.high, fontWeight: '600' },
 });

@@ -17,7 +17,7 @@ import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { activeCardId, setActiveCard } from '@/lib/activeCard';
 import { hydrateContentState } from '@/lib/contentState';
 import { eventBuffer } from '@/lib/eventBuffer';
-import { stopMusic } from '@/lib/music';
+import { musicForCard, stopMusic } from '@/lib/music';
 import { stopSpeech } from '@/lib/speech';
 import { api, configError, supabase } from '@/lib/supabase';
 import type { Category, ContentItem, Source } from '@/lib/types.db';
@@ -138,10 +138,29 @@ export function FeedScreen({
    * kaputt. (Vorlesen im Hintergrund - Bildschirm aus, App hoert weiter - ist
    * eine eigene Sache und braucht mehr als das hier.)
    */
+  const aktivVorher = useRef<string | null>(null);
   useFocusEffect(
     useCallback(() => {
       resume();
+      // Zurueck im Feed: die Karte, die vorher dran war, ist wieder dran -
+      // eine Erklaerkarte faengt von vorn an, die Flaeche kommt wieder.
+      if (aktivVorher.current && activeCardId() === null) {
+        setActiveCard(aktivVorher.current);
+        musicForCard(aktivVorher.current);
+      }
+      aktivVorher.current = null;
       return () => {
+        // Zuerst die Karte abmelden, DANN die Stimme anhalten.
+        //
+        // Gemeldet: "Sound geht immer noch weiter, wenn aus Feed raus" -
+        // obwohl hier schon stopSpeech() stand. Die Erklaerkarte blieb aber
+        // aktiv. Das Anhalten meldet ihr "Satz zu Ende" (onStopped), und ihr
+        // Taktgeber nahm das als Stichwort fuer den naechsten Satz; ohne
+        // Stimme sprang spaetestens die Zeit-Notbremse ein. Die Stimme wurde
+        // also angehalten und von der Karte sofort wieder angeworfen.
+        // Eine inaktive Karte hat keinen Taktgeber (KineticCard).
+        aktivVorher.current = activeCardId();
+        setActiveCard(null);
         stopSpeech();
         stopMusic();
         pause();

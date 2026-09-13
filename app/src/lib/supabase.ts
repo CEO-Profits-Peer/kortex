@@ -23,8 +23,10 @@ import type {
   CategoryDetail,
   CollectionEntry,
   CommentQuestion,
+  CreatePostResult,
   DuelListEntry,
   HomeData,
+  PostDetail,
   InvitePreview,
   MyInvite,
   RedeemResult,
@@ -397,11 +399,76 @@ export const api = {
     if (error) throw error;
   },
 
-  /** Home: was die Leute machen, denen ich folge (Migration 0076). */
-  async home(limit = 50): Promise<HomeData> {
-    const { data, error } = await supabase.rpc('get_home', { p_limit: limit });
+  /**
+   * Home: was die Leute machen, denen ich folge (Migration 0077).
+   * Seitenweise - `before` ist die Zeit des letzten Eintrags der Vorseite.
+   */
+  async home(limit = 25, before?: string): Promise<HomeData> {
+    const { data, error } = await supabase.rpc('get_home', {
+      p_limit: limit,
+      p_before: before ?? null,
+    });
     if (error) throw error;
     return data as HomeData;
+  },
+
+  // --- Beitraege (Migration 0077) ----------------------------------------
+
+  async createPost(input: {
+    body: string;
+    art?: 'post' | 'frage';
+    contentId?: string;
+    repostOf?: string;
+  }): Promise<CreatePostResult> {
+    const { data, error } = await supabase.rpc('create_post', {
+      p_body: input.body,
+      p_art: input.art ?? 'post',
+      p_content_id: input.contentId ?? null,
+      p_repost_of: input.repostOf ?? null,
+    });
+    if (error) throw error;
+    return data as CreatePostResult;
+  },
+
+  async postDetail(id: string): Promise<PostDetail> {
+    const { data, error } = await supabase.rpc('get_post', { p_id: id });
+    if (error) throw error;
+    return data as PostDetail;
+  },
+
+  async setPostLike(id: string, on: boolean): Promise<void> {
+    const { error } = await supabase.rpc('set_post_like', { p_post: id, p_on: on });
+    if (error) throw error;
+  },
+
+  async addPostComment(postId: string, body: string, parentId?: string): Promise<CreatePostResult> {
+    const { data, error } = await supabase.rpc('add_post_comment', {
+      p_post: postId,
+      p_body: body,
+      p_parent: parentId ?? null,
+    });
+    if (error) throw error;
+    return data as CreatePostResult;
+  },
+
+  async reportPost(id: string): Promise<void> {
+    const { error } = await supabase.rpc('report_post', { p_id: id });
+    if (error) throw error;
+  },
+
+  async deletePost(id: string): Promise<void> {
+    const { error } = await supabase.rpc('delete_post', { p_id: id });
+    if (error) throw error;
+  },
+
+  async reportPostComment(id: string): Promise<void> {
+    const { error } = await supabase.rpc('report_post_comment', { p_id: id });
+    if (error) throw error;
+  },
+
+  async deletePostComment(id: string): Promise<void> {
+    const { error } = await supabase.rpc('delete_post_comment', { p_id: id });
+    if (error) throw error;
   },
 
   async followingFeed(limit = 30): Promise<FollowingItem[]> {

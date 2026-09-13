@@ -102,3 +102,43 @@ export async function shareCard(opts: {
     return 'failed';
   }
 }
+
+/**
+ * Einen Beitrag teilen.
+ *
+ * Als Abfrage (`/?post=ID`) und nicht als Pfad, aus demselben Grund wie bei
+ * Karten und Einladungen: die Startseite laedt garantiert, ein tiefer Pfad
+ * haengt davon ab, wie der Webserver unbekannte Adressen behandelt.
+ * lib/deepLink.ts oeffnet den Beitrag danach.
+ */
+export async function sharePost(opts: { postId: string; text: string }): Promise<ShareResult> {
+  const url = `${WEB_BASE}/?post=${encodeURIComponent(opts.postId)}`;
+  const kurz = opts.text.length > 90 ? `${opts.text.slice(0, 87)}…` : opts.text;
+
+  if (Platform.OS === 'web') {
+    const nav = globalThis.navigator as Navigator & {
+      share?: (d: { title: string; text: string; url: string }) => Promise<void>;
+    };
+    if (typeof nav?.share === 'function') {
+      try {
+        await nav.share({ title: BRAND.name, text: kurz, url });
+        return 'shared';
+      } catch {
+        return 'cancelled';
+      }
+    }
+    try {
+      await Clipboard.setStringAsync(url);
+      return 'copied';
+    } catch {
+      return 'failed';
+    }
+  }
+
+  try {
+    const res = await Share.share({ message: `${kurz}\n\n${url}`, title: BRAND.name });
+    return res.action === Share.dismissedAction ? 'cancelled' : 'shared';
+  } catch {
+    return 'failed';
+  }
+}

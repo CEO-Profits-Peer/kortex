@@ -28,6 +28,8 @@ import { analytics } from '@/lib/analytics';
 import { eventBuffer } from '@/lib/eventBuffer';
 import { beiWiederOnline } from '@/lib/online';
 import { einladungEinloesen } from '@/lib/invite';
+// Frueh laden: liest `?card=` / `?post=`, bevor expo-router die Adresse umschreibt.
+import { geteiltenLinkOeffnen } from '@/lib/deepLink';
 import { loadPrefs } from '@/lib/prefs';
 import i18n from '@/lib/i18n';
 import { api, configError } from '@/lib/supabase';
@@ -68,6 +70,13 @@ function Gate() {
     }
     void refreshProfile();
   }, [session, refreshProfile]);
+
+  // Ein geteilter Link (`?card=` / `?post=`) wird erst geoeffnet, wenn die
+  // App wirklich steht: angemeldet, Onboarding durch, keine Neuigkeiten davor.
+  const appSteht = Boolean(session) && onboarded === true && !(whatsNew.ready && whatsNew.show);
+  useEffect(() => {
+    if (appSteht) geteiltenLinkOeffnen();
+  }, [appSteht]);
 
   // Fehlende .env-Werte zuerst: sonst sieht man nur eine gescheiterte
   // Anmeldung und sucht an der falschen Stelle.

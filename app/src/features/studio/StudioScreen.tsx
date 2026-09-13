@@ -21,32 +21,34 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { beiWiederOnline } from '@/lib/online';
 import { api } from '@/lib/supabase';
-import type { CourseSummary } from '@/lib/types.db';
+import type { CollectionEntry, CourseSummary } from '@/lib/types.db';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
  * Studio - der Tab, in dem man selbst etwas tut.
  *
- * War vorher "Kurse", und Kurse allein trugen keinen Tab: ein Bildschirm mit
- * einem einzigen Kurs ist eine Sackgasse. Zusammen mit Duellen, Wiederholung
- * und der Tagesaufgabe ist er der Ort fuer alles, wofuer man sich absichtlich
- * hinsetzt - der Gegenpol zum Feed, der einen einfach mitnimmt.
+ * War vorher "Kurse", und Kurse allein trugen keinen Tab. Jetzt oben das
+ * Erstellen - Beitrag, Frage, eine gelikte Karte weiterempfehlen -, darunter
+ * alles, wofuer man sich absichtlich hinsetzt: Wiederholung, Duelle,
+ * Tagesaufgabe, Kurse.
  *
- * "Studio", weil hier spaeter auch das hinkommt, was man selbst erstellt
- * (Momente, LAB). Das Tab-Symbol ist deshalb ein Plus.
+ * Das Erstellen steht OBEN, weil es der Grund fuer den Namen und das Plus im
+ * Tab ist. Die erste Fassung hatte es nur im Namen - "man kann im Studio
+ * noch nicht wirklich Posts erstellen" war die richtige Rueckmeldung darauf.
  */
 export function StudioScreen() {
   const hinweis = useTabHint('studio');
   const insets = useSafeAreaInsets();
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
+  const [geliked, setGeliked] = useState<CollectionEntry[]>([]);
   const [faellig, setFaellig] = useState(0);
   const [duelle, setDuelle] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    // Die Zaehler duerfen fehlen, die Kurse nicht: ein kaputter Zaehler
-    // soll nicht den ganzen Tab leer machen.
+    // Zaehler und Karten duerfen fehlen, die Kurse nicht: ein kaputter
+    // Zaehler soll nicht den ganzen Tab leer machen.
     void api
       .reviewSummary()
       .then((r) => setFaellig(r?.due_now ?? 0))
@@ -55,6 +57,10 @@ export function StudioScreen() {
       .duelList()
       .then((d) => setDuelle(d.filter((x) => x.laeuft && x.mein_stand !== 'fertig').length))
       .catch(() => setDuelle(0));
+    void api
+      .myCollection('likes', 12)
+      .then(setGeliked)
+      .catch(() => setGeliked([]));
     try {
       setCourses(await api.listCourses());
       setError(null);
@@ -68,7 +74,6 @@ export function StudioScreen() {
     void load();
   }, [load]);
 
-  // Offline gescheitert: sobald der Server wieder antwortet, von selbst neu.
   useEffect(() => {
     if (!error) return;
     return beiWiederOnline(() => void load());
@@ -109,9 +114,62 @@ export function StudioScreen() {
       >
         <View>
           <Text style={styles.pageTitle}>Studio</Text>
-          <Text style={styles.pageSub}>Hier lernst du absichtlich: Kurse, Duelle, Wiederholung.</Text>
+          <Text style={styles.pageSub}>Selbst etwas machen: posten, fragen, lernen, herausfordern.</Text>
         </View>
 
+        {/* --- Erstellen --------------------------------------------------- */}
+        <View style={styles.erstellen}>
+          <Erstellen
+            icon="plus"
+            label="Beitrag"
+            unter="was du gelernt hast"
+            haupt
+            onPress={() => router.push('/compose')}
+          />
+          <Erstellen
+            icon="comment"
+            label="Frage"
+            unter="deine Leute antworten"
+            onPress={() => router.push('/compose?art=frage')}
+          />
+        </View>
+
+        {geliked.length > 0 ? (
+          <View style={{ gap: space.sm }}>
+            <Text style={styles.abschnitt}>Karte empfehlen - aus deinen Likes</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.likes}
+              style={styles.bleed}
+            >
+              {geliked.map((k) => (
+                <Pressable
+                  key={k.content_id}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(
+                      `/compose?card=${encodeURIComponent(k.content_id)}&titel=${encodeURIComponent(k.title)}`,
+                    );
+                  }}
+                  style={({ pressed }) => [styles.like, pressed && { opacity: 0.85 }]}
+                >
+                  <Text style={styles.likeTitel} numberOfLines={3}>
+                    {k.title}
+                  </Text>
+                  <View style={styles.likeFuss}>
+                    <Text style={styles.likeTag} numberOfLines={1}>
+                      #{k.category.split('.').pop()}
+                    </Text>
+                    <Text style={styles.likeAktion}>Empfehlen</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        {/* --- Lernen ------------------------------------------------------ */}
         <View style={styles.kacheln}>
           <Kachel
             icon="refresh"
@@ -131,7 +189,6 @@ export function StudioScreen() {
           />
         </View>
 
-        {/* Die Tagesaufgabe gilt nur heute, ein Kurs wartet auch morgen. */}
         <DailyBanner />
 
         <Text style={styles.abschnitt}>Kurse</Text>
@@ -210,12 +267,47 @@ export function StudioScreen() {
         <TabHint
           icon="plus"
           titel="Studio: selbst machen"
-          text="Kurse bauen aufeinander auf, Duelle fordern deine Leute heraus, Wiederholungen holen zurück, was sonst verblasst. Später kommt hier auch dazu, was du selbst erstellst."
+          text="Oben schreibst du Beiträge und Fragen für deine Follower oder empfiehlst eine Karte. Darunter: Wiederholung, Duelle und Kurse, die aufeinander aufbauen."
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />
       ) : null}
     </GridBackground>
+  );
+}
+
+function Erstellen({
+  icon,
+  label,
+  unter,
+  haupt,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  unter: string;
+  haupt?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.light();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.erstellKnopf, haupt && styles.erstellHaupt, pressed && { opacity: 0.85 }]}
+      accessibilityRole="button"
+    >
+      <View style={[styles.erstellIcon, haupt && { backgroundColor: color.signal.primary }]}>
+        <Icon name={icon} size={18} color={haupt ? color.bg : color.signal.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.erstellLabel}>{label}</Text>
+        <Text style={styles.erstellUnter} numberOfLines={1}>
+          {unter}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -259,6 +351,48 @@ const styles = StyleSheet.create({
 
   pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   pageSub: { ...type.body, fontSize: 15, color: color.ink.mid, marginTop: space.xs },
+
+  erstellen: { flexDirection: 'row', gap: space.md },
+  erstellKnopf: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  erstellHaupt: { borderColor: color.signal.primary },
+  erstellIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.bgSunken,
+  },
+  erstellLabel: { ...type.label, fontSize: 15, color: color.ink.high },
+  erstellUnter: { ...type.meta, fontSize: 10, color: color.ink.low },
+
+  bleed: { marginHorizontal: -space.xl },
+  likes: { paddingHorizontal: space.xl, gap: space.md },
+  like: {
+    width: 150,
+    minHeight: 110,
+    justifyContent: 'space-between',
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  likeTitel: { ...type.body, fontSize: 14, lineHeight: 19, color: color.ink.high },
+  likeFuss: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.xs },
+  likeTag: { ...type.meta, fontSize: 10, color: color.ink.low, flexShrink: 1 },
+  likeAktion: { ...type.meta, fontSize: 10, color: color.signal.primary },
 
   kacheln: { flexDirection: 'row', gap: space.md },
   kachel: {

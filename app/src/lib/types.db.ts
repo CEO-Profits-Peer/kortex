@@ -399,29 +399,86 @@ export type PersonHit = {
   is_me: boolean;
 };
 
-/** Eine Person, wie get_home (Migration 0076) sie mitschickt. */
+/** Eine Person, wie get_home und get_post (Migration 0077) sie mitschicken. */
 export type HomePerson = {
   handle: string;
   name: string;
   avatar_seed: string;
   avatar_path: string | null;
+  /** Das bin ich - die App schreibt dann "Du". */
+  ich?: boolean;
+};
+
+/** Eine Karte als Verweis in einem Beitrag. */
+export type PostCard = {
+  content_id: string;
+  title: string;
+  deck: string | null;
+  category: string;
+};
+
+/** Ein eigener Beitrag (Migration 0077, post_json). */
+export type Post = {
+  id: string;
+  art: 'post' | 'frage';
+  body: string;
+  at: string;
+  wer: HomePerson;
+  ist_meins: boolean;
+  likes: number;
+  ich_like: boolean;
+  kommentare: number;
+  reposts: number;
+  karte: PostCard | null;
+  /** Gesetzt, wenn der Beitrag einen anderen weiterteilt. */
+  original: {
+    id: string;
+    art: 'post' | 'frage';
+    body: string;
+    at: string;
+    wer: HomePerson;
+    karte: PostCard | null;
+  } | null;
+};
+
+export type PostComment = {
+  id: string;
+  body: string;
+  at: string;
+  wer: HomePerson;
+  ist_meins: boolean;
+  /** Eigene Kommentare - und alle unter dem eigenen Beitrag. */
+  darf_loeschen: boolean;
+  antworten: PostComment[];
+};
+
+export type PostDetail =
+  | { gesperrt: false; post: Post; kommentare: PostComment[] }
+  | { gesperrt: true; wer: HomePerson };
+
+export type CreatePostResult = {
+  id: string;
+  status: 'visible' | 'blocked';
+  reason: string | null;
 };
 
 type HomeBasis = { at: string; wer: HomePerson };
 
 export type HomeEntry =
+  | (HomeBasis & { art: 'post'; was: Post })
   | (HomeBasis & {
       art: 'repost';
-      was: { content_id: string; title: string; deck: string | null; category: string; comment: string | null };
-    })
-  | (HomeBasis & { art: 'frage'; was: { content_id: string; title: string; body: string } })
-  | (HomeBasis & {
-      art: 'duell';
-      was: {
-        a: HomePerson & { punkte: number; ich: boolean };
-        b: HomePerson & { punkte: number; ich: boolean };
+      was: PostCard & {
+        comment: string | null;
+        likes: number;
+        kommentare: number;
+        ich_like: boolean;
+        ich_repost: boolean;
       };
     })
+  | (HomeBasis & { art: 'frage'; was: { content_id: string; title: string; body: string } })
+  // Nur der Sieger, nicht gegen wen (0077).
+  | (HomeBasis & { art: 'duell'; was: { punkte: number; gegner_punkte: number } })
   | (HomeBasis & { art: 'kurs'; was: { slug: string; title: string; lessons: number } })
   | (HomeBasis & { art: 'abzeichen'; was: { title: string; emoji: string | null } })
   | (HomeBasis & { art: 'folgt'; was: HomePerson & { bin_ich: boolean } });

@@ -285,6 +285,19 @@ Deliberately not relaxed — checking only the mantissa would make
     questions, new follows of people I follow; course completions and badges
     only if that person has `leaderboard_opt_in`; duel results only if BOTH
     have it. Plus "who was active" and follow suggestions.
+  - `0077_posts.sql` - user posts (`posts`, `post_likes`, `post_comments`,
+    reports). Same text check as card comments (`comment_rejection`), 30
+    posts / 100 comments per day, 3 reports hide. Visible to author,
+    followers, and followers of someone who reposted it (`post_sichtbar`).
+    `get_home` v2 (drop + create, cursor `p_before`): posts, own posts and
+    recommendations, counts for the buttons; duels show only the winner.
+- **Posts**: `/compose` (post, question, `?card=` recommend, `?repost=`),
+  `/post/[id]` (post + comments), Studio has "Erstellen" on top. Shared links
+  are `/?post=ID` and `/?card=ID`, opened by `lib/deepLink.ts` - `?card=` was
+  generated for months and never opened by anything.
+- **Sound kept playing after leaving the feed**: the kinetic card stayed
+  active; stopping speech reported "sentence done" and its beat clock spoke
+  the next one. FeedScreen now deactivates the card on blur and restores it.
 - **Tabs are now Home · Studio · Feed · Suche · Profil** (start route stays
   `index` = Feed). Studio replaced the Kurse tab (courses + duels + review +
   daily). The tab bar is a floating glass pill (`backdropFilter`, web only)
