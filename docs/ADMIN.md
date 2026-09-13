@@ -108,6 +108,40 @@ Zugriff, nicht der größere.
 - Keine Kommentartexte, keine Likes auf einzelne Karten.
 - Kein `admin_pin_hash`, auch nicht der eigene.
 
+## Wer war auf der Seite? (Cloudflare)
+
+Das Kontrollzentrum zählt, was **in** der App passiert — also nur von Leuten,
+die ein Konto haben. Wer die Seite geöffnet und wieder zugemacht hat, kommt
+darin nicht vor. Diese Frage beantwortet Cloudflare.
+
+**Cloudflare Web Analytics** ist kostenlos, setzt kein Cookie und erkennt
+niemanden wieder. Es zeigt: Seitenaufrufe, Besuche, Länder, woher der Link
+kam, Browser, Gerätetyp und Ladezeiten. Es zeigt **keine Personen** — keine
+IP-Adresse, keine Wiedererkennung, keinen einzelnen Besucher. „Wer" heißt
+hier „aus welchem Land, über welchen Link", nicht „welcher Mensch". Für alles
+darüber hinaus bräuchte es Tracking, und das wäre bei einer teils
+minderjährigen Zielgruppe die falsche Entscheidung.
+
+Einschalten:
+
+1. Cloudflare-Dashboard → **Analytics & Logs** → **Web Analytics** → *Add a
+   site* → `elycic.pages.dev`. Cloudflare zeigt danach einen **Token**.
+2. Den Token beim Bauen mitgeben — dann steht der Zähler in der
+   ausgelieferten `index.html`:
+
+```bash
+CF_BEACON_TOKEN=dein-token npm run deploy:web
+```
+
+Ohne die Variable passiert nichts, und der Build enthält keine Zeile davon.
+Das steckt in `scripts/finish_web.py`; absichtlich dort und nicht in einem
+Dashboard-Schalter: eine Zeile, die eine fremde Domain in jede Seite lädt,
+gehört dorthin, wo man sie im Repo sieht.
+
+Nicht verwechseln mit **PostHog**, das schon läuft: das beantwortet die
+andere Frage — was jemand *in* der App tut, verknüpft über die Konto-UUID.
+Cloudflare endet an der Tür, PostHog fängt dahinter an.
+
 ## Ansehen ohne Anmeldung
 
 `/atelier`, Reiter **kontrolle**, zeigt alle drei Ansichten mit erfundenen

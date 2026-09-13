@@ -20,6 +20,7 @@ robuster, als das Framework zu etwas zu ueberreden.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -149,6 +150,28 @@ def add_service_worker(html: str) -> str:
     return html.replace("</body>", SW_REGISTER + "  </body>", 1)
 
 
+# --- Cloudflare Web Analytics ------------------------------------------------
+#
+# Beantwortet die Frage "wer war auf der Seite und woher": Seitenaufrufe,
+# Besuche, Laender, Verweise, Geraet und Browser. KEINE Personen - der Dienst
+# setzt kein Cookie und kennt niemanden wieder. Genau deshalb ist er hier
+# richtig: die Zielgruppe ist teils minderjaehrig, und PostHog beantwortet
+# ohnehin die andere Frage (was tut jemand IN der App, ueber die Konto-UUID).
+#
+# Cloudflare kann das Skript fuer ein Pages-Projekt auch selbst einspritzen.
+# Diese Variante steht trotzdem hier, weil sie im Repo sichtbar ist: eine
+# Zeile, die eine fremde Domain in jede Seite laedt, gehoert dorthin, wo man
+# sie sieht - und nicht in einen Schalter, an den sich in einem Jahr niemand
+# erinnert.
+#
+# Ohne Token passiert gar nichts. Den Token gibt es unter
+# Cloudflare -> Analytics & Logs -> Web Analytics -> Add a site.
+BEACON_TOKEN = os.environ.get("CF_BEACON_TOKEN", "").strip()
+BEACON = """    <!-- Cloudflare Web Analytics: cookiefrei, ohne Wiedererkennung -->
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "%s"}'></script>
+"""
+
+
 def main() -> int:
     if not INDEX.exists():
         sys.exit(f"{INDEX} fehlt. Erst `npm run build:web`.")
@@ -167,6 +190,9 @@ def main() -> int:
     if "</head>" not in html:
         sys.exit("Kein </head> in index.html - Expo hat die Vorlage geaendert.")
     html = html.replace("</head>", HEAD + "  </head>", 1)
+
+    if BEACON_TOKEN:
+        html = html.replace("</head>", (BEACON % BEACON_TOKEN) + "  </head>", 1)
 
     html = add_service_worker(html)
     INDEX.write_text(html, encoding="utf-8")
@@ -198,7 +224,13 @@ def main() -> int:
         print("         Vermutlich fehlt `npm run icons`.")
         return 1
 
-    print("index.html ergaenzt · Manifest, Icons und Teilen-Vorschau geprueft")
+    if BEACON_TOKEN and "cloudflareinsights" not in check:
+        sys.exit("FEHLER: CF_BEACON_TOKEN gesetzt, aber das Skript fehlt in index.html.")
+
+    print(
+        "index.html ergaenzt · Manifest, Icons und Teilen-Vorschau geprueft"
+        + (" · Cloudflare-Zaehler an" if BEACON_TOKEN else "")
+    )
     return 0
 
 
