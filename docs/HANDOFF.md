@@ -269,7 +269,18 @@ Deliberately not relaxed — checking only the mantissa would make
   - `0074_pipeline_runs.sql` - every pipeline script writes its run balance
     (cards, Gemini calls, WHY it stopped, error) via `pipeline/laufbilanz.py`;
     `admin_runs(pin)` shows it in the control centre, tab "Pipeline". Without
-    the table the scripts only warn and run as before.
+    the table the scripts only warn and run as before. (Applied.)
+  - `0075_generated_courses.sql` - courses built by `pipeline/courses.py`
+    (`source_url`, `generated`, skript 'kurse' in the run balance). Also fixes
+    two 0014 bugs: `list_courses` filtered on the UI language instead of the
+    feed mix, and `position` came from `current_position`, which nothing ever
+    writes - the overview bar was always 0.
+- **Course generator** `pipeline/courses.py`: article that already carries an
+  approved knowledge card -> `make_course_arc` -> one `make_card` per lesson
+  with an `auftrag`, same validation. A lesson failing twice ends the course
+  BEFORE it (no gaps in a sequence); fewer than 3 in a row = no course. Runs
+  in `ingest.yml` step "Kurse" at 09:17 and 18:17 UTC only (6-12 calls each).
+  Dry run on "Immunsystem": 3 lessons, all passed, 4 calls.
 - **Topics are no longer a wall.** `pipeline/topic_discovery.py` finds new
   evergreen topics from the link graph of topics that already have a card:
   articles linked by >= 2 topics of the SAME category, >= 60 % of their inbound

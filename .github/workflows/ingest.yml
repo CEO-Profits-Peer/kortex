@@ -293,6 +293,45 @@ jobs:
           set -o pipefail
           python pipeline/evergreen.py 2>&1 | tee -a "$RUNNER_TEMP/evergreen.log"
 
+      # --- Kurse ---------------------------------------------------------
+      #
+      # Ein Kurs kostet sechs bis zwoelf Aufrufe (Bogen, fuenf Lektionen,
+      # Wiederholungen, Drehbuecher) - so viel wie sechs neue Feed-Karten.
+      # Deshalb nicht in jedem Lauf, sondern zweimal am Tag: in den Laeufen
+      # um 09:17 und 18:17 UTC. Die Stunden als Bereich, weil GitHub
+      # geplante Laeufe oft eine halbe Stunde und mehr verspaetet startet;
+      # ein 09:17-Lauf, der um 10:05 beginnt, soll trotzdem zaehlen.
+      #
+      # Nach Evergreen, vor dem Nachruesten: eine neue Feed-Karte geht vor,
+      # ein Kurs vor einer schoeneren Darstellung einer alten Karte.
+      - name: Kurse
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          MAX_RUN_MINUTES: "5"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
+          GEMINI_MODEL: gemini-3.5-flash
+          INGEST_LANGUAGES: de,en
+          MAX_GEMINI_CALLS_PER_RUN: "16"
+          AUTO_APPROVE: "true"
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -o pipefail
+          stunde=$(date -u +%H)
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            case "$stunde" in
+              09|10|11|18|19|20) ;;
+              *) echo "Kurse nur in den Laeufen um 09:17 und 18:17 UTC (jetzt $stunde Uhr)."; exit 0 ;;
+            esac
+          fi
+          python pipeline/courses.py 2>&1 | tee -a "$RUNNER_TEMP/kurse.log"
+
       # --- Erklaerkarten nachruesten -------------------------------------
       #
       # Der Anteil an Erklaerkarten ist eine Quote ueber den BESTAND. Jede
@@ -392,7 +431,7 @@ jobs:
       - name: Bilanz in die Uebersicht
         if: always()
         run: |
-          for datei in ingest evergreen backfill; do
+          for datei in ingest evergreen kurse backfill; do
             pfad="$RUNNER_TEMP/$datei.log"
             [ -f "$pfad" ] || continue
             echo "## $datei" >> "$GITHUB_STEP_SUMMARY"

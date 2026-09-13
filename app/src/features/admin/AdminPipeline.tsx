@@ -43,6 +43,7 @@ const SKRIPT: Record<string, string> = {
   ingest: 'Nachrichten',
   evergreen: 'Wissen',
   backfill: 'Erklärkarten',
+  kurse: 'Kurse',
 };
 
 const AUSLOESER: Record<string, string> = {
@@ -72,7 +73,7 @@ function durchgaenge(laeufe: AdminRun[]): AdminRun[][] {
     if (g) g.push(l);
     else gruppen.set(k, [l]);
   }
-  const reihenfolge = ['ingest', 'evergreen', 'backfill'];
+  const reihenfolge = ['ingest', 'evergreen', 'kurse', 'backfill'];
   return [...gruppen.values()].map((g) =>
     g.sort((a, b) => reihenfolge.indexOf(a.skript) - reihenfolge.indexOf(b.skript)),
   );

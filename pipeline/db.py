@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import time
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -327,6 +328,85 @@ class Database:
                 raise RuntimeError(
                     f"topic_memory: {response.status_code} {response.text[:300]}"
                 )
+
+    # --- Kurse ----------------------------------------------------------------
+
+    def course_candidates(
+        self, languages: tuple[str, ...], category: str | None = None
+    ) -> list[dict[str, str]] | None:
+        """Artikel, aus denen ein Kurs werden koennte - oder None ohne Migration 0075.
+
+        Nur Artikel, die schon eine freigegebene Wissenskarte tragen: die
+        Pruefung hat an ihnen einmal bestanden. Einer je Kategorie und
+        Sprache, und die Kategorien mit den wenigsten Kursen zuerst - sonst
+        bekaeme die Kategorie mit den meisten Karten alle Kurse.
+        """
+        try:
+            kurse = self._get("/courses", {"select": "category_id,language,source_url"})
+        except RuntimeError as exc:
+            if "source_url" in str(exc):
+                return None
+            raise
+        schon = {(k["language"], k["source_url"]) for k in kurse if k.get("source_url")}
+        je_kategorie = Counter((k["category_id"], k["language"]) for k in kurse)
+
+        quellen = ",".join(f"wikipedia-{l}" for l in languages)
+        karten: list[dict[str, Any]] = []
+        page = 0
+        while True:
+            params = {
+                "select": "primary_category_id,language,source_urls,created_at",
+                "status": "eq.approved",
+                "content_type": "eq.knowledge",
+                "primary_source_id": f"in.({quellen})",
+                "order": "created_at.desc",
+                "limit": "1000",
+                "offset": str(page * 1000),
+            }
+            if category:
+                params["primary_category_id"] = f"eq.{category}"
+            rows = self._get("/content_items", params)
+            karten.extend(rows)
+            if len(rows) < 1000:
+                break
+            page += 1
+
+        groesse = Counter((k["primary_category_id"], k["language"]) for k in karten)
+        gesehen: set[tuple[str, str]] = set()
+        out: list[dict[str, str]] = []
+        for k in karten:
+            url = (k.get("source_urls") or [None])[0]
+            schluessel = (k["primary_category_id"], k["language"])
+            if not url or (k["language"], url) in schon or schluessel in gesehen:
+                continue
+            gesehen.add(schluessel)
+            out.append({"category_id": k["primary_category_id"], "language": k["language"], "url": url})
+        out.sort(key=lambda c: (je_kategorie[(c["category_id"], c["language"])],
+                                -groesse[(c["category_id"], c["language"])]))
+        return out
+
+    def ids_for_hashes(self, hashes: list[str]) -> dict[str, str]:
+        """content_hash -> id. Auch fuer Zeilen, die schon vorher existierten."""
+        out: dict[str, str] = {}
+        for i in range(0, len(hashes), 100):
+            rows = self._get("/content_items", {
+                "select": "id,content_hash",
+                "content_hash": f"in.({','.join(hashes[i:i + 100])})",
+            })
+            out.update({r["content_hash"]: r["id"] for r in rows})
+        return out
+
+    def insert_rows(self, table: str, rows: list[dict[str, Any]], *, antwort: bool = True) -> list[dict[str, Any]]:
+        """Schlicht einfuegen. Kein stilles Ignorieren - ein Fehler hier soll laut sein."""
+        if not rows:
+            return []
+        response = self.http.post(
+            f"/{table}", json=rows,
+            headers={"Prefer": "return=representation" if antwort else "return=minimal"},
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(f"{table}: {response.status_code} {response.text[:300]}")
+        return response.json() if antwort else []
 
     def presentation_counts(self) -> tuple[int, int]:
         """(freigegebene Karten, davon Erklaerkarten).

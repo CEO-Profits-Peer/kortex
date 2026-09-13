@@ -103,9 +103,12 @@ class Laufbilanz:
             log.warning("Laufbilanz nicht angelegt (%s) - der Lauf geht weiter.", type(exc).__name__)
             return
         if r.status_code >= 400:
-            # 404 / PGRST205: Tabelle fehlt. Einmal sagen, nicht bei jeder Zeile.
-            log.warning("Laufbilanz nicht angelegt (HTTP %d) - Migration 0074 eingespielt? "
-                        "Der Lauf geht weiter.", r.status_code)
+            # 404: Tabelle fehlt (0074). 400: meist eine Pruefregel - etwa ein
+            # Skript, das die Tabelle noch nicht kennt (kurse vor 0075). Die
+            # erste Fassung sagte bei beidem "0074 eingespielt?" und schickte
+            # damit bei 400 an die falsche Stelle. Deshalb der Antworttext.
+            log.warning("Laufbilanz nicht angelegt (HTTP %d: %s) - der Lauf geht weiter.",
+                        r.status_code, " ".join(r.text.split())[:160])
             return
         try:
             self._id = int(r.json()[0]["id"])
