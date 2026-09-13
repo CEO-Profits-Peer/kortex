@@ -92,7 +92,11 @@ class Laufbilanz:
         run_id = os.getenv("GITHUB_RUN_ID", "").strip()
         zeile = {
             "skript": self.skript,
-            "ausloeser": os.getenv("GITHUB_EVENT_NAME", "").strip() or "lokal",
+            # LAUF_AUSLOESER setzt ingest.yml: 'zeitplan', wenn der Cloudflare
+            # Worker angestossen hat - fuer GitHub ist das sonst nur ein
+            # workflow_dispatch, nicht zu unterscheiden von einem Start von Hand.
+            "ausloeser": (os.getenv("LAUF_AUSLOESER", "").strip()
+                          or os.getenv("GITHUB_EVENT_NAME", "").strip() or "lokal"),
             "github_run_id": int(run_id) if run_id.isdigit() else None,
             "trockenlauf": self.trocken,
         }

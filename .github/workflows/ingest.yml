@@ -52,6 +52,15 @@ on:
         description: "Nur diese Quellen-ID (leer = alle)"
         type: string
         default: ""
+      # Setzt der Cloudflare Worker (workers/ingest-anstoss), nicht du. Er
+      # stoesst den Lauf an, weil GitHubs eigener Zeitplan oben Laeufe
+      # auslaesst. Damit sich so ein Lauf wie ein geplanter verhaelt - Kurse
+      # nur zu ihren Uhrzeiten, im Kontrollzentrum als geplant gezaehlt -,
+      # muss er sich von einem Start von Hand unterscheiden lassen.
+      zeitplan:
+        description: "Vom Zeitplan angestossen (Cloudflare) - nicht von Hand setzen"
+        type: boolean
+        default: false
 
 concurrency:
   # Zwei gleichzeitige Laeufe wuerden dieselben Artikel doppelt verarbeiten
@@ -67,6 +76,10 @@ jobs:
     # ueberspringt auch die Bilanz, und dann fehlt genau die Information,
     # warum es zu lange gedauert hat.
     timeout-minutes: 34
+    env:
+      # schedule, zeitplan (Cloudflare) oder workflow_dispatch (von Hand).
+      # Liest pipeline/laufbilanz.py und der Kurs-Schritt unten.
+      LAUF_AUSLOESER: ${{ inputs.zeitplan && 'zeitplan' || github.event_name }}
 
     steps:
       # v5/v6 statt v4/v5: die aelteren laufen auf Node 20, und das meldet
@@ -324,7 +337,7 @@ jobs:
         run: |
           set -o pipefail
           stunde=$(date -u +%H)
-          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+          if [ "$LAUF_AUSLOESER" = "schedule" ] || [ "$LAUF_AUSLOESER" = "zeitplan" ]; then
             case "$stunde" in
               09|10|11|18|19|20) ;;
               *) echo "Kurse nur in den Laeufen um 09:17 und 18:17 UTC (jetzt $stunde Uhr)."; exit 0 ;;

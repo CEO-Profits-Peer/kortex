@@ -47,7 +47,9 @@ const SKRIPT: Record<string, string> = {
 };
 
 const AUSLOESER: Record<string, string> = {
-  schedule: 'geplant',
+  schedule: 'geplant (GitHub)',
+  // Vom Cloudflare Worker angestossen (workers/ingest-anstoss, 0079).
+  zeitplan: 'geplant',
   workflow_dispatch: 'von Hand',
   lokal: 'lokal',
 };

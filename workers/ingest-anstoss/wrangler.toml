@@ -1,0 +1,17 @@
+# Stoesst den Ingest-Workflow auf GitHub an - alle drei Stunden, puenktlich.
+#
+# Warum: GitHubs eigener Zeitplan (`schedule` in ingest.yml) laesst Laeufe
+# aus. Am 2026-09-13 kamen bis 20:43 UTC vier von sieben, der um 18:17 fehlte
+# ganz - und mit ihm der Kurs des Tages. Cloudflare-Zeitplaene laufen zur
+# Minute.
+#
+# Der Token liegt als Secret im Worker, nie in dieser Datei:
+#   npx wrangler secret put GITHUB_TOKEN --config workers/ingest-anstoss/wrangler.toml
+
+name = "elycic-ingest-anstoss"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[triggers]
+# UTC, dieselben Zeiten wie bisher in ingest.yml.
+crons = ["17 */3 * * *"]
