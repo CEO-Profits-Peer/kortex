@@ -33,7 +33,7 @@ export type IconName =
   | 'news' | 'knowledge' | 'interactive' | 'lesson'
   // Sonstiges
   | 'leaderboard' | 'lock' | 'plus' | 'sliders'
-  | 'listen' | 'listening' | 'comment';
+  | 'listen' | 'listening' | 'comment' | 'bell';
 
 type Props = {
   name: IconName;
@@ -181,6 +181,12 @@ function IconBase({ name, size = 20, color: tint = color.ink.mid }: Props) {
         </>
       )}
       {name === 'plus' && <Path d="M12 5.5v13M5.5 12h13" {...s} />}
+      {name === 'bell' && (
+        <>
+          <Path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14l1.5-2Z" {...s} />
+          <Path d="M10 20.5a2.2 2.2 0 0 0 4 0" {...s} />
+        </>
+      )}
       {/* Vorlesen: eine Schallquelle mit zwei Wellen. Kein Lautsprecher-
           Trapez - das steht ueberall fuer Lautstaerke, hier geht es um
           Vorlesen. */}

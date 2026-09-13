@@ -23,10 +23,12 @@ import type {
   CategoryDetail,
   CollectionEntry,
   CommentQuestion,
+  AppNotification,
   CreatePostResult,
   DuelListEntry,
   HomeData,
   PostDetail,
+  UserPostsPage,
   InvitePreview,
   MyInvite,
   RedeemResult,
@@ -469,6 +471,36 @@ export const api = {
   async deletePostComment(id: string): Promise<void> {
     const { error } = await supabase.rpc('delete_post_comment', { p_id: id });
     if (error) throw error;
+  },
+
+  /** Die Beitraege einer Person, seitenweise (0078). */
+  async userPosts(handle: string, limit = 10, before?: string): Promise<UserPostsPage> {
+    const { data, error } = await supabase.rpc('get_user_posts', {
+      p_handle: handle,
+      p_limit: limit,
+      p_before: before ?? null,
+    });
+    if (error) throw error;
+    return data as UserPostsPage;
+  },
+
+  // --- Glocke (0051, 0078) --------------------------------------------
+
+  async myNotifications(limit = 50): Promise<AppNotification[]> {
+    const { data, error } = await supabase.rpc('my_notifications', { p_limit: limit });
+    if (error) throw error;
+    return (data ?? []) as AppNotification[];
+  },
+
+  async markNotificationsRead(): Promise<void> {
+    const { error } = await supabase.rpc('mark_notifications_read');
+    if (error) throw error;
+  },
+
+  async unreadNotifications(): Promise<number> {
+    const { data, error } = await supabase.rpc('my_unread_notifications');
+    if (error) throw error;
+    return Number(data ?? 0);
   },
 
   async followingFeed(limit = 30): Promise<FollowingItem[]> {

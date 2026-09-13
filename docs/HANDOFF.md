@@ -291,6 +291,21 @@ Deliberately not relaxed — checking only the mantissa would make
     followers, and followers of someone who reposted it (`post_sichtbar`).
     `get_home` v2 (drop + create, cursor `p_before`): posts, own posts and
     recommendations, counts for the buttons; duels show only the winner.
+  - `0078_benachrichtigungen.sql` - notifications for post likes (bell only,
+    `sent_at` set so no push), post comments, replies (posts AND cards),
+    post reposts, duel challenges. `my_unread_notifications()` for the bell
+    dot, `get_user_posts(handle)` for profiles (non-followers see the count,
+    not the content). **Applied by Claude via `supabase db push`.**
+- **Applying migrations**: the Supabase CLI is linked and works without a
+  password prompt. Workflow: `npx supabase migration list --linked`, then
+  `npx supabase db push --linked --dry-run`, then `--yes`. Anything applied
+  by hand in the SQL editor is missing from the history - check that its
+  objects exist, then `supabase migration repair --status applied <nr>`
+  (done for 0077). Never push blind: a missing history row means the push
+  would run that file again.
+- **Bell** `/notifications` (Home header, red count) - it did not exist, the
+  push function already marked notifications as "visible under the bell".
+  **Profiles** have a "Beiträge" tab first (own and others').
 - **Posts**: `/compose` (post, question, `?card=` recommend, `?repost=`),
   `/post/[id]` (post + comments), Studio has "Erstellen" on top. Shared links
   are `/?post=ID` and `/?card=ID`, opened by `lib/deepLink.ts` - `?card=` was

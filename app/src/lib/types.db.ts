@@ -462,6 +462,31 @@ export type CreatePostResult = {
   reason: string | null;
 };
 
+/** Die Beitraege einer Person, seitenweise (get_user_posts, 0078). */
+export type UserPostsPage = {
+  /** Wer nicht folgt, sieht die Anzahl, aber nicht den Inhalt. */
+  gesperrt: boolean;
+  anzahl: number;
+  posts: Post[];
+};
+
+/** Eine Zeile aus notifications (0051, Arten erweitert in 0078). */
+export type AppNotification = {
+  id: string;
+  user_id: string;
+  kind:
+    | 'follow' | 'repost' | 'review' | 'streak'
+    | 'post_like' | 'post_comment' | 'comment_reply' | 'post_repost' | 'duel'
+    | string;
+  title: string;
+  body: string;
+  url: string | null;
+  created_at: string;
+  sent_at: string | null;
+  read_at: string | null;
+  dedupe_key: string | null;
+};
+
 type HomeBasis = { at: string; wer: HomePerson };
 
 export type HomeEntry =

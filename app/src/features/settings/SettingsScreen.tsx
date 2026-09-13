@@ -144,7 +144,7 @@ const GOALS = [30, 60, 100, 200];
 
 /** Was unter dem Schalter steht - je nachdem, warum er so aussieht, wie er aussieht. */
 const PUSH_HINT: Record<PushState, string | null> = {
-  on: 'Du bekommst Bescheid, wenn dir jemand folgt oder eine Karte teilt.',
+  on: 'Neue Follower, Kommentare, Antworten, Duelle und geteilte Beiträge. Likes stehen nur in der Glocke.',
   off: 'Beim Einschalten fragt der Browser einmal um Erlaubnis.',
   denied: null, // steht als Fehlermeldung darunter, sonst zweimal dasselbe
   unsupported: 'Dieser Browser kann keine Benachrichtigungen.',
@@ -477,7 +477,7 @@ export function SettingsScreen() {
         {/* --- Push ------------------------------------------------------ */}
         <Section title="Benachrichtigungen">
           <Row erste
-            label="Neue Follower & geteilte Karten"
+            label="Follower, Kommentare & Duelle"
             hint={PUSH_HINT[push] ?? undefined}
             right={
               push === 'unsupported' || push === 'needs-install' ? (

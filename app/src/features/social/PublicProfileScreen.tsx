@@ -12,6 +12,7 @@ import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
+import { UserPosts } from '@/features/posts/UserPosts';
 import type { PublicProfile, RepostRef } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -67,7 +68,8 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
   const [p, setP] = useState<PublicProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<'reposts' | 'likes'>('reposts');
+  const [tab, setTab] = useState<'posts' | 'reposts' | 'likes'>('posts');
+  const [postAnzahl, setPostAnzahl] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -253,6 +255,14 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
 
         <View style={styles.tabs}>
           <Pressable
+            onPress={() => setTab('posts')}
+            style={[styles.tab, tab === 'posts' && styles.tabOn]}
+          >
+            <Text style={[styles.tabText, tab === 'posts' && styles.tabTextOn]}>
+              Beiträge{postAnzahl !== null ? ` · ${postAnzahl}` : ''}
+            </Text>
+          </Pressable>
+          <Pressable
             onPress={() => setTab('reposts')}
             style={[styles.tab, tab === 'reposts' && styles.tabOn]}
           >
@@ -270,7 +280,9 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
           </Pressable>
         </View>
 
-        {tab === 'likes' && p.likes === null ? (
+        {tab === 'posts' ? (
+          <UserPosts handle={p.handle} eigene={p.is_me} onAnzahl={setPostAnzahl} />
+        ) : tab === 'likes' && p.likes === null ? (
           <View style={styles.private}>
             <Icon name="lock" size={18} color={color.ink.low} />
             <Text style={styles.privateText}>

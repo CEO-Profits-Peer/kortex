@@ -23,6 +23,7 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { personName } from '@/lib/name';
 import { shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
+import { UserPosts } from '@/features/posts/UserPosts';
 import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { beiWiederOnline } from '@/lib/online';
@@ -126,7 +127,10 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const [social, setSocial] = useState<MySocial | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [tab, setTab] = useState<'reposts' | 'likes'>('reposts');
+  const [tab, setTab] = useState<'posts' | 'reposts' | 'likes'>('posts');
+  const [postAnzahl, setPostAnzahl] = useState<number | null>(null);
+  // Zaehlt beim Ziehen hoch und laedt damit auch die Beitraege neu.
+  const [neu, setNeu] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [einladeNotiz, setEinladeNotiz] = useState<string | null>(null);
 
@@ -210,6 +214,7 @@ export function ProfileScreen() {
             onRefresh={async () => {
               setRefreshing(true);
               await load();
+              setNeu((n) => n + 1);
               setRefreshing(false);
             }}
             tintColor={color.ink.low}
@@ -313,7 +318,7 @@ export function ProfileScreen() {
 
         {/* --- Eigene Inhalte ---------------------------------------------- */}
         <View style={styles.tabs}>
-          {(['reposts', 'likes'] as const).map((k) => (
+          {(['posts', 'reposts', 'likes'] as const).map((k) => (
             <Pressable
               key={k}
               onPress={() => {
@@ -323,12 +328,12 @@ export function ProfileScreen() {
               style={styles.tab}
             >
               <Icon
-                name={k === 'reposts' ? 'refresh' : 'like'}
+                name={k === 'posts' ? 'feed' : k === 'reposts' ? 'refresh' : 'like'}
                 size={16}
                 color={tab === k ? color.ink.max : color.ink.low}
               />
               <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>
-                {k === 'reposts' ? social.repost_count : social.like_count}
+                {k === 'posts' ? (postAnzahl ?? '') : k === 'reposts' ? social.repost_count : social.like_count}
               </Text>
               {/* Unterstrich statt Pille - ruhiger und eindeutig. */}
               <View style={[styles.tabRule, tab === k && styles.tabRuleOn]} />
@@ -336,7 +341,11 @@ export function ProfileScreen() {
           ))}
         </View>
 
-        {list.length === 0 ? (
+        {/* Eigene Beitraege zuerst: sie sind das, was man selbst geschrieben
+            hat, Empfohlenes und Likes sind Reaktionen auf andere. */}
+        {tab === 'posts' ? (
+          <UserPosts key={neu} handle={social.handle} eigene onAnzahl={setPostAnzahl} />
+        ) : list.length === 0 ? (
           <Text style={styles.empty}>
             {tab === 'reposts'
               ? 'Noch nichts empfohlen. Der Repost-Knopf sitzt rechts an jeder Karte.'
@@ -372,7 +381,7 @@ export function ProfileScreen() {
         {/* Nur wenn es wirklich mehr gibt. Ein Knopf, der auf eine Liste
             fuehrt, die genauso lang ist wie das, was daneben steht, ist ein
             Versprechen ohne Inhalt. */}
-        {gesamt > Math.min(list.length, VORSCHAU) ? (
+        {tab !== 'posts' && gesamt > Math.min(list.length, VORSCHAU) ? (
           <Pressable
             onPress={() => {
               haptics.light();

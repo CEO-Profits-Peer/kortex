@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -64,6 +64,15 @@ export function HomeScreen() {
   const [notiz, setNotiz] = useState<string | null>(null);
   const [gefolgt, setGefolgt] = useState<Set<string>>(new Set());
   const [kommentare, setKommentare] = useState<{ id: string; titel: string } | null>(null);
+  const [ungelesen, setUngelesen] = useState(0);
+
+  // Bei jedem Zurueckkommen neu zaehlen: wer die Glocke geleert hat, soll
+  // den Punkt nicht mehr sehen, und wer lange im Feed war, den neuen schon.
+  useFocusEffect(
+    useCallback(() => {
+      void api.unreadNotifications().then(setUngelesen).catch(() => undefined);
+    }, []),
+  );
 
   const zeige = useCallback((text: string) => {
     if (!text) return;
@@ -153,10 +162,29 @@ export function HomeScreen() {
     <View style={styles.kopfBereich}>
       <View style={styles.titelZeile}>
         <Text style={styles.titel}>Home</Text>
-        <Pressable onPress={() => void einladen()} hitSlop={8} style={styles.einladen}>
-          <Icon name="plus" size={14} color={color.signal.primary} />
-          <Text style={styles.einladenText}>Einladen</Text>
-        </Pressable>
+        <View style={styles.kopfKnoepfe}>
+          <Pressable onPress={() => void einladen()} hitSlop={8} style={styles.einladen}>
+            <Icon name="plus" size={14} color={color.signal.primary} />
+            <Text style={styles.einladenText}>Einladen</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              haptics.light();
+              setUngelesen(0);
+              router.push('/notifications');
+            }}
+            hitSlop={8}
+            style={styles.glocke}
+            accessibilityLabel={ungelesen > 0 ? `Benachrichtigungen, ${ungelesen} neu` : 'Benachrichtigungen'}
+          >
+            <Icon name="bell" size={22} color={color.ink.high} />
+            {ungelesen > 0 ? (
+              <View style={styles.glockePunkt}>
+                <Text style={styles.glockeZahl}>{ungelesen > 9 ? '9+' : ungelesen}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
       </View>
 
       {/* Das Schreibfeld - der wichtigste Knopf auf dem Bildschirm. */}
@@ -483,6 +511,21 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
   },
   einladenText: { ...type.meta, color: color.signal.primary },
+  kopfKnoepfe: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  glocke: { padding: 4 },
+  glockePunkt: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.signal.error,
+  },
+  glockeZahl: { ...type.meta, fontSize: 10, color: '#fff' },
 
   schreiben: {
     flexDirection: 'row',
