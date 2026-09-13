@@ -69,26 +69,47 @@ function nearestStep(pct: number): number {
   LANGUAGE_STEPS[0].pct as number);
 }
 
+/**
+ * Eine Zeile.
+ *
+ * `right` steht neben der Beschriftung, `unten` darunter ueber die ganze
+ * Breite. Der Unterschied ist nicht Geschmack: eine Reihe aus fuenf
+ * Auswahlknoepfen neben einem Text laesst dem Text etwa sechzig Pixel, und
+ * dann bricht "Sprache der Inhalte" auf vier Zeilen zu je einem halben Wort.
+ * Genau so stand es hier.
+ *
+ * Eine Breitenangabe haette das auch geloest und beim naechsten laengeren
+ * Wort wieder nicht. Etwas Breites gehoert unter die Beschriftung, nicht
+ * daneben.
+ */
 function Row({
   label,
   hint,
   right,
+  unten,
   onPress,
   danger,
+  erste,
 }: {
   label: string;
   hint?: string;
   right?: React.ReactNode;
+  unten?: React.ReactNode;
   onPress?: () => void;
   danger?: boolean;
+  /** Die erste Zeile einer Gruppe bekommt keine Trennlinie oben. */
+  erste?: boolean;
 }) {
   const content = (
-    <View style={styles.row}>
-      <View style={styles.rowText}>
-        <Text style={[styles.rowLabel, danger && { color: color.signal.error }]}>{label}</Text>
-        {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
+    <View style={[styles.row, !erste && styles.rowLinie]}>
+      <View style={styles.rowOben}>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowLabel, danger && { color: color.signal.error }]}>{label}</Text>
+          {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
+        </View>
+        {right}
       </View>
-      {right}
+      {unten ? <View style={styles.rowUnten}>{unten}</View> : null}
     </View>
   );
   if (!onPress) return content;
@@ -99,11 +120,20 @@ function Row({
   );
 }
 
+/**
+ * Eine Gruppe.
+ *
+ * Ohne Kasten. Vorher lag jede Gruppe in einem umrandeten, abgesetzten Feld -
+ * acht solche Felder untereinander sehen aus wie ein Formular, und ein
+ * Formular ist das Letzte, was man gestaltet hat, bevor man aufgehoert hat zu
+ * gestalten. Jetzt tragen Ueberschrift, Haarlinie und Abstand die Gliederung,
+ * genau wie im Kontrollzentrum.
+ */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
       <SectionTitle>{title}</SectionTitle>
-      <View style={styles.card}>{children}</View>
+      <View>{children}</View>
     </View>
   );
 }
@@ -253,7 +283,7 @@ export function SettingsScreen() {
 
         {/* --- Konto ---------------------------------------------------- */}
         <Section title="Konto">
-          <Row label="Benutzername" hint="Öffentlich auf der Rangliste" right={
+          <Row erste label="Benutzername" hint="Öffentlich auf der Rangliste" right={
             <Text style={styles.value}>@{profile.handle}</Text>
           } />
           <Row
@@ -272,7 +302,7 @@ export function SettingsScreen() {
 
         {/* --- Inhalte -------------------------------------------------- */}
         <Section title="Inhalte">
-          <Row label="Sprache" hint="Bestimmt, welche Karten du bekommst" right={
+          <Row erste label="Sprache" hint="Bestimmt, welche Karten du bekommst" right={
             <View style={styles.choices}>
               {SUPPORTED.map((lang: Language) => (
                 <Pressable
@@ -309,15 +339,15 @@ export function SettingsScreen() {
           <Row
             label="Sprache der Inhalte"
             hint={LANGUAGE_STEPS.find((s2) => s2.pct === nearestStep(profile.feed_english_pct))?.hint}
-            right={
-              <View style={styles.choices}>
+            unten={
+              <View style={styles.choicesBreit}>
                 {LANGUAGE_STEPS.map((step) => {
                   const on = nearestStep(profile.feed_english_pct) === step.pct;
                   return (
                     <Pressable
                       key={step.pct}
                       onPress={() => void patch({ feed_english_pct: step.pct })}
-                      style={[styles.choice, on && styles.choiceOn]}
+                      style={[styles.choice, styles.choiceBreit, on && styles.choiceOn]}
                       accessibilityLabel={step.hint}
                     >
                       <Text style={[styles.choiceText, on && { color: color.signal.primary }]}>
@@ -330,13 +360,17 @@ export function SettingsScreen() {
             }
           />
 
-          <Row label="Genug für heute" hint="Ab dieser Zahl bietet die App das Aufhören an" right={
-            <View style={styles.choices}>
+          <Row label="Genug für heute" hint="Ab dieser Zahl bietet die App das Aufhören an" unten={
+            <View style={styles.choicesBreit}>
               {GOALS.map((g) => (
                 <Pressable
                   key={g}
                   onPress={() => void patch({ daily_goal_cards: g })}
-                  style={[styles.choice, profile.daily_goal_cards === g && styles.choiceOn]}
+                  style={[
+                    styles.choice,
+                    styles.choiceBreit,
+                    profile.daily_goal_cards === g && styles.choiceOn,
+                  ]}
                 >
                   <Text style={[
                     styles.choiceText,
@@ -352,7 +386,7 @@ export function SettingsScreen() {
 
         {/* --- Sichtbarkeit --------------------------------------------- */}
         <Section title="Sichtbarkeit">
-          <Row
+          <Row erste
             label="Likes öffentlich zeigen"
             hint="Aus bedeutet: niemand sieht namentlich, was du likest. Der allgemeine Zähler auf der Karte läuft trotzdem mit."
             right={
@@ -380,7 +414,7 @@ export function SettingsScreen() {
 
         {/* --- Erinnerungen --------------------------------------------- */}
         <Section title="Erinnerungen">
-          <Row
+          <Row erste
             label="Fällige Wiederholungen"
             hint="Die Erinnerung, die tatsächlich beim Lernen hilft"
             right={
@@ -407,7 +441,7 @@ export function SettingsScreen() {
 
         {/* --- Push ------------------------------------------------------ */}
         <Section title="Benachrichtigungen">
-          <Row
+          <Row erste
             label="Neue Follower & geteilte Karten"
             hint={PUSH_HINT[push] ?? undefined}
             right={
@@ -448,7 +482,7 @@ export function SettingsScreen() {
 
         {/* --- Dieses Gerät --------------------------------------------- */}
         <Section title="Dieses Gerät">
-          <Row
+          <Row erste
             label="Haptisches Feedback"
             hint="Vibration bei Interaktionen"
             right={
@@ -516,7 +550,7 @@ export function SettingsScreen() {
 
         {/* --- Daten ----------------------------------------------------- */}
         <Section title="Deine Daten">
-          <Row
+          <Row erste
             label="Daten exportieren"
             hint="Alles über dich als JSON in die Zwischenablage (DSGVO Art. 15)"
             onPress={exportData}
@@ -532,7 +566,7 @@ export function SettingsScreen() {
         </Section>
 
         <Section title={`Über ${BRAND.name}`}>
-          <Row label="Version" right={<Text style={styles.value}>0.1.0 · Prototyp</Text>} />
+          <Row erste label="Version" right={<Text style={styles.value}>0.1.0 · Prototyp</Text>} />
           <Row label="Konto-ID" hint="Bei Fehlermeldungen hilfreich" right={
             <Text style={styles.mono} numberOfLines={1}>{profile.id.slice(0, 8)}…</Text>
           } />
@@ -552,25 +586,20 @@ const styles = StyleSheet.create({
   note: { ...type.body, fontSize: 14, color: color.signal.primary },
 
   section: { gap: space.sm },
-  card: {
-    borderRadius: radius.lg,
-    backgroundColor: color.bgElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
-    overflow: 'hidden',
-  },
 
-  row: {
+  row: { paddingVertical: space.md, gap: space.sm },
+  rowLinie: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.ink.faint,
+  },
+  rowOben: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: space.lg,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: color.bg,
-    minHeight: 54,
+    minHeight: 30,
   },
+  rowUnten: { paddingTop: 2 },
   rowText: { flex: 1, gap: 2 },
   rowLabel: { ...type.body, fontSize: 16, color: color.ink.high },
   rowHint: { ...type.meta, color: color.ink.low, lineHeight: 16 },
@@ -580,7 +609,9 @@ const styles = StyleSheet.create({
   soon: { ...type.meta, color: color.ink.low },
   chevron: { fontSize: 16, color: color.ink.low },
 
-  choices: { flexDirection: 'row', gap: 6 },
+  choices: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  /** Ueber die volle Breite, wenn die Auswahl unter der Beschriftung steht. */
+  choicesBreit: { flexDirection: 'row', gap: 6 },
   choice: {
     minWidth: 38,
     alignItems: 'center',
@@ -590,6 +621,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
   },
-  choiceOn: { borderColor: color.signal.primary },
+  choiceOn: { borderColor: color.signal.primary, backgroundColor: color.bgElevated },
+  choiceBreit: { flex: 1, paddingVertical: 8 },
   choiceText: { ...type.meta, color: color.ink.mid },
 });
