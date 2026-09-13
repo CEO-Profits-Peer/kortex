@@ -125,15 +125,27 @@ minderjährigen Zielgruppe die falsche Entscheidung.
 Einschalten:
 
 1. Cloudflare-Dashboard → **Analytics & Logs** → **Web Analytics** → *Add a
-   site* → `elycic.pages.dev`. Cloudflare zeigt danach einen **Token**.
-2. Den Token beim Bauen mitgeben — dann steht der Zähler in der
-   ausgelieferten `index.html`:
+   site* → `elycic.pages.dev` → **Update**. Cloudflare zeigt danach ein
+   JS-Schnipsel mit einem **Token** darin.
+2. Das Schnipsel (oder nur den Token) in `app/.env` schreiben — die Datei
+   steht in `.gitignore`:
 
-```bash
-CF_BEACON_TOKEN=dein-token npm run deploy:web
+```
+CF_BEACON_TOKEN=<Token oder das ganze Schnipsel>
 ```
 
-Ohne die Variable passiert nichts, und der Build enthält keine Zeile davon.
+Das war es. Jedes `npm run deploy:web` baut den Zähler von da an mit ein.
+Ohne den Eintrag enthält der Build keine Zeile davon.
+
+Der Token ist übrigens **kein Geheimnis** — er steht anschließend im
+Quelltext jeder ausgelieferten Seite. Er gehört trotzdem nicht ins Repo: was
+nicht drinsteht, muss man auch nicht zurückziehen.
+
+Für einen einmaligen Lauf geht auch eine Umgebungsvariable. **PowerShell:**
+
+```
+$env:CF_BEACON_TOKEN="dein-token"; npm run deploy:web
+```
 Das steckt in `scripts/finish_web.py`; absichtlich dort und nicht in einem
 Dashboard-Schalter: eine Zeile, die eine fremde Domain in jede Seite lädt,
 gehört dorthin, wo man sie im Repo sieht.

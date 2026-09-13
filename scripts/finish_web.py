@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -166,7 +167,45 @@ def add_service_worker(html: str) -> str:
 #
 # Ohne Token passiert gar nichts. Den Token gibt es unter
 # Cloudflare -> Analytics & Logs -> Web Analytics -> Add a site.
-BEACON_TOKEN = os.environ.get("CF_BEACON_TOKEN", "").strip()
+def _beacon_token() -> str:
+    """Den Cloudflare-Token finden - Umgebung zuerst, dann app/.env.
+
+    Zwei Wege, weil es zwei Situationen gibt: in einer CI-Umgebung setzt man
+    eine Variable, auf dem eigenen Rechner will man sie einmal hinschreiben
+    und nie wieder. app/.env ist dafuer der richtige Ort - die Datei steht in
+    .gitignore, das Repo ist oeffentlich, und alles ohne EXPO_PUBLIC_-Praefix
+    landet ohnehin nicht im Bundle.
+
+    Der Token ist uebrigens kein Geheimnis: er steht nachher in der
+    ausgelieferten index.html und damit im Quelltext jeder Seite. Er gehoert
+    trotzdem nicht ins Repo - was nicht drinsteht, muss man auch nicht
+    zurueckziehen, wenn Cloudflare die Bedeutung eines Tages aendert.
+
+    Angenommen wird beides: der blanke Token ODER das ganze Schnipsel, das
+    Cloudflare zum Kopieren anbietet. Wer "Click to copy" drueckt, hat das
+    Schnipsel in der Zwischenablage und nicht den Token darin - daran soll es
+    nicht scheitern.
+    """
+    roh = os.environ.get("CF_BEACON_TOKEN", "").strip()
+    if not roh:
+        env = ROOT / "app" / ".env"
+        if env.exists():
+            for zeile in env.read_text(encoding="utf-8").splitlines():
+                zeile = zeile.strip()
+                if zeile.startswith("CF_BEACON_TOKEN="):
+                    roh = zeile.split("=", 1)[1].strip().strip("\"'")
+                    break
+    if not roh:
+        return ""
+
+    # Ganzes Schnipsel eingefuegt? Dann den Token herausziehen.
+    treffer = re.search(r'"token"\s*:\s*"([0-9a-fA-F]{16,})"', roh)
+    if treffer:
+        return treffer.group(1)
+    return roh
+
+
+BEACON_TOKEN = _beacon_token()
 BEACON = """    <!-- Cloudflare Web Analytics: cookiefrei, ohne Wiedererkennung -->
     <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "%s"}'></script>
 """
