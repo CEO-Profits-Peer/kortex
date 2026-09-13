@@ -14,6 +14,7 @@ import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
 import type { CategoryDetail } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -86,7 +87,7 @@ export function CategoryScreen({ categoryId }: { categoryId: string }) {
       setDetail(d);
       setFollowing(d.is_following);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Kategorie nicht ladbar');
+      setError(fehlerText(e, 'Kategorie nicht ladbar'));
     }
   }, [categoryId]);
 

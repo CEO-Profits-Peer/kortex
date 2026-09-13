@@ -12,6 +12,7 @@ import { COUNTRIES, type Country } from './regions';
 
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
+import { fehlerText } from '@/lib/fehler';
 
 /**
  * Onboarding in drei Schritten: Land/Region, Geburtsjahr, Interessen.
@@ -74,7 +75,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
       analytics.onboardingDone(picked.length);
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Speichern fehlgeschlagen');
+      setError(fehlerText(e, 'Speichern fehlgeschlagen'));
       setBusy(false);
     }
   };

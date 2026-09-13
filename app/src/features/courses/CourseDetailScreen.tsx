@@ -11,6 +11,7 @@ import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
 import type { CourseDetail } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -33,7 +34,7 @@ export function CourseDetailScreen({ slug }: { slug: string }) {
     try {
       setCourse(await api.courseDetail(slug));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Kurs nicht ladbar');
+      setError(fehlerText(e, 'Kurs nicht ladbar'));
     }
   }, [slug]);
 

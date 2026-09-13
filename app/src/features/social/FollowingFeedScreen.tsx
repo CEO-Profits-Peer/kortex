@@ -20,6 +20,7 @@ import { Icon } from '@/components/Icon';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { FollowingItem } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -57,7 +58,7 @@ export function FollowingFeedScreen() {
       setItems(await api.followingFeed(30));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Konnte nicht geladen werden');
+      setError(fehlerText(e, 'Konnte nicht geladen werden'));
       setItems([]);
     }
   }, []);

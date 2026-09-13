@@ -11,6 +11,7 @@ import {
 import { Avatar } from '@/components/Avatar';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import {
@@ -62,7 +63,7 @@ export function AdminPeople({
       try {
         setTreffer(await suche(text));
       } catch (e) {
-        setFehler(e instanceof Error ? e.message : 'Suche ging nicht');
+        setFehler(fehlerText(e, 'Suche ging nicht'));
         setTreffer([]);
       } finally {
         setBusy(false);
@@ -85,7 +86,7 @@ export function AdminPeople({
       try {
         setPerson(await laden(handle));
       } catch (e) {
-        setFehler(e instanceof Error ? e.message : 'Person nicht ladbar');
+        setFehler(fehlerText(e, 'Person nicht ladbar'));
       } finally {
         setBusy(false);
       }

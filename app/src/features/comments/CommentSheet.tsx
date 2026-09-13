@@ -20,6 +20,7 @@ import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CommentAnswer, CommentQuestion } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -133,7 +134,7 @@ export function CommentSheet({
       onCountChange?.(rows.length);
     } catch (e) {
       setItems([]);
-      setNote(e instanceof Error ? e.message : 'Konnte nicht laden');
+      setNote(fehlerText(e, 'Konnte nicht laden'));
     }
   }, [contentId, onCountChange]);
 
@@ -164,7 +165,7 @@ export function CommentSheet({
         await load();
       }
     } catch (e) {
-      setNote(e instanceof Error ? e.message : 'Hat nicht geklappt.');
+      setNote(fehlerText(e, 'Hat nicht geklappt.'));
     } finally {
       setBusy(false);
     }

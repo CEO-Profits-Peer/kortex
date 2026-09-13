@@ -23,6 +23,8 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { MySocial, Stats } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
+import { beiWiederOnline } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -134,13 +136,19 @@ export function ProfileScreen() {
       setStats(st);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Profil konnte nicht geladen werden');
+      setError(fehlerText(e, 'Profil konnte nicht geladen werden'));
     }
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Offline gescheitert: sobald der Server wieder antwortet, von selbst neu.
+  useEffect(() => {
+    if (!error) return;
+    return beiWiederOnline(() => void load());
+  }, [error, load]);
 
   if (!social) {
     return (

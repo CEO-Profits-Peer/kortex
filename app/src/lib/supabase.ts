@@ -9,6 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
+import { beobachteterFetch } from './online';
+
 import type {
   AdminCategory,
   AdminData,
@@ -71,6 +73,10 @@ export const supabase = createClient(url ?? 'http://localhost', anonKey ?? 'miss
     // auf nativen Plattformen gibt es keine Redirect-URL zum Parsen.
     detectSessionInUrl: Platform.OS === 'web',
   },
+  // Jede Anfrage laeuft hier durch - daran erkennt die App, ob sie den Server
+  // erreicht (lib/online.ts). Eine Stelle statt 35 Bildschirmen, die je fuer
+  // sich raten muessten, ob ein Fehler ein Funkloch war.
+  global: { fetch: beobachteterFetch },
 });
 
 /**

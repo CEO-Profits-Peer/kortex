@@ -22,6 +22,8 @@ import { usePrefs } from '@/lib/prefs';
 import { sound } from '@/lib/sound';
 import { api } from '@/lib/supabase';
 import type { DuelQuestion, DuelResult } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
+import { beiWiederOnline, istNetzfehler } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -81,7 +83,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
       })
       .catch((e) => {
         if (!lebt) return;
-        setFehler(e instanceof Error ? e.message : 'Duell nicht ladbar');
+        setFehler(fehlerText(e, 'Duell nicht ladbar'));
         setPhase('fertig');
       });
     return () => {
@@ -116,7 +118,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
       })
       .catch((e) => {
         if (!lebt) return;
-        setFehler(e instanceof Error ? e.message : 'Fragen nicht ladbar');
+        setFehler(fehlerText(e, 'Fragen nicht ladbar'));
         setPhase('fertig');
       });
     return () => {
@@ -124,14 +126,43 @@ export function DuelScreen({ duelId }: { duelId: string }) {
     };
   }, [phase, fragen.length, duelId]);
 
+  /**
+   * Abgeben - und im Funkloch nicht verlieren.
+   *
+   * Die Antworten liegen in einer Ref und bleiben dort, solange der
+   * Bildschirm offen ist. Scheitert die Abgabe am Netz, wird sie wiederholt,
+   * sobald der Server antwortet. Die Uhr auf dem Server laeuft dabei weiter,
+   * und das steht auch so da: 15 Sekunden Nachsicht decken ein kurzes Loch,
+   * keine zehn Minuten U-Bahn. Alles andere waere eine Luecke, durch die man
+   * zum Nachschlagen einfach das WLAN ausschaltet.
+   */
+  const nachholen = useRef(false);
   const abgeben = useCallback(async () => {
     setPhase('fertig');
     try {
       setErgebnis(await api.duelSubmit(duelId, antworten.current));
+      setFehler(null);
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : 'Abgabe ging nicht');
+      if (istNetzfehler(e)) {
+        nachholen.current = true;
+        setFehler(
+          'Keine Verbindung. Deine Antworten werden abgegeben, sobald du wieder Netz hast — lass diese Seite dabei offen. Die Uhr läuft auf dem Server weiter.',
+        );
+      } else {
+        setFehler(fehlerText(e, 'Abgabe ging nicht'));
+      }
     }
   }, [duelId]);
+
+  useEffect(
+    () =>
+      beiWiederOnline(() => {
+        if (!nachholen.current) return;
+        nachholen.current = false;
+        void abgeben();
+      }),
+    [abgeben],
+  );
 
   const weiter = useCallback(
     (gewaehlt: number) => {

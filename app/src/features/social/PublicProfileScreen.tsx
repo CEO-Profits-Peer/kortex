@@ -13,6 +13,7 @@ import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { PublicProfile, RepostRef } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -73,7 +74,7 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
       setP(await api.publicProfile(handle));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Profil nicht gefunden');
+      setError(fehlerText(e, 'Profil nicht gefunden'));
     }
   }, [handle]);
 
@@ -100,8 +101,9 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
       const id = await api.duelStart(p.id);
       router.push(`/duel/${id}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      setDuellFehler(msg || 'Duell ging nicht');
+      // Die Saetze aus 0069 kommen als P0001 an und gehen woertlich durch;
+      // ein Funkloch wird zu einem Satz statt zu "Failed to fetch".
+      setDuellFehler(fehlerText(e, 'Duell ging nicht'));
     } finally {
       setDuellBusy(false);
     }

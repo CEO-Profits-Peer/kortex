@@ -32,6 +32,7 @@ import { type PushState, disablePush, enablePush, pushState } from '@/lib/push';
 import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { signOut } from '@/lib/useSession';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -194,7 +195,7 @@ export function SettingsScreen() {
         }
       })
       .catch((e: unknown) =>
-        setPushError(e instanceof Error ? e.message : 'Hat nicht geklappt'),
+        setPushError(fehlerText(e, 'Hat nicht geklappt')),
       )
       .finally(() => setPushBusy(false));
   };
@@ -205,7 +206,7 @@ export function SettingsScreen() {
       setProfile(await api.updateSettings(p));
       haptics.select();
     } catch (e) {
-      setNote(e instanceof Error ? e.message : 'Speichern fehlgeschlagen');
+      setNote(fehlerText(e, 'Speichern fehlgeschlagen'));
     } finally {
       setBusy(false);
     }
@@ -218,7 +219,7 @@ export function SettingsScreen() {
       await Clipboard.setStringAsync(JSON.stringify(data, null, 2));
       setNote('Alle deine Daten liegen jetzt als JSON in der Zwischenablage.');
     } catch (e) {
-      setNote(e instanceof Error ? e.message : 'Export fehlgeschlagen');
+      setNote(fehlerText(e, 'Export fehlgeschlagen'));
     } finally {
       setBusy(false);
     }
@@ -239,7 +240,7 @@ export function SettingsScreen() {
               await api.deleteMyAccount();
               await signOut();
             } catch (e) {
-              setNote(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
+              setNote(fehlerText(e, 'Löschen fehlgeschlagen'));
             }
           },
         },

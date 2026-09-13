@@ -19,6 +19,8 @@ import { DailyBanner } from '@/features/daily/DailyBanner';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CourseSummary } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
+import { beiWiederOnline } from '@/lib/online';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -41,7 +43,7 @@ export function CoursesScreen() {
       setCourses(await api.listCourses());
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Kurse nicht ladbar');
+      setError(fehlerText(e, 'Kurse nicht ladbar'));
       setCourses([]);
     }
   }, []);
@@ -49,6 +51,12 @@ export function CoursesScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Offline gescheitert: sobald der Server wieder antwortet, von selbst neu.
+  useEffect(() => {
+    if (!error) return;
+    return beiWiederOnline(() => void load());
+  }, [error, load]);
 
   if (courses === null) {
     return (

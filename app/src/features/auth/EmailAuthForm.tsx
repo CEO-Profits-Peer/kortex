@@ -4,6 +4,8 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { Button } from '@/components/Button';
 import { haptics } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
+import { OFFLINE_TEXT } from '@/lib/fehler';
+import { istNetzfehler } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -100,7 +102,11 @@ export function EmailAuthForm({
         onDone?.({ needsConfirmation: false });
       }
     } catch (e) {
-      setError(translate(e instanceof Error ? e.message : 'Hat nicht geklappt'));
+      setError(
+        istNetzfehler(e)
+          ? OFFLINE_TEXT
+          : translate(e instanceof Error ? e.message : 'Hat nicht geklappt'),
+      );
       haptics.warning();
     } finally {
       setBusy(false);

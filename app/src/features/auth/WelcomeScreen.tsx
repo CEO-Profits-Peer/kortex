@@ -11,6 +11,7 @@ import { GoogleButton } from '@/features/auth/GoogleButton';
 import { BRAND } from '@/lib/brand';
 import { takeOAuthError } from '@/lib/oauthReturn';
 import { signInAnonymously } from '@/lib/useSession';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -47,7 +48,7 @@ export function WelcomeScreen() {
         /anonymous/i.test(msg)
           ? 'Anonyme Anmeldung ist im Supabase-Dashboard noch nicht aktiviert: ' +
               'Authentication → Sign In / Providers → Anonymous einschalten.'
-          : msg,
+          : fehlerText(e, 'Anmeldung fehlgeschlagen'),
       );
       setBusy(false);
     }

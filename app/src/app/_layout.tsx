@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { RewardLayer } from '@/components/RewardLayer';
 /**
  * Nur wegen der Nebenwirkung geladen, und die ist wichtig: das Modul
@@ -25,6 +26,7 @@ import { OnboardingFlow } from '@/features/onboarding/OnboardingFlow';
 import { WhatsNew, useWhatsNew } from '@/features/whatsnew/WhatsNew';
 import { analytics } from '@/lib/analytics';
 import { eventBuffer } from '@/lib/eventBuffer';
+import { beiWiederOnline } from '@/lib/online';
 import { loadPrefs } from '@/lib/prefs';
 import '@/lib/i18n';
 import { api, configError } from '@/lib/supabase';
@@ -131,7 +133,14 @@ export default function RootLayout() {
     void loadPrefs();
     analytics.init();
     analytics.appOpened();
-    return () => eventBuffer.dispose();
+    // Was offline gelesen wurde, liegt im Puffer. Der schickt von sich aus
+    // erst ab zehn Ereignissen oder beim Wechsel in den Hintergrund - wer
+    // nach dem Funkloch einfach weiterliest, wuerde also noch lange warten.
+    const aus = beiWiederOnline(() => void eventBuffer.flush());
+    return () => {
+      aus();
+      eventBuffer.dispose();
+    };
   }, []);
 
   if (!fontsReady) return null;
@@ -144,6 +153,7 @@ export default function RootLayout() {
         {/* Liegt ueber allem und faengt jede Belohnung ab, egal von welchem
             Bildschirm sie kommt. Siehe lib/rewards.ts. */}
         <RewardLayer />
+        <OfflineBanner />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

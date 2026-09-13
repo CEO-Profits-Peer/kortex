@@ -37,6 +37,7 @@ import { usePrefs } from '@/lib/prefs';
 import { shareCard } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { ContentItem, Source } from '@/lib/types.db';
+import { istNetzfehler } from '@/lib/online';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 type Props = {
@@ -311,7 +312,11 @@ function ContentCardBase({
       // was gar nicht mehr gefordert ist.
       const msg = e instanceof Error ? e.message : '';
       setShareNote(
-        msg.includes('not read') ? 'Schau sie dir kurz an' : 'Hat nicht geklappt',
+        msg.includes('not read')
+          ? 'Schau sie dir kurz an'
+          : istNetzfehler(e)
+            ? 'Offline — Empfehlen braucht Netz'
+            : 'Hat nicht geklappt',
       );
     }
     setTimeout(() => setShareNote(null), 2600);

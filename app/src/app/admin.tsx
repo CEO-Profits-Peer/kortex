@@ -19,6 +19,7 @@ import { AdminPeople } from '@/features/admin/AdminPeople';
 import type { AdminCategory, AdminData } from '@/features/admin/types';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -83,7 +84,7 @@ export default function Admin() {
       // das weiter und raet nicht daran herum.
       const msg = e instanceof Error ? e.message : '';
       setFehler(
-        /kein Zugang/i.test(msg) ? 'Kein Zugang.' : 'Hat nicht geklappt. Später nochmal.',
+        /kein Zugang/i.test(msg) ? 'Kein Zugang.' : fehlerText(e, 'Hat nicht geklappt. Später nochmal.'),
       );
     } finally {
       setBusy(false);

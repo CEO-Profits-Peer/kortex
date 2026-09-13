@@ -21,6 +21,8 @@ import { stopMusic } from '@/lib/music';
 import { stopSpeech } from '@/lib/speech';
 import { api, configError, supabase } from '@/lib/supabase';
 import type { Category, ContentItem, Source } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
+import { beiWiederOnline, useOnline } from '@/lib/online';
 import { color, space, type } from '@/theme/tokens';
 
 import { FeedTutorial, useFeedTutorial } from './FeedTutorial';
@@ -121,6 +123,7 @@ export function FeedScreen({
   // hereinkommt, bekommt keine Bedienungsanleitung vorgesetzt - er ist einem
   // Link gefolgt und will die Karte sehen.
   const tutorial = useFeedTutorial();
+  const online = useOnline();
 
   /**
    * Tab gewechselt: Stimme aus, Flaeche aus, Uhr an.
@@ -292,12 +295,20 @@ export function FeedScreen({
       });
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Feed konnte nicht geladen werden');
+      setError(fehlerText(e, 'Feed konnte nicht geladen werden'));
     } finally {
       loadingMore.current = false;
       setLoading(false);
     }
   }, [loader]);
+
+  // Offline gescheitert? Dann nicht auf einen Tipp warten: sobald der Server
+  // wieder antwortet, laedt der Feed von selbst. Wer im Tunnel war, soll
+  // danach nicht erst herausfinden muessen, dass er neu laden darf.
+  useEffect(() => {
+    if (!error) return;
+    return beiWiederOnline(() => void loadMore());
+  }, [error, loadMore]);
 
   useEffect(() => {
     void loadMore();
@@ -369,7 +380,7 @@ export function FeedScreen({
     return (
       <GridBackground>
         <View style={styles.center}>
-          <Text style={styles.errorTitle}>Kein Feed</Text>
+          <Text style={styles.errorTitle}>{online ? 'Kein Feed' : 'Offline'}</Text>
           <Text style={styles.errorBody}>{error}</Text>
         </View>
       </GridBackground>

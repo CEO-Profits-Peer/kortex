@@ -11,6 +11,7 @@ import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { PersonHit } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -45,7 +46,7 @@ export function PeopleListScreen({
       .then((r) => alive && setPeople(r))
       .catch((e) => {
         if (!alive) return;
-        setError(e instanceof Error ? e.message : 'Liste nicht ladbar');
+        setError(fehlerText(e, 'Liste nicht ladbar'));
         setPeople([]);
       });
     return () => {

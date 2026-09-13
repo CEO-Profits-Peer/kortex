@@ -10,6 +10,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { DuelListEntry } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -47,7 +48,7 @@ export function DuelsScreen() {
       setDuelle(await api.duelList());
       setFehler(null);
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : 'Duelle nicht ladbar');
+      setFehler(fehlerText(e, 'Duelle nicht ladbar'));
       setDuelle([]);
     }
   }, []);

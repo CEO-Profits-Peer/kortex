@@ -24,6 +24,7 @@ import { personName } from '@/lib/name';
 import { takeOAuthError } from '@/lib/oauthReturn';
 import { api, supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -76,7 +77,7 @@ export function AccountScreen() {
       haptics.success();
       setTimeout(() => setNote(null), 2000);
     } catch (e) {
-      setNote(e instanceof Error ? e.message : 'Speichern fehlgeschlagen');
+      setNote(fehlerText(e, 'Speichern fehlgeschlagen'));
     } finally {
       setBusy(false);
     }

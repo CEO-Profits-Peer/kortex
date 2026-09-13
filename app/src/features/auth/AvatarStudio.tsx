@@ -20,6 +20,7 @@ import { haptics } from '@/lib/haptics';
 import { pickAvatarImage } from '@/lib/pickImage';
 import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -89,7 +90,7 @@ export function AvatarStudio() {
       haptics.success();
       flash('Profilbild gespeichert');
     } catch (e) {
-      flash(e instanceof Error ? e.message : 'Speichern fehlgeschlagen');
+      flash(fehlerText(e, 'Speichern fehlgeschlagen'));
     } finally {
       setBusy(false);
     }
@@ -123,7 +124,7 @@ export function AvatarStudio() {
         haptics.success();
         flash('Foto uebernommen');
       })
-      .catch((e: unknown) => flash(e instanceof Error ? e.message : 'Hochladen fehlgeschlagen'))
+      .catch((e: unknown) => flash(fehlerText(e, 'Hochladen fehlgeschlagen')))
       .finally(() => setBusy(false));
   };
 
@@ -136,7 +137,7 @@ export function AvatarStudio() {
       await api.deleteAvatar(old);
       flash('Foto entfernt — dein Muster ist wieder da');
     } catch (e) {
-      flash(e instanceof Error ? e.message : 'Hat nicht geklappt');
+      flash(fehlerText(e, 'Hat nicht geklappt'));
     } finally {
       setBusy(false);
     }

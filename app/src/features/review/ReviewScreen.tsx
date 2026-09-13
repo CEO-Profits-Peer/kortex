@@ -11,6 +11,7 @@ import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { api } from '@/lib/supabase';
 import type { DueReview } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -47,7 +48,7 @@ export function ReviewScreen() {
         analytics.reviewOpened(q.length);
       })
       .catch((e) => {
-        setError(e instanceof Error ? e.message : 'Wiederholungen nicht ladbar');
+        setError(fehlerText(e, 'Wiederholungen nicht ladbar'));
         setQueue([]);
       });
   }, []);

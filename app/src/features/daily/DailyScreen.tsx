@@ -20,6 +20,7 @@ import type {
   DailyQuestion,
   DailySubmission,
 } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -82,7 +83,7 @@ export function DailyScreen() {
         // durchzuklicken waere sinnlos.
         if (c.result) void loadBoard();
       })
-      .catch((e) => alive && setError(e instanceof Error ? e.message : 'nicht ladbar'));
+      .catch((e) => alive && setError(fehlerText(e, 'nicht ladbar')));
     return () => {
       alive = false;
     };
@@ -127,7 +128,7 @@ export function DailyScreen() {
       if (r.xp) rewards.xp(r.xp);
       void loadBoard();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Abgeben fehlgeschlagen');
+      setError(fehlerText(e, 'Abgeben fehlgeschlagen'));
       // Antworten zuruecknehmen, damit man es nochmal versuchen kann.
       setAnswers(answers);
     } finally {

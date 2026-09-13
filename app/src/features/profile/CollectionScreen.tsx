@@ -16,6 +16,7 @@ import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { api } from '@/lib/supabase';
 import type { CollectionEntry } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -56,7 +57,7 @@ export function CollectionScreen({ kind }: { kind: 'reposts' | 'likes' }) {
         setMehr(seite.length === SEITE);
         setFehler(null);
       } catch (e) {
-        setFehler(e instanceof Error ? e.message : 'Liste nicht ladbar');
+        setFehler(fehlerText(e, 'Liste nicht ladbar'));
         setItems((prev) => prev ?? []);
       } finally {
         laeuft.current = false;

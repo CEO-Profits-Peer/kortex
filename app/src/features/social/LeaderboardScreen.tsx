@@ -18,6 +18,7 @@ import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { LeaderboardRow } from '@/lib/types.db';
+import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -55,7 +56,7 @@ export function LeaderboardScreen() {
       setRows(await api.leaderboard(s, 50));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Rangliste nicht ladbar');
+      setError(fehlerText(e, 'Rangliste nicht ladbar'));
       setRows([]);
     }
   }, []);
