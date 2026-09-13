@@ -167,6 +167,12 @@ def add_service_worker(html: str) -> str:
 #
 # Ohne Token passiert gar nichts. Den Token gibt es unter
 # Cloudflare -> Analytics & Logs -> Web Analytics -> Add a site.
+#
+# `type="module"` und nicht `defer`: das ist die Form, die Cloudflare derzeit
+# selbst zum Kopieren anbietet. Beides laedt verzoegert und beides
+# funktioniert - aber wenn der Zaehler eines Tages nicht mehr geht, soll das,
+# was hier steht, Zeichen fuer Zeichen dem entsprechen, was im Dashboard
+# danebensteht. Sonst sucht man den Unterschied und es war keiner.
 def _beacon_token() -> str:
     """Den Cloudflare-Token finden - Umgebung zuerst, dann app/.env.
 
@@ -207,7 +213,7 @@ def _beacon_token() -> str:
 
 BEACON_TOKEN = _beacon_token()
 BEACON = """    <!-- Cloudflare Web Analytics: cookiefrei, ohne Wiedererkennung -->
-    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "%s"}'></script>
+    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "%s"}'></script>
 """
 
 
