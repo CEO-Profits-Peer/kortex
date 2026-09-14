@@ -62,6 +62,27 @@ const PLATZHALTER: Record<PostArt, string> = {
   lab: 'Etwas dazu sagen (freiwillig)',
 };
 
+/** Eine Karte zur Auswahl im Stapel. */
+type Wahl = { content_id: string; title: string; category: string };
+
+function WahlZeile({ k, nr, onPress }: { k: Wahl; nr: number; onPress: () => void }) {
+  const an = nr >= 0;
+  return (
+    <Pressable onPress={onPress} style={[styles.wahlKarte, an && styles.wahlKarteAn]}>
+      <View style={[styles.nummer, an && styles.nummerAn]}>
+        <Text style={[styles.nummerText, an && { color: color.bg }]}>{an ? nr + 1 : ''}</Text>
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={styles.wahlTitel} numberOfLines={2}>
+          {k.title}
+        </Text>
+        {k.category ? <Text style={styles.wahlTag}>#{k.category.split('.').pop()}</Text> : null}
+      </View>
+      {an ? <Icon name="close" size={13} color={color.ink.low} /> : <Icon name="plus" size={14} color={color.signal.primary} />}
+    </Pressable>
+  );
+}
+
 function leereOptionen(art: PostArt): string[] {
   return art === 'quiz' ? ['', '', ''] : ['', ''];
 }
@@ -100,6 +121,10 @@ export function ComposeScreen() {
   const [richtig, setRichtig] = useState<number | null>(null);
   const [karten, setKarten] = useState<string[]>([]);
   const [auswahl, setAuswahl] = useState<CollectionEntry[] | null>(null);
+  // Stapel: Suche ueber ALLE Karten, nicht nur die eigenen Likes.
+  const [kartenSuche, setKartenSuche] = useState('');
+  const [treffer, setTreffer] = useState<Wahl[] | null>(null);
+  const [bekannt, setBekannt] = useState<Record<string, Wahl>>({});
   const [busy, setBusy] = useState(false);
   const [notiz, setNotiz] = useState<string | null>(null);
   const [original, setOriginal] = useState<Post | null>(null);
@@ -142,6 +167,66 @@ export function ComposeScreen() {
         setAuswahl([...je.values()]);
       });
   }, [art, auswahl]);
+
+  // Suche ueber alle Karten (search_all, dieselbe wie im Such-Tab), entprellt.
+  useEffect(() => {
+    if (art !== 'stapel') return;
+    const q = kartenSuche.trim();
+    if (q.length < 2) {
+      setTreffer(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      void api
+        .search(q, 30)
+        .then((hits) =>
+          setTreffer(
+            hits
+              .filter((h) => h.kind === 'content')
+              .map((h) => ({
+                content_id: h.id,
+                title: h.title,
+                category: typeof h.meta?.category === 'string' ? h.meta.category : '',
+              })),
+          ),
+        )
+        .catch(() => setTreffer([]));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [art, kartenSuche]);
+
+  // Titel merken, damit "Ausgewählt" auch Karten zeigt, die gerade nicht in
+  // der Liste darunter stehen - etwa aus einer frueheren Suche.
+  useEffect(() => {
+    const neu: Record<string, Wahl> = {};
+    [...(auswahl ?? []), ...(treffer ?? [])].forEach((k) => {
+      neu[k.content_id] = { content_id: k.content_id, title: k.title, category: k.category };
+    });
+    if (Object.keys(neu).length) setBekannt((alt) => ({ ...alt, ...neu }));
+  }, [auswahl, treffer]);
+
+  // Ein Entwurf kann Karten enthalten, deren Titel hier niemand kennt.
+  // Jede Kennung nur EINMAL anfragen: eine zurueckgezogene Karte kommt nie
+  // zurueck, und ohne diese Merkliste loeste jede Antwort die naechste
+  // Anfrage aus - eine Schleife ohne Ende.
+  const angefragt = useRef(new Set<string>());
+  useEffect(() => {
+    const fehlen = karten.filter((id) => !bekannt[id] && !angefragt.current.has(id));
+    if (fehlen.length === 0) return;
+    fehlen.forEach((id) => angefragt.current.add(id));
+    void api
+      .contentByIds(fehlen)
+      .then((items) =>
+        setBekannt((alt) => {
+          const n = { ...alt };
+          items.forEach((c) => {
+            n[c.id] = { content_id: c.id, title: c.title, category: c.primary_category_id };
+          });
+          return n;
+        }),
+      )
+      .catch(() => undefined);
+  }, [karten, bekannt]);
 
   // Beim Verlassen ohne Posten: als Entwurf behalten. Ueber eine Ref, damit
   // der Abbau den LETZTEN Stand sieht, nicht den vom ersten Rendern.
@@ -347,36 +432,70 @@ export function ComposeScreen() {
           {/* --- Stapel ------------------------------------------------------------ */}
           {art === 'stapel' ? (
             <View style={styles.optionen}>
-              <Text style={styles.abschnitt}>
-                Karten wählen · {karten.length} von 2–10 · aus deinen Likes und Empfehlungen
-              </Text>
-              {auswahl === null ? (
-                <ActivityIndicator color={color.ink.low} />
-              ) : auswahl.length === 0 ? (
-                <Text style={styles.leer}>
-                  Noch keine Likes. Like im Feed ein paar Karten – dann kannst du sie hier bündeln.
-                </Text>
+              <View style={styles.suche}>
+                <Icon name="search" size={16} color={color.ink.low} />
+                <TextInput
+                  value={kartenSuche}
+                  onChangeText={setKartenSuche}
+                  placeholder="Alle Karten durchsuchen"
+                  placeholderTextColor={color.ink.low}
+                  style={styles.sucheEingabe}
+                  returnKeyType="search"
+                />
+                {kartenSuche ? (
+                  <Pressable onPress={() => setKartenSuche('')} hitSlop={10} accessibilityLabel="Suche leeren">
+                    <Icon name="close" size={14} color={color.ink.low} />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {/* Ausgewählt - in der Reihenfolge, in der der Stapel abläuft. */}
+              {karten.length > 0 ? (
+                <>
+                  <Text style={styles.abschnitt}>Ausgewählt · {karten.length} von 2–10</Text>
+                  {karten.map((id, i) => (
+                    <WahlZeile
+                      key={id}
+                      k={bekannt[id] ?? { content_id: id, title: 'Karte', category: '' }}
+                      nr={i}
+                      onPress={() => karteUmschalten(id)}
+                    />
+                  ))}
+                </>
               ) : (
-                auswahl.map((k) => {
-                  const nr = karten.indexOf(k.content_id);
-                  return (
-                    <Pressable
-                      key={k.content_id}
-                      onPress={() => karteUmschalten(k.content_id)}
-                      style={[styles.wahlKarte, nr >= 0 && styles.wahlKarteAn]}
-                    >
-                      <View style={[styles.nummer, nr >= 0 && styles.nummerAn]}>
-                        <Text style={[styles.nummerText, nr >= 0 && { color: color.bg }]}>{nr >= 0 ? nr + 1 : ''}</Text>
-                      </View>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text style={styles.wahlTitel} numberOfLines={2}>
-                          {k.title}
-                        </Text>
-                        <Text style={styles.wahlTag}>#{k.category.split('.').pop()}</Text>
-                      </View>
-                    </Pressable>
-                  );
-                })
+                <Text style={styles.abschnitt}>Wähle 2 bis 10 Karten</Text>
+              )}
+
+              {kartenSuche.trim().length >= 2 ? (
+                <>
+                  <Text style={styles.abschnitt}>Treffer</Text>
+                  {treffer === null ? (
+                    <ActivityIndicator color={color.ink.low} />
+                  ) : treffer.filter((k) => !karten.includes(k.content_id)).length === 0 ? (
+                    <Text style={styles.leer}>Keine weitere Karte zu „{kartenSuche.trim()}".</Text>
+                  ) : (
+                    treffer
+                      .filter((k) => !karten.includes(k.content_id))
+                      .map((k) => <WahlZeile key={k.content_id} k={k} nr={-1} onPress={() => karteUmschalten(k.content_id)} />)
+                  )}
+                </>
+              ) : (
+                <>
+                  <Text style={styles.abschnitt}>Aus deinen Likes und Empfehlungen</Text>
+                  {auswahl === null ? (
+                    <ActivityIndicator color={color.ink.low} />
+                  ) : auswahl.filter((k) => !karten.includes(k.content_id)).length === 0 ? (
+                    <Text style={styles.leer}>
+                      {auswahl.length === 0
+                        ? 'Noch keine Likes – such oben nach Karten.'
+                        : 'Alle gewählt. Such oben nach weiteren Karten.'}
+                    </Text>
+                  ) : (
+                    auswahl
+                      .filter((k) => !karten.includes(k.content_id))
+                      .map((k) => <WahlZeile key={k.content_id} k={k} nr={-1} onPress={() => karteUmschalten(k.content_id)} />)
+                  )}
+                </>
               )}
             </View>
           ) : null}
@@ -502,6 +621,24 @@ const styles = StyleSheet.create({
   dazuText: { ...type.label, fontSize: 14, color: color.signal.primary },
 
   leer: { ...type.body, fontSize: 14, color: color.ink.mid },
+  suche: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  sucheEingabe: {
+    flex: 1,
+    ...type.body,
+    fontSize: 15,
+    color: color.ink.max,
+    paddingVertical: 10,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+  },
   wahlKarte: {
     flexDirection: 'row',
     alignItems: 'center',
