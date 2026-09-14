@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { ErwaehnungsText } from '@/components/Erwaehnungen';
+import { PostInhalt, VERB } from '@/features/posts/PostArten';
 import { Icon, type IconName } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { sharePost } from '@/lib/share';
@@ -204,9 +205,8 @@ export function PostKarte({
     ? 'teilt einen Beitrag'
     : post.karte
       ? 'empfiehlt eine Karte'
-      : post.art === 'frage'
-        ? 'fragt'
-        : null;
+      : (VERB[post.art] ?? null);
+  const frageStil = post.art === 'frage' || post.art === 'umfrage' || post.art === 'quiz';
 
   return (
     <View style={styles.karte}>
@@ -214,9 +214,11 @@ export function PostKarte({
 
       {post.body ? (
         <Pressable onPress={oeffnen} disabled={imDetail}>
-          <ErwaehnungsText text={post.body} style={[styles.text, post.art === 'frage' && styles.frage]} />
+          <ErwaehnungsText text={post.body} style={[styles.text, frageStil && styles.frage]} />
         </Pressable>
       ) : null}
+
+      <PostInhalt postId={post.id} art={post.art} daten={post.daten} istMeins={post.ist_meins} onNotiz={onNotiz} />
 
       {post.karte ? <KartenVerweis karte={post.karte} von={post.wer.handle} /> : null}
 
@@ -229,6 +231,13 @@ export function PostKarte({
           {post.original.body ? (
             <ErwaehnungsText text={post.original.body} style={styles.originalText} numberOfLines={6} />
           ) : null}
+          <PostInhalt
+            postId={post.original.id}
+            art={post.original.art}
+            daten={post.original.daten}
+            istMeins={post.original.wer.ich === true}
+            onNotiz={onNotiz}
+          />
           {post.original.karte ? <KartenVerweis karte={post.original.karte} /> : null}
         </Pressable>
       ) : null}

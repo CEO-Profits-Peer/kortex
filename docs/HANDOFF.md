@@ -273,6 +273,27 @@ nothing in react-native-web), second tap on Home/Profile tab = top + reload,
 silent reload after 30 s away; `/statistik`; Following/Explore switch in Home;
 comment links `/post/ID?kommentar=CID`.
 
+## 0086–0088 (2026-09-14, applied via CLI)
+
+- `0086_erwaehnungen.sql` – @handle mentions: bell notification (max 10 per
+  text, only people who may see the post). The app renders every @handle as a
+  link (`components/Erwaehnungen.tsx`) and suggests people while typing.
+- `0087_wiederholen_ueberblick.sql` – `my_review_overview()` for the explained
+  empty state of the review screen (the button "did nothing").
+- `0088_erstellen.sql` – post kinds `umfrage` (2–4 options), `quiz` (3 options,
+  answer in `post_quiz_loesung`, returned only after answering), `stapel` (2–10
+  approved cards), `lab` (tool + INPUTS only; the app recomputes the result in
+  `features/lab/rechnen.ts` on every render). `posts.daten`, `post_stimmen`,
+  `post_abstimmen()`, `lab_anker_eintragen()`. `create_post` has a 5th param
+  `p_daten`. Self-test creates one of each and rolls back.
+
+App: Studio = switch "Erstellen | Lernen" (decision: option B). Erstellen shows
+Neu (6 kinds), Entwürfe (device-only, `lib/entwuerfe.ts`, saved when leaving the
+composer without posting), Von dir, LAB (7 tools at `/lab/[id]`). Stack viewer
+`/stapel/[id]`. Still to do: LAB tools Inflation, Brutto→Netto, Wege & CO₂ need
+official, cited tables first. Open finding (spawned as separate task): feed
+functions return `quiz_items` incl. `correct_index` to the client.
+
 ## Backlog after that
 
 - **More courses** (multi-card structured sequences; `features/courses`).

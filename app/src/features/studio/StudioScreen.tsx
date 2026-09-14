@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,38 +17,80 @@ import { GridBackground } from '@/components/GridBackground';
 import { Icon, type IconName } from '@/components/Icon';
 import { TabHint, useTabHint } from '@/components/TabHint';
 import { DailyBanner } from '@/features/daily/DailyBanner';
+import { BALD, WERKZEUGE } from '@/features/lab/rechnen';
+import { wann } from '@/features/posts/PostParts';
+import { entwurfLoeschen, useEntwuerfe } from '@/lib/entwuerfe';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { beiWiederOnline } from '@/lib/online';
 import { api } from '@/lib/supabase';
-import type { CollectionEntry, CourseSummary } from '@/lib/types.db';
+import type { CourseSummary, Post, PostArt } from '@/lib/types.db';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
- * Studio - der Tab, in dem man selbst etwas tut.
+ * Studio - mit einem Umschalter: Erstellen | Lernen (entschieden: Option B).
  *
- * War vorher "Kurse", und Kurse allein trugen keinen Tab. Jetzt oben das
- * Erstellen - Beitrag, Frage, eine gelikte Karte weiterempfehlen -, darunter
- * alles, wofuer man sich absichtlich hinsetzt: Wiederholung, Duelle,
- * Tagesaufgabe, Kurse.
+ * Vorher stand alles untereinander: Beitrag, Frage, Karte empfehlen,
+ * Wiederholen, Duelle, Tagesaufgabe, Kurse. "Kurse & tägliche Fragen,
+ * Empfehlungen sind nicht dasselbe wie der Erstell-Hub" - richtig: das eine
+ * macht man, das andere tut man fuer sich.
  *
- * Das Erstellen steht OBEN, weil es der Grund fuer den Namen und das Plus im
- * Tab ist. Die erste Fassung hatte es nur im Namen - "man kann im Studio
- * noch nicht wirklich Posts erstellen" war die richtige Rueckmeldung darauf.
+ * Erstellen, in dieser Reihenfolge, weil man es in dieser Reihenfolge braucht:
+ *   Neu        alle Arten auf einen Blick, je ein Wort
+ *   Entwürfe   nur wenn es welche gibt - dann oft das, weswegen man kommt
+ *   Von dir    was schon draussen ist, mit Likes und Kommentaren
+ *   LAB        die Werkzeuge
+ *
+ * "Karte empfehlen" ist hier weg: das geht an jeder Karte (Repost), und
+ * mehrere Karten zusammen sind jetzt der Stapel.
  */
+
+type Ansicht = 'erstellen' | 'lernen';
+
+const NEU: { art: PostArt | 'lab'; label: string; icon: IconName }[] = [
+  { art: 'post', label: 'Beitrag', icon: 'plus' },
+  { art: 'frage', label: 'Frage', icon: 'comment' },
+  { art: 'umfrage', label: 'Umfrage', icon: 'leaderboard' },
+  { art: 'quiz', label: 'Quiz', icon: 'check' },
+  { art: 'stapel', label: 'Stapel', icon: 'lesson' },
+  { art: 'lab', label: 'LAB', icon: 'interactive' },
+];
+
+const ART_LABEL: Record<PostArt, string> = {
+  post: 'Beitrag',
+  frage: 'Frage',
+  umfrage: 'Umfrage',
+  quiz: 'Quiz',
+  stapel: 'Stapel',
+  lab: 'LAB',
+};
+
 export function StudioScreen() {
   const hinweis = useTabHint('studio');
   const insets = useSafeAreaInsets();
+  const [ansicht, setAnsicht] = useState<Ansicht>('erstellen');
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
-  const [geliked, setGeliked] = useState<CollectionEntry[]>([]);
   const [faellig, setFaellig] = useState(0);
   const [duelle, setDuelle] = useState(0);
+  const [meine, setMeine] = useState<Post[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const entwuerfe = useEntwuerfe();
+  const scroll = useRef<ScrollView>(null);
+  const labY = useRef(0);
+
+  const ladenMeine = useCallback(async () => {
+    try {
+      const p = await api.getMyProfile();
+      if (!p) return;
+      const s = await api.userPosts(p.handle, 5);
+      setMeine(s.posts);
+    } catch {
+      setMeine((alt) => alt ?? []);
+    }
+  }, []);
 
   const load = useCallback(async () => {
-    // Zaehler und Karten duerfen fehlen, die Kurse nicht: ein kaputter
-    // Zaehler soll nicht den ganzen Tab leer machen.
     void api
       .reviewSummary()
       .then((r) => setFaellig(r?.due_now ?? 0))
@@ -57,10 +99,7 @@ export function StudioScreen() {
       .duelList()
       .then((d) => setDuelle(d.filter((x) => x.laeuft && x.mein_stand !== 'fertig').length))
       .catch(() => setDuelle(0));
-    void api
-      .myCollection('likes', 12)
-      .then(setGeliked)
-      .catch(() => setGeliked([]));
+    void ladenMeine();
     try {
       setCourses(await api.listCourses());
       setError(null);
@@ -68,30 +107,43 @@ export function StudioScreen() {
       setError(fehlerText(e, 'Kurse nicht ladbar'));
       setCourses([]);
     }
-  }, []);
+  }, [ladenMeine]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Zurueck aus dem Schreibfenster: "Von dir" soll das Neue schon zeigen.
+  useFocusEffect(
+    useCallback(() => {
+      void ladenMeine();
+    }, [ladenMeine]),
+  );
 
   useEffect(() => {
     if (!error) return;
     return beiWiederOnline(() => void load());
   }, [error, load]);
 
-  if (courses === null) {
-    return (
-      <GridBackground>
-        <View style={styles.center}>
-          <ActivityIndicator color={color.signal.primary} />
-        </View>
-      </GridBackground>
-    );
-  }
+  const umschalten = (a: Ansicht) => {
+    if (a === ansicht) return;
+    haptics.select();
+    setAnsicht(a);
+  };
+
+  const neu = (art: PostArt | 'lab') => {
+    haptics.light();
+    if (art === 'lab') {
+      scroll.current?.scrollTo({ y: Math.max(0, labY.current - space.lg), animated: true });
+      return;
+    }
+    router.push(art === 'post' ? '/compose' : `/compose?art=${art}`);
+  };
 
   return (
     <GridBackground>
       <ScrollView
+        ref={scroll}
         contentContainerStyle={[
           styles.body,
           {
@@ -112,162 +164,239 @@ export function StudioScreen() {
           />
         }
       >
-        <View>
-          <Text style={styles.pageTitle}>Studio</Text>
-          <Text style={styles.pageSub}>Selbst etwas machen: posten, fragen, lernen, herausfordern.</Text>
-        </View>
+        <Text style={styles.pageTitle}>Studio</Text>
 
-        {/* --- Erstellen --------------------------------------------------- */}
-        <View style={styles.erstellen}>
-          <Erstellen
-            icon="plus"
-            label="Beitrag"
-            unter="was du gelernt hast"
-            haupt
-            onPress={() => router.push('/compose')}
-          />
-          <Erstellen
-            icon="comment"
-            label="Frage"
-            unter="deine Leute antworten"
-            onPress={() => router.push('/compose?art=frage')}
-          />
-        </View>
-
-        {geliked.length > 0 ? (
-          <View style={{ gap: space.sm }}>
-            <Text style={styles.abschnitt}>Karte empfehlen - aus deinen Likes</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.likes}
-              style={styles.bleed}
+        <View style={styles.umschalter}>
+          {(['erstellen', 'lernen'] as const).map((a) => (
+            <Pressable
+              key={a}
+              onPress={() => umschalten(a)}
+              style={[styles.umschalterTeil, ansicht === a && styles.umschalterAn]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: ansicht === a }}
             >
-              {geliked.map((k) => (
+              <Text style={[styles.umschalterText, ansicht === a && styles.umschalterTextAn]}>
+                {a === 'erstellen' ? 'Erstellen' : 'Lernen'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {ansicht === 'erstellen' ? (
+          <>
+            {/* --- Neu -------------------------------------------------------- */}
+            <View style={styles.neuRaster}>
+              {NEU.map((n) => (
                 <Pressable
-                  key={k.content_id}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(
-                      `/compose?card=${encodeURIComponent(k.content_id)}&titel=${encodeURIComponent(k.title)}`,
-                    );
-                  }}
-                  style={({ pressed }) => [styles.like, pressed && { opacity: 0.85 }]}
+                  key={n.art}
+                  onPress={() => neu(n.art)}
+                  style={({ pressed }) => [styles.neu, n.art === 'post' && styles.neuHaupt, pressed && { opacity: 0.85 }]}
+                  accessibilityRole="button"
                 >
-                  <Text style={styles.likeTitel} numberOfLines={3}>
-                    {k.title}
-                  </Text>
-                  <View style={styles.likeFuss}>
-                    <Text style={styles.likeTag} numberOfLines={1}>
-                      #{k.category.split('.').pop()}
-                    </Text>
-                    <Text style={styles.likeAktion}>Empfehlen</Text>
+                  <View style={[styles.neuIcon, n.art === 'post' && { backgroundColor: color.signal.primary }]}>
+                    <Icon name={n.icon} size={17} color={n.art === 'post' ? color.bg : color.signal.primary} />
                   </View>
+                  <Text style={styles.neuLabel}>{n.label}</Text>
                 </Pressable>
               ))}
-            </ScrollView>
-          </View>
-        ) : null}
+            </View>
 
-        {/* --- Lernen ------------------------------------------------------ */}
-        <View style={styles.kacheln}>
-          <Kachel
-            icon="refresh"
-            label="Wiederholen"
-            zahl={faellig}
-            unter={faellig > 0 ? 'fällig' : 'nichts fällig'}
-            ton={faellig > 0 ? color.signal.mastery : undefined}
-            onPress={() => router.push('/review')}
-          />
-          <Kachel
-            icon="xp"
-            label="Duelle"
-            zahl={duelle}
-            unter={duelle > 0 ? 'offen' : 'jemanden fordern'}
-            ton={duelle > 0 ? color.signal.warn : undefined}
-            onPress={() => router.push('/duels')}
-          />
-        </View>
+            {/* --- Entwürfe --------------------------------------------------- */}
+            {entwuerfe.length > 0 ? (
+              <View style={styles.abschnittBlock}>
+                <Abschnitt titel="Entwürfe" zahl={entwuerfe.length} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reihe} style={styles.bleed}>
+                  {entwuerfe.map((e) => {
+                    const d = (e.daten ?? {}) as { karten?: string[] };
+                    const vorschau =
+                      e.text.trim() ||
+                      (e.art === 'stapel' && d.karten?.length ? `${d.karten.length} Karten gewählt` : 'Ohne Text');
+                    return (
+                      <Pressable
+                        key={e.id}
+                        onPress={() => {
+                          haptics.light();
+                          router.push(`/compose?entwurf=${encodeURIComponent(e.id)}`);
+                        }}
+                        style={({ pressed }) => [styles.entwurf, pressed && { opacity: 0.85 }]}
+                      >
+                        <View style={styles.entwurfKopf}>
+                          <Text style={styles.entwurfArt}>{ART_LABEL[e.art]}</Text>
+                          <Pressable
+                            onPress={() => {
+                              haptics.light();
+                              void entwurfLoeschen(e.id);
+                            }}
+                            hitSlop={10}
+                            accessibilityLabel="Entwurf löschen"
+                          >
+                            <Icon name="close" size={13} color={color.ink.low} />
+                          </Pressable>
+                        </View>
+                        <Text style={styles.entwurfText} numberOfLines={3}>
+                          {vorschau}
+                        </Text>
+                        <Text style={styles.entwurfWann}>{wann(e.aktualisiert)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
 
-        <DailyBanner />
-
-        <Text style={styles.abschnitt}>Kurse</Text>
-
-        {courses.length === 0 ? (
-          <Text style={styles.empty}>
-            {error ?? 'Noch keine Kurse in deiner Sprache freigegeben.'}
-          </Text>
-        ) : (
-          courses.map((c) => {
-            const accent = categoryAccent(c.accent);
-            const done = c.lessons > 0 ? c.position / c.lessons : 0;
-            return (
-              <Pressable
-                key={c.id}
-                onPress={() => {
-                  haptics.light();
-                  router.push(`/course/${encodeURIComponent(c.slug)}`);
-                }}
-                style={({ pressed }) => [styles.card, pressed && { opacity: 0.88 }]}
-              >
-                <BlueprintVisual seed={c.id} accentHex={c.accent} height={96} />
-
-                <View style={styles.cardBody}>
-                  <View style={styles.cardHead}>
-                    <Text style={[styles.category, { color: accent }]}>
-                      {c.emoji ?? '◇'}  {c.category}
-                    </Text>
-                    <View style={styles.difficulty}>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <View
-                          key={n}
-                          style={[
-                            styles.diffDot,
-                            { backgroundColor: n <= c.difficulty ? color.ink.mid : color.ink.faint },
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  </View>
-
-                  <Text style={styles.title}>{c.title}</Text>
-                  <Text style={styles.description} numberOfLines={2}>
-                    {c.description}
-                  </Text>
-
-                  <View style={styles.progressRow}>
-                    <View style={styles.track}>
-                      <View
-                        style={[
-                          styles.fill,
-                          { width: `${Math.round(done * 100)}%`, backgroundColor: accent },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.progressText}>
-                      {c.completed
-                        ? 'abgeschlossen'
-                        : c.started
-                          ? `${c.position} / ${c.lessons}`
-                          : `${c.lessons} Lektionen`}
-                    </Text>
-                  </View>
+            {/* --- Von dir ------------------------------------------------------ */}
+            <View style={styles.abschnittBlock}>
+              <Abschnitt
+                titel="Von dir"
+                rechts={meine && meine.length > 0 ? { text: 'Alle', onPress: () => router.push('/profile') } : undefined}
+              />
+              {meine === null ? (
+                <ActivityIndicator color={color.ink.low} />
+              ) : meine.length === 0 ? (
+                <Text style={styles.leer}>Noch nichts erstellt. Oben geht's los.</Text>
+              ) : (
+                <View style={styles.liste}>
+                  {meine.map((p) => (
+                    <Pressable
+                      key={p.id}
+                      onPress={() => router.push(`/post/${encodeURIComponent(p.id)}`)}
+                      style={({ pressed }) => [styles.meinZeile, pressed && { opacity: 0.8 }]}
+                    >
+                      <Text style={styles.meinArt}>{ART_LABEL[p.art] ?? 'Beitrag'}</Text>
+                      <Text style={styles.meinText} numberOfLines={1}>
+                        {p.body || (p.original ? 'Geteilter Beitrag' : ART_LABEL[p.art])}
+                      </Text>
+                      <View style={styles.meinZahlenReihe}>
+                        <Icon name="like" size={11} color={color.ink.low} />
+                        <Text style={styles.meinZahlen}>{p.likes}</Text>
+                        <Icon name="comment" size={11} color={color.ink.low} />
+                        <Text style={styles.meinZahlen}>{p.kommentare}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
                 </View>
-              </Pressable>
-            );
-          })
-        )}
+              )}
+            </View>
 
-        <Text style={styles.footnote}>
-          Neue Kurse baut die Pipeline zweimal am Tag aus Wikipedia-Artikeln – jede
-          Lektion wird gegen den Artikel geprüft wie jede Karte im Feed.
-        </Text>
+            {/* --- LAB -------------------------------------------------------------- */}
+            <View style={styles.abschnittBlock} onLayout={(e) => (labY.current = e.nativeEvent.layout.y)}>
+              <Abschnitt titel="LAB" />
+              <Text style={styles.labHinweis}>Einstellen, ausprobieren, Ergebnis teilen.</Text>
+              <View style={styles.labRaster}>
+                {WERKZEUGE.map((w) => (
+                  <Pressable
+                    key={w.id}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(`/lab/${w.id}`);
+                    }}
+                    style={({ pressed }) => [styles.lab, pressed && { opacity: 0.85 }]}
+                  >
+                    <Text style={[styles.labTag, { color: w.farbe }]}>#{w.hashtag}</Text>
+                    <Text style={styles.labTitel}>{w.titel}</Text>
+                    <Text style={styles.labKurz} numberOfLines={2}>
+                      {w.kurz}
+                    </Text>
+                  </Pressable>
+                ))}
+                {BALD.map((b) => (
+                  <View key={b.titel} style={[styles.lab, styles.labBald]}>
+                    <Text style={[styles.labTag, { color: color.ink.low }]}>#{b.hashtag}</Text>
+                    <Text style={[styles.labTitel, { color: color.ink.mid }]}>{b.titel}</Text>
+                    <Text style={styles.labKurz}>bald</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* --- Lernen ---------------------------------------------------------- */}
+            <View style={styles.kacheln}>
+              <Kachel
+                icon="refresh"
+                label="Wiederholen"
+                zahl={faellig}
+                unter={faellig > 0 ? 'fällig' : 'nichts fällig'}
+                ton={faellig > 0 ? color.signal.mastery : undefined}
+                onPress={() => router.push('/review')}
+              />
+              <Kachel
+                icon="xp"
+                label="Duelle"
+                zahl={duelle}
+                unter={duelle > 0 ? 'offen' : 'jemanden fordern'}
+                ton={duelle > 0 ? color.signal.warn : undefined}
+                onPress={() => router.push('/duels')}
+              />
+            </View>
+
+            <DailyBanner />
+
+            <Abschnitt titel="Kurse" />
+
+            {courses === null ? (
+              <ActivityIndicator color={color.ink.low} />
+            ) : courses.length === 0 ? (
+              <Text style={styles.leer}>{error ?? 'Noch keine Kurse in deiner Sprache freigegeben.'}</Text>
+            ) : (
+              courses.map((c) => {
+                const accent = categoryAccent(c.accent);
+                const done = c.lessons > 0 ? c.position / c.lessons : 0;
+                return (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(`/course/${encodeURIComponent(c.slug)}`);
+                    }}
+                    style={({ pressed }) => [styles.card, pressed && { opacity: 0.88 }]}
+                  >
+                    <BlueprintVisual seed={c.id} accentHex={c.accent} height={96} />
+                    <View style={styles.cardBody}>
+                      <View style={styles.cardHead}>
+                        <Text style={[styles.category, { color: accent }]}>
+                          {c.emoji ?? '◇'}  {c.category}
+                        </Text>
+                        <View style={styles.difficulty}>
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <View
+                              key={n}
+                              style={[styles.diffDot, { backgroundColor: n <= c.difficulty ? color.ink.mid : color.ink.faint }]}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                      <Text style={styles.title}>{c.title}</Text>
+                      <Text style={styles.description} numberOfLines={2}>
+                        {c.description}
+                      </Text>
+                      <View style={styles.progressRow}>
+                        <View style={styles.track}>
+                          <View style={[styles.fill, { width: `${Math.round(done * 100)}%`, backgroundColor: accent }]} />
+                        </View>
+                        <Text style={styles.progressText}>
+                          {c.completed ? 'abgeschlossen' : c.started ? `${c.position} / ${c.lessons}` : `${c.lessons} Lektionen`}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })
+            )}
+
+            <Text style={styles.footnote}>
+              Neue Kurse baut die Pipeline zweimal am Tag aus Wikipedia-Artikeln – jede Lektion wird gegen den
+              Artikel geprüft wie jede Karte im Feed.
+            </Text>
+          </>
+        )}
       </ScrollView>
       {hinweis.zeigen ? (
         <TabHint
           icon="plus"
-          titel="Studio: selbst machen"
-          text="Oben schreibst du Beiträge und Fragen für deine Follower oder empfiehlst eine Karte. Darunter: Wiederholung, Duelle und Kurse, die aufeinander aufbauen."
+          titel="Studio"
+          text="Erstellen: Beiträge, Umfragen, Quiz, Stapel und das LAB – mit deinen Entwürfen. Lernen: Wiederholung, Duelle, Tagesfrage und Kurse."
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />
@@ -276,38 +405,27 @@ export function StudioScreen() {
   );
 }
 
-function Erstellen({
-  icon,
-  label,
-  unter,
-  haupt,
-  onPress,
+function Abschnitt({
+  titel,
+  zahl,
+  rechts,
 }: {
-  icon: IconName;
-  label: string;
-  unter: string;
-  haupt?: boolean;
-  onPress: () => void;
+  titel: string;
+  zahl?: number;
+  rechts?: { text: string; onPress: () => void };
 }) {
   return (
-    <Pressable
-      onPress={() => {
-        haptics.light();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.erstellKnopf, haupt && styles.erstellHaupt, pressed && { opacity: 0.85 }]}
-      accessibilityRole="button"
-    >
-      <View style={[styles.erstellIcon, haupt && { backgroundColor: color.signal.primary }]}>
-        <Icon name={icon} size={18} color={haupt ? color.bg : color.signal.primary} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.erstellLabel}>{label}</Text>
-        <Text style={styles.erstellUnter} numberOfLines={1}>
-          {unter}
-        </Text>
-      </View>
-    </Pressable>
+    <View style={styles.abschnittKopf}>
+      <Text style={styles.abschnitt}>
+        {titel}
+        {zahl ? ` · ${zahl}` : ''}
+      </Text>
+      {rechts ? (
+        <Pressable onPress={rechts.onPress} hitSlop={8}>
+          <Text style={styles.abschnittLink}>{rechts.text}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -346,26 +464,36 @@ function Kachel({
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: space.xl, gap: space.lg },
-
   pageTitle: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
-  pageSub: { ...type.body, fontSize: 15, color: color.ink.mid, marginTop: space.xs },
 
-  erstellen: { flexDirection: 'row', gap: space.md },
-  erstellKnopf: {
-    flex: 1,
+  umschalter: {
     flexDirection: 'row',
+    padding: 3,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgSunken,
+  },
+  umschalterTeil: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: radius.pill },
+  umschalterAn: { backgroundColor: color.bgElevated },
+  umschalterText: { ...type.label, fontSize: 13, color: color.ink.low },
+  umschalterTextAn: { color: color.ink.max },
+
+  neuRaster: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  neu: {
+    width: '31.8%',
+    flexGrow: 1,
     alignItems: 'center',
-    gap: space.md,
-    padding: space.md,
+    gap: space.sm,
+    paddingVertical: space.lg,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
   },
-  erstellHaupt: { borderColor: color.signal.primary },
-  erstellIcon: {
+  neuHaupt: { borderColor: color.signal.primary },
+  neuIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -373,26 +501,71 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color.bgSunken,
   },
-  erstellLabel: { ...type.label, fontSize: 15, color: color.ink.high },
-  erstellUnter: { ...type.meta, fontSize: 10, color: color.ink.low },
+  neuLabel: { ...type.label, fontSize: 14, color: color.ink.high },
+
+  abschnittBlock: { gap: space.sm },
+  abschnittKopf: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.sm },
+  abschnitt: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1.2 },
+  abschnittLink: { ...type.label, fontSize: 13, color: color.signal.primary },
 
   bleed: { marginHorizontal: -space.xl },
-  likes: { paddingHorizontal: space.xl, gap: space.md },
-  like: {
-    width: 150,
-    minHeight: 110,
-    justifyContent: 'space-between',
-    gap: space.sm,
+  reihe: { paddingHorizontal: space.xl, gap: space.md },
+  entwurf: {
+    width: 170,
+    minHeight: 112,
+    gap: space.xs,
+    padding: space.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  entwurfKopf: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  entwurfArt: { ...type.meta, fontSize: 10, color: color.signal.warn, textTransform: 'uppercase', letterSpacing: 1 },
+  entwurfText: { ...type.body, fontSize: 14, lineHeight: 19, color: color.ink.high, flex: 1 },
+  entwurfWann: { ...type.meta, fontSize: 10, color: color.ink.low },
+
+  leer: { ...type.body, fontSize: 14, color: color.ink.mid },
+  liste: {
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+    overflow: 'hidden',
+  },
+  meinZeile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.ink.faint,
+    marginTop: -StyleSheet.hairlineWidth,
+  },
+  meinArt: { ...type.meta, fontSize: 10, color: color.signal.primary, width: 58, textTransform: 'uppercase', letterSpacing: 0.8 },
+  meinText: { ...type.body, fontSize: 14, color: color.ink.high, flex: 1 },
+  meinZahlenReihe: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  meinZahlen: { ...type.mono, fontSize: 11, color: color.ink.low, marginRight: 4 },
+
+  labHinweis: { ...type.body, fontSize: 14, color: color.ink.mid, marginTop: -space.xs },
+  labRaster: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  lab: {
+    width: '48.5%',
+    flexGrow: 1,
+    minHeight: 104,
+    gap: 3,
     padding: space.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
   },
-  likeTitel: { ...type.body, fontSize: 14, lineHeight: 19, color: color.ink.high },
-  likeFuss: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.xs },
-  likeTag: { ...type.meta, fontSize: 10, color: color.ink.low, flexShrink: 1 },
-  likeAktion: { ...type.meta, fontSize: 10, color: color.signal.primary },
+  labBald: { backgroundColor: 'transparent', borderStyle: 'dashed' },
+  labTag: { ...type.meta, fontSize: 10 },
+  labTitel: { ...type.label, fontSize: 16, color: color.ink.max },
+  labKurz: { ...type.meta, fontSize: 11, lineHeight: 15, color: color.ink.low },
 
   kacheln: { flexDirection: 'row', gap: space.md },
   kachel: {
@@ -409,8 +582,6 @@ const styles = StyleSheet.create({
   kachelLabel: { ...type.label, fontSize: 15, color: color.ink.high },
   kachelUnter: { ...type.meta, color: color.ink.low },
 
-  abschnitt: { ...type.meta, color: color.ink.low, paddingTop: space.sm },
-
   card: {
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
@@ -423,15 +594,11 @@ const styles = StyleSheet.create({
   category: { ...type.meta },
   difficulty: { flexDirection: 'row', gap: 3 },
   diffDot: { width: 5, height: 5, borderRadius: 3 },
-
   title: { ...type.deck, fontSize: 19, color: color.ink.max },
   description: { ...type.body, fontSize: 14, lineHeight: 21, color: color.ink.mid },
-
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm },
   track: { flex: 1, height: 3, borderRadius: 3, backgroundColor: color.ink.faint },
   fill: { height: 3, borderRadius: 3 },
   progressText: { ...type.meta, color: color.ink.low },
-
-  empty: { ...type.body, fontSize: 15, color: color.ink.mid },
   footnote: { ...type.meta, color: color.ink.low, lineHeight: 17, paddingTop: space.md },
 });

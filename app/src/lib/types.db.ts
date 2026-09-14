@@ -398,6 +398,12 @@ export type PublicProfile = {
   likes_bekommen?: number;
 };
 
+/** LAB Ankereffekt: Schnitt je Gruppe (lab_anker_eintragen, 0088). */
+export type AnkerStand = {
+  niedrig: { n: number; schnitt: number | null };
+  hoch: { n: number; schnitt: number | null };
+};
+
 /** Stand der Wiederholungen (my_review_overview, 0087). */
 export type ReviewUeberblick = {
   faellig: number;
@@ -476,9 +482,26 @@ export type PostCard = {
 };
 
 /** Ein eigener Beitrag (Migration 0077, post_json). */
+/** Beitragsarten (0077, erweitert in 0088). */
+export type PostArt = 'post' | 'frage' | 'umfrage' | 'quiz' | 'stapel' | 'lab';
+
+/** Umfrage und Quiz. `stimmen` und `richtig` erst nach der eigenen Stimme. */
+export type AbstimmDaten = {
+  optionen: string[];
+  meine_wahl: number | null;
+  gesamt: number;
+  stimmen: number[] | null;
+  /** Nur beim Quiz, und nur nach der Antwort (oder fuer den Autor). */
+  richtig?: number | null;
+};
+
+export type StapelDaten = { karten: PostCard[] };
+export type LabDaten = { werkzeug: string; eingaben: Record<string, unknown> };
+export type PostDaten = AbstimmDaten | StapelDaten | LabDaten | null;
+
 export type Post = {
   id: string;
-  art: 'post' | 'frage';
+  art: PostArt;
   body: string;
   at: string;
   wer: HomePerson;
@@ -488,14 +511,16 @@ export type Post = {
   kommentare: number;
   reposts: number;
   karte: PostCard | null;
+  daten?: PostDaten;
   /** Gesetzt, wenn der Beitrag einen anderen weiterteilt. */
   original: {
     id: string;
-    art: 'post' | 'frage';
+    art: PostArt;
     body: string;
     at: string;
     wer: HomePerson;
     karte: PostCard | null;
+    daten?: PostDaten;
   } | null;
 };
 

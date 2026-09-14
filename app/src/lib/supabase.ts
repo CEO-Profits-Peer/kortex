@@ -30,6 +30,9 @@ import type {
   HomeData,
   Post,
   PostDetail,
+  AbstimmDaten,
+  AnkerStand,
+  PostArt,
   ReviewUeberblick,
   Statistik,
   UserPostsPage,
@@ -436,18 +439,48 @@ export const api = {
 
   async createPost(input: {
     body: string;
-    art?: 'post' | 'frage';
+    art?: PostArt;
     contentId?: string;
     repostOf?: string;
+    /** Antworten, Karten oder LAB-Eingaben - je nach Art (0088). */
+    daten?: Record<string, unknown> | null;
   }): Promise<CreatePostResult> {
     const { data, error } = await supabase.rpc('create_post', {
       p_body: input.body,
       p_art: input.art ?? 'post',
       p_content_id: input.contentId ?? null,
       p_repost_of: input.repostOf ?? null,
+      p_daten: input.daten ?? null,
     });
     if (error) throw error;
     return data as CreatePostResult;
+  },
+
+  /** Umfrage abstimmen oder Quiz beantworten. Eine Stimme, kein Umentscheiden (0088). */
+  async abstimmen(postId: string, wahl: number): Promise<AbstimmDaten> {
+    const { data, error } = await supabase.rpc('post_abstimmen', { p_post: postId, p_wahl: wahl });
+    if (error) throw error;
+    return data as AbstimmDaten;
+  },
+
+  /** LAB Ankereffekt: eigene Schaetzung eintragen, Schnitt beider Gruppen zurueck. */
+  async labAnker(anker: 10 | 65, schaetzung: number): Promise<AnkerStand> {
+    const { data, error } = await supabase.rpc('lab_anker_eintragen', { p_anker: anker, p_schaetzung: schaetzung });
+    if (error) throw error;
+    return data as AnkerStand;
+  },
+
+  /** Mehrere Karten, in der uebergebenen Reihenfolge (Stapel). */
+  async contentByIds(ids: string[]): Promise<ContentItem[]> {
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+      .from('content_items')
+      .select('*')
+      .in('id', ids)
+      .eq('status', 'approved');
+    if (error) throw error;
+    const je = new Map(((data ?? []) as ContentItem[]).map((c) => [c.id, c]));
+    return ids.map((id) => je.get(id)).filter((c): c is ContentItem => Boolean(c));
   },
 
   async postDetail(id: string): Promise<PostDetail> {
