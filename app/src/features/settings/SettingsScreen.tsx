@@ -445,6 +445,48 @@ export function SettingsScreen() {
               />
             }
           />
+          {/* 0084. `!== false`: ein Profil von vor der Migration kennt das
+              Feld nicht, und in der Datenbank steht dann der Standard "an". */}
+          <Row
+            label="Beiträge in Explore zeigen"
+            hint="An: deine Beiträge können in Explore auftauchen und alle Angemeldeten sehen sie. Aus: nur deine Follower."
+            right={
+              <Switch
+                value={profile.beitraege_oeffentlich !== false}
+                onValueChange={(v) => void patch({ beitraege_oeffentlich: v })}
+                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
+                thumbColor={color.bg}
+              />
+            }
+          />
+          <Row
+            label="Reposts nur im Profil"
+            hint="Was du teilst oder empfiehlst, steht in deinem Profil – aber nicht im Home deiner Follower."
+            right={
+              <Switch
+                value={Boolean(profile.reposts_nur_profil)}
+                onValueChange={(v) => void patch({ reposts_nur_profil: v })}
+                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
+                thumbColor={color.bg}
+              />
+            }
+          />
+        </Section>
+
+        {/* --- Home ------------------------------------------------------ */}
+        <Section title="Home">
+          <Row erste
+            label="Keine Reposts in meinem Home"
+            hint="Du siehst nur, was deine Leute selbst schreiben – nichts Geteiltes, keine Karten-Empfehlungen. Explore zeigt ohnehin keine Reposts."
+            right={
+              <Switch
+                value={Boolean(profile.home_ohne_reposts)}
+                onValueChange={(v) => void patch({ home_ohne_reposts: v })}
+                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
+                thumbColor={color.bg}
+              />
+            }
+          />
         </Section>
 
         {/* --- Erinnerungen --------------------------------------------- */}

@@ -144,6 +144,12 @@ export type Profile = {
   notify_streak: boolean;
   notify_social: boolean;
   onboarding_completed_at: string | null;
+  /** 0084: Beitraege in Explore und fuer Nicht-Follower sichtbar. */
+  beitraege_oeffentlich?: boolean;
+  /** 0084: eigene Reposts nur im Profil, nicht im Home anderer. */
+  reposts_nur_profil?: boolean;
+  /** 0084: im eigenen Home keine Reposts. */
+  home_ohne_reposts?: boolean;
 };
 
 // --- Events, die der Client sendet ------------------------------------------
@@ -386,6 +392,50 @@ export type PublicProfile = {
   reposts: RepostRef[];
   /** null, wenn die Person ihre Likes privat hält */
   likes: RepostRef[] | null;
+  /** 0083 */
+  dabei_seit?: string;
+  beitraege?: number;
+  likes_bekommen?: number;
+};
+
+/** Die eigene Statistik (get_my_statistik, 0083). */
+export type Statistik = {
+  dabei_seit: string;
+  /** Ab hier ist der Follower-Verlauf genau (follow_events, 0080). */
+  mitschrift_seit: string;
+  sozial: {
+    follower: number;
+    folgt: number;
+    beitraege: number;
+    likes: number;
+    kommentar_likes: number;
+    kommentare: number;
+    geteilt: number;
+    empfohlen: number;
+  };
+  lernen: {
+    gesehen: number;
+    gelesen: number;
+    gelikt: number;
+    quiz_versuche: number;
+    quiz_richtig: number;
+    xp: number;
+    streak: number;
+    streak_best: number;
+    fokus_minuten: number;
+  };
+  follower_verlauf: { tag: string; follower: number; neu: number; weg: number }[];
+  gelesen_verlauf: { tag: string; anzahl: number }[];
+  quellen: Record<string, number>;
+  top_beitraege: {
+    id: string;
+    body: string;
+    at: string;
+    likes: number;
+    kommentare: number;
+    geteilt: number;
+    neue_follower: number;
+  }[];
 };
 
 export type PersonHit = {

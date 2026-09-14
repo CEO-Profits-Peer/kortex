@@ -229,7 +229,22 @@ export function PublicProfileScreen({
               <Text style={styles.statLabel}>Streak</Text>
             </View>
           ) : null}
+          {p.likes_bekommen ? (
+            <View style={styles.statCol}>
+              <Text style={[styles.statValue, { color: color.signal.primary }]}>{p.likes_bekommen}</Text>
+              <Text style={styles.statLabel}>Likes bekommen</Text>
+            </View>
+          ) : null}
         </View>
+
+        {/* 0083: wie lange schon, und wie viel geschrieben - das, was man
+            wissen will, bevor man jemandem folgt. */}
+        {p.dabei_seit ? (
+          <Text style={styles.dabei}>
+            Dabei seit {new Date(p.dabei_seit).toLocaleDateString('de-AT', { month: 'long', year: 'numeric' })}
+            {p.beitraege ? ` · ${p.beitraege} ${p.beitraege === 1 ? 'Beitrag' : 'Beiträge'}` : ''}
+          </Text>
+        ) : null}
 
         {!p.is_me ? (
           <View style={styles.knoepfe}>
@@ -332,6 +347,7 @@ const styles = StyleSheet.create({
   statCol: { gap: 2 },
   statValue: { ...type.title, fontSize: 20, color: color.ink.max },
   statLabel: { ...type.meta, color: color.ink.low },
+  dabei: { ...type.meta, color: color.ink.low, marginTop: -space.sm },
 
   tabs: { flexDirection: 'row', gap: space.sm },
   tab: {

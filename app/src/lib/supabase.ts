@@ -28,7 +28,9 @@ import type {
   DuelListEntry,
   FolgenQuelle,
   HomeData,
+  Post,
   PostDetail,
+  Statistik,
   UserPostsPage,
   InvitePreview,
   MyInvite,
@@ -476,6 +478,24 @@ export const api = {
   async deletePost(id: string): Promise<void> {
     const { error } = await supabase.rpc('delete_post', { p_id: id });
     if (error) throw error;
+  },
+
+  /**
+   * Explore (0084): Beitraege von Leuten, denen ich nicht folge, ohne Reposts.
+   * Seitenweise ueber die schon gezeigten IDs - die Reihenfolge ist eine
+   * Rangfolge mit Zufall fuer kleine Accounts, keine Zeitachse.
+   */
+  async explore(limit = 20, ausser: string[] = []): Promise<Post[]> {
+    const { data, error } = await supabase.rpc('get_explore', { p_limit: limit, p_ausser: ausser });
+    if (error) throw error;
+    return ((data as { beitraege?: Post[] } | null)?.beitraege ?? []) as Post[];
+  },
+
+  /** Eigene Statistik (0083). */
+  async myStatistik(): Promise<Statistik> {
+    const { data, error } = await supabase.rpc('get_my_statistik');
+    if (error) throw error;
+    return data as Statistik;
   },
 
   async setPostCommentLike(id: string, on: boolean): Promise<void> {

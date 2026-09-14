@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,7 +26,7 @@ import { haptics } from '@/lib/haptics';
 import { beiWiederOnline } from '@/lib/online';
 import { shareCard, shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
-import type { HomeData, HomeEntry } from '@/lib/types.db';
+import type { HomeData, HomeEntry, Post } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -76,6 +76,12 @@ export function HomeScreen() {
   const liste = useRef<FlatList<HomeEntry>>(null);
   const geladenAm = useRef(0);
   const scrollOben = useRef(0);
+
+  // Following oder Explore (0084). Explore wird erst beim ersten Umschalten
+  // geladen - die meisten schauen zuerst, was ihre Leute machen.
+  const [ansicht, setAnsicht] = useState<'following' | 'explore'>('following');
+  const [explore, setExplore] = useState<Post[] | null>(null);
+  const [exploreMehr, setExploreMehr] = useState(true);
 
   // Bei jedem Zurueckkommen neu zaehlen: wer die Glocke geleert hat, soll
   // den Punkt nicht mehr sehen, und wer lange im Feed war, den neuen schon.
@@ -155,6 +161,45 @@ export function HomeScreen() {
     }
   }, [mehr, eintraege]);
 
+  /**
+   * Explore laden. `neu`: von vorn (Umschalten, Neuladen). Sonst die naechste
+   * Seite - der Server bekommt die schon gezeigten IDs, weil Explore nach
+   * Punkten sortiert und nicht nach Zeit.
+   */
+  const ladenExplore = useCallback(async (neu: boolean) => {
+    if (nachladen.current) return;
+    nachladen.current = true;
+    if (!neu) setNachLaedt(true);
+    try {
+      const schon = neu ? [] : (explore ?? []).map((p) => p.id);
+      const b = await api.explore(20, schon);
+      setExplore((alt) => (neu ? b : [...(alt ?? []), ...b.filter((p) => !schon.includes(p.id))]));
+      setExploreMehr(b.length >= 20);
+      setFehler(null);
+    } catch (e) {
+      setExplore((alt) => alt ?? []);
+      setFehler(fehlerText(e, 'Explore nicht ladbar'));
+    } finally {
+      nachladen.current = false;
+      setNachLaedt(false);
+    }
+  }, [explore]);
+
+  const umschalten = (a: 'following' | 'explore') => {
+    if (a === ansicht) return;
+    haptics.select();
+    setAnsicht(a);
+    liste.current?.scrollToOffset({ offset: 0, animated: false });
+    if (a === 'explore' && explore === null) void ladenExplore(true);
+  };
+
+  // Explore als Home-Eintraege, damit dieselbe Liste und dieselbe Beitragskarte
+  // beides zeigen.
+  const exploreEintraege = useMemo<HomeEntry[]>(
+    () => (explore ?? []).map((p) => ({ art: 'post', at: p.at, wer: p.wer, was: p })),
+    [explore],
+  );
+
   useEffect(() => {
     void laden();
   }, [laden]);
@@ -164,7 +209,12 @@ export function HomeScreen() {
     return beiWiederOnline(() => void laden());
   }, [fehler, laden]);
 
+  // Neu geladen wird, was gerade zu sehen ist.
   const neuladen = useNeuladen(async () => {
+    if (ansicht === 'explore') {
+      await ladenExplore(true);
+      return;
+    }
     await laden();
     setGefolgt(new Set());
   }, insets.top + space.sm);
@@ -241,6 +291,23 @@ export function HomeScreen() {
         </View>
       </View>
 
+      {/* Following | Explore (0084) */}
+      <View style={styles.umschalter}>
+        {(['following', 'explore'] as const).map((a) => (
+          <Pressable
+            key={a}
+            onPress={() => umschalten(a)}
+            style={[styles.umschalterTeil, ansicht === a && styles.umschalterAn]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: ansicht === a }}
+          >
+            <Text style={[styles.umschalterText, ansicht === a && styles.umschalterTextAn]}>
+              {a === 'following' ? 'Following' : 'Explore'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       {/* Das Schreibfeld - der wichtigste Knopf auf dem Bildschirm. */}
       <Pressable
         onPress={() => {
@@ -255,7 +322,7 @@ export function HomeScreen() {
         </View>
       </Pressable>
 
-      {daten.leute.length > 0 ? (
+      {ansicht === 'following' && daten.leute.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -274,7 +341,7 @@ export function HomeScreen() {
       ) : null}
 
       {/* --- Vorschlaege: waagrecht, wie bei Instagram ------------------------- */}
-      {daten.vorschlaege.length > 0 ? (
+      {ansicht === 'following' && daten.vorschlaege.length > 0 ? (
         <View style={{ gap: space.sm }}>
           <Text style={styles.abschnitt}>Vorschläge für dich</Text>
           <ScrollView
@@ -322,28 +389,43 @@ export function HomeScreen() {
     <GridBackground>
       <FlatList
         ref={liste}
-        data={eintraege}
+        data={ansicht === 'following' ? eintraege : exploreEintraege}
         keyExtractor={schluessel}
         renderItem={({ item }) => (
           <Eintrag e={item} onNotiz={zeige} onKommentare={(id, titel) => setKommentare({ id, titel })} />
         )}
         ListHeaderComponent={kopf}
         ListEmptyComponent={
-          <Text style={styles.leer}>
-            {daten.folge_ich === 0
-              ? 'Du folgst noch niemandem. Folge jemandem aus den Vorschlägen - oder schreib den ersten Beitrag selbst.'
-              : 'Hier ist noch nichts. Mach den Anfang: Was du postest oder im Feed repostest, sehen deine Follower hier.'}
-          </Text>
+          ansicht === 'explore' ? (
+            explore === null ? (
+              <ActivityIndicator color={color.ink.low} style={{ marginVertical: space.xl }} />
+            ) : (
+              <Text style={styles.leer}>
+                In Explore ist gerade nichts – hier landen Beiträge von Leuten, denen du noch nicht folgst.
+              </Text>
+            )
+          ) : (
+            <Text style={styles.leer}>
+              {daten.folge_ich === 0
+                ? 'Du folgst noch niemandem. Folge jemandem aus den Vorschlägen – oder schau in Explore.'
+                : 'Hier ist noch nichts. Mach den Anfang: Was du postest oder im Feed repostest, sehen deine Follower hier.'}
+            </Text>
+          )
         }
         ListFooterComponent={
-          eintraege.length === 0 ? null : nachLaedt ? (
+          (ansicht === 'following' ? eintraege.length : exploreEintraege.length) === 0 ? null : nachLaedt ? (
             <ActivityIndicator color={color.ink.low} style={{ marginVertical: space.lg }} />
-          ) : !mehr ? (
+          ) : ansicht === 'following' && !mehr ? (
             <Text style={styles.ende}>Das ist alles von deinen Leuten.</Text>
+          ) : ansicht === 'explore' && !exploreMehr ? (
+            <Text style={styles.ende}>Mehr gibt es in Explore gerade nicht.</Text>
           ) : null
         }
         ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
-        onEndReached={() => void weiter()}
+        onEndReached={() => {
+          if (ansicht === 'following') void weiter();
+          else if (exploreMehr && (explore?.length ?? 0) > 0) void ladenExplore(false);
+        }}
         onEndReachedThreshold={0.6}
         contentContainerStyle={[
           styles.body,
@@ -548,6 +630,19 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl },
 
   kopfBereich: { gap: space.lg, paddingBottom: space.lg },
+
+  umschalter: {
+    flexDirection: 'row',
+    padding: 3,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgSunken,
+  },
+  umschalterTeil: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: radius.pill },
+  umschalterAn: { backgroundColor: color.bgElevated },
+  umschalterText: { ...type.label, fontSize: 13, color: color.ink.low },
+  umschalterTextAn: { color: color.ink.max },
   titelZeile: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titel: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   einladen: {

@@ -89,7 +89,7 @@ an area.
 | Leaf categories with no card | 10 of 45 (was 20 before the scarcity ordering) |
 | Evergreen topics | 382, all lemmas API-verified; ~280 never attempted |
 | Active sources | 31 with a feed, 21 of them full-text |
-| Categories | 53 (8 top-level) |
+| Categories | 65 active (11 top-level) since 0082; world.history/culture/media inactive, moved |
 
 Measure it, don't trust this table — it ages with every scheduled run:
 `db.presentation_counts()` for the share, `db.card_counts()` for the
@@ -236,6 +236,42 @@ Deliberately not relaxed — checking only the mantissa would make
 - The share is a quota over the **stock**, so every new text card lowers it.
   `kinetic_backfill.py` therefore runs inside the scheduled workflow (last
   step, once a day at 06:17 UTC, on whatever daily quota is left).
+
+## 0080–0085 (2026-09-13, all applied via CLI)
+
+- `0080_kommentare_folgen.sql` – comment likes on posts (bell only, no push),
+  `absaetze_saeubern()` for post/comment text (btrim never removed newlines),
+  `follow_events` = log of every follow/unfollow with its source
+  (`beitrag`/`home`/`profil`/`suche`/`liste`); existing follows back-filled as
+  `nachgetragen`. `set_following(user, follow, quelle, post)` – two new
+  optional params. Account deletion guarded in the trigger.
+- `0081_hashtags.sql` – cards carry up to two extra categories in
+  `category_ids` (model assigns them, `pipeline/hashtags.py` back-filled 360
+  cards with 15 calls; `media.kategorien_geprueft` marks done). Category feed
+  and category page count them. App: `HashtagLauf` scrolls only when the tags
+  overflow AND the card is on screen.
+- `0082_hauptthemen.sql` – new roots `history`, `culture`, `language` (4 leaves
+  each). The three old `world.*` knowledge leaves were MOVED (cards, interests,
+  XP, reviews, courses, topic_memory) and set inactive with `-alt` slugs – the
+  feed's root diversity reads the id prefix (`arrange.ts`), so re-parenting
+  alone would not have worked. Seeds in `topics.py`, all 447 lemmas checked.
+- `0083_statistik.sql` – `get_public_profile` + dabei_seit/beitraege/
+  likes_bekommen; `get_my_statistik()` (follower graph 90 d, sources, top posts
+  with followers gained, learning numbers). Graph exact only from 2026-09-13.
+- `0084_explore_reposts.sql` – settings `beitraege_oeffentlich` (default ON:
+  posts visible to all signed-in users and eligible for Explore),
+  `reposts_nur_profil`, `home_ohne_reposts`; `get_home` filters pure reposts
+  and card recommendations accordingly; `get_explore(limit, ausser[])` = posts
+  of people you don't follow, no reposts, ranked by likes+2×comments with age
+  decay, every 4th slot a random small account.
+- `0085_selbsttest.sql` – writes nothing; calls every rewritten function as a
+  real account inside `db push`. Pattern worth reusing: plpgsql errors only
+  show at call time, and the service key has no `auth.uid()`.
+
+App: pull-to-refresh on web (`components/Neuladen.tsx` – RefreshControl does
+nothing in react-native-web), second tap on Home/Profile tab = top + reload,
+silent reload after 30 s away; `/statistik`; Following/Explore switch in Home;
+comment links `/post/ID?kommentar=CID`.
 
 ## Backlog after that
 

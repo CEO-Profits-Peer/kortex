@@ -326,6 +326,7 @@ export function ProfileScreen() {
             label="Rangliste"
             onPress={() => router.push('/leaderboard')}
           />
+          <Shortcut icon="chart" label="Statistik" onPress={() => router.push('/statistik')} />
         </View>
 
         {/* Verschwindet von selbst, sobald die App installiert ist - und
