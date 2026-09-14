@@ -24,11 +24,21 @@ export function UserPosts({
   handle,
   eigene,
   onAnzahl,
+  neuladen = 0,
 }: {
   handle: string;
   /** Eigenes Profil: leerer Zustand mit Knopf zum Schreiben. */
   eigene?: boolean;
   onAnzahl?: (n: number) => void;
+  /**
+   * Zaehlt der Aufrufer hoch, wird still neu geladen.
+   *
+   * Vorher hing hier ein `key={neu}` im Profil: jedes Neuladen baute die
+   * Liste neu auf, zeigte kurz den Kreisel und warf alles Nachgeladene weg.
+   * Beim Herunterziehen merkt man das kaum - beim stillen Neuladen nach
+   * einem Tabwechsel waere es ein Sprung mitten im Lesen.
+   */
+  neuladen?: number;
 }) {
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [gesperrt, setGesperrt] = useState(false);
@@ -58,7 +68,7 @@ export function UserPosts({
 
   useEffect(() => {
     void laden();
-  }, [laden]);
+  }, [laden, neuladen]);
 
   const weiter = async () => {
     if (!posts?.length || laedt) return;

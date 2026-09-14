@@ -26,6 +26,7 @@ import type {
   AppNotification,
   CreatePostResult,
   DuelListEntry,
+  FolgenQuelle,
   HomeData,
   PostDetail,
   UserPostsPage,
@@ -387,8 +388,22 @@ export const api = {
     return (data ?? []) as DuelListEntry[];
   },
 
-  async setFollowing(userId: string, follow: boolean): Promise<void> {
-    const { error } = await supabase.rpc('set_following', { p_user: userId, p_follow: follow });
+  /**
+   * Folgen oder entfolgen. `herkunft` sagt, wo der Knopf gedrueckt wurde -
+   * daraus rechnet die Statistik, wie viele Follower ein Beitrag gebracht
+   * hat (follow_events, 0080). Ohne Angabe zaehlt der Follow als "unbekannt".
+   */
+  async setFollowing(
+    userId: string,
+    follow: boolean,
+    herkunft?: { quelle: FolgenQuelle; post?: string | null },
+  ): Promise<void> {
+    const { error } = await supabase.rpc('set_following', {
+      p_user: userId,
+      p_follow: follow,
+      p_quelle: herkunft?.quelle ?? null,
+      p_post: herkunft?.post ?? null,
+    });
     if (error) throw error;
   },
 
@@ -460,6 +475,11 @@ export const api = {
 
   async deletePost(id: string): Promise<void> {
     const { error } = await supabase.rpc('delete_post', { p_id: id });
+    if (error) throw error;
+  },
+
+  async setPostCommentLike(id: string, on: boolean): Promise<void> {
+    const { error } = await supabase.rpc('set_post_comment_like', { p_comment: id, p_on: on });
     if (error) throw error;
   },
 

@@ -288,6 +288,9 @@ CARD_SCHEMA: dict[str, Any] = {
             },
         },
         "category_id": {"type": "string"},
+        # Weitere Hashtags der Karte. Nicht "required": ein Modell, das das
+        # Feld weglaesst, soll keine sonst gute Karte kosten.
+        "extra_category_ids": {"type": "array", "maxItems": 2, "items": {"type": "string"}},
         "difficulty": {"type": "integer", "minimum": 1, "maximum": 5},
         "tags": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string"}},
         "content_type": {"type": "string", "enum": ["news", "knowledge"]},
@@ -438,6 +441,11 @@ NACHRICHT ODER WISSEN - content_type:
 {auftrag}
 KATEGORIE: waehle genau eine ID aus dieser Liste:
 {categories}
+
+WEITERE HASHTAGS: in extra_category_ids 0 bis 2 weitere IDs aus DERSELBEN
+Liste - nur wenn die Karte dort genauso gut hingehoert. Eine Karte ueber
+Zinseszins passt auch zu Geld-Grundlagen; eine ueber Schlaf nicht zu
+Ernaehrung, nur weil beides gesund ist. Im Zweifel leer lassen.
 
 QUELLE: {source_name}
 TITEL: {title}
@@ -692,6 +700,15 @@ class Generator:
         if card.get("category_id") not in category_ids:
             self.last_reject = f"unbekannte Kategorie: {card.get('category_id')!r}"
             return None
+
+        # Weitere Hashtags: was nicht in der Liste steht, faellt still weg -
+        # anders als bei der Hauptkategorie ist ein erfundener Hashtag kein
+        # Grund, die ganze Karte zu verwerfen.
+        extra: list[str] = []
+        for c in card.get("extra_category_ids") or []:
+            if c in category_ids and c != card["category_id"] and c not in extra:
+                extra.append(c)
+        card["extra_category_ids"] = extra[:2]
 
         _shuffle_options(card)
         self.last_reject = None

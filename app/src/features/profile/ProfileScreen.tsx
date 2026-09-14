@@ -1,9 +1,8 @@
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
+import { useNeuladen, useTabNochmal } from '@/components/Neuladen';
 import { TabHint, useTabHint } from '@/components/TabHint';
 import { Icon, type IconName } from '@/components/Icon';
 import { KnowledgeRadar } from '@/components/KnowledgeRadar';
@@ -129,9 +129,10 @@ export function ProfileScreen() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [tab, setTab] = useState<'posts' | 'reposts' | 'likes'>('posts');
   const [postAnzahl, setPostAnzahl] = useState<number | null>(null);
-  // Zaehlt beim Ziehen hoch und laedt damit auch die Beitraege neu.
+  // Zaehlt beim Neuladen hoch und laedt damit auch die Beitraege neu.
   const [neu, setNeu] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
+  const scroll = useRef<ScrollView>(null);
+  const geladenAm = useRef(0);
   const [einladeNotiz, setEinladeNotiz] = useState<string | null>(null);
 
   /**
@@ -159,6 +160,7 @@ export function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    geladenAm.current = Date.now();
     try {
       const [s, st] = await Promise.all([api.getMySocial(), api.getMyStats()]);
       setSocial(s);
@@ -178,6 +180,28 @@ export function ProfileScreen() {
     if (!error) return;
     return beiWiederOnline(() => void load());
   }, [error, load]);
+
+  const neuladen = useNeuladen(async () => {
+    await load();
+    setNeu((n) => n + 1);
+  }, insets.top + space.sm);
+
+  // Zweiter Tipp auf "Profil": nach oben, neu laden.
+  useTabNochmal(() => {
+    scroll.current?.scrollTo({ y: 0, animated: true });
+    void neuladen.ausloesen();
+  });
+
+  // Zurueck nach mehr als 30 Sekunden: still nachladen. Wer im Feed drei
+  // Karten empfohlen hat, soll sie hier sehen, ohne selbst zu ziehen.
+  useFocusEffect(
+    useCallback(() => {
+      if (geladenAm.current && Date.now() - geladenAm.current > 30_000) {
+        void load();
+        setNeu((n) => n + 1);
+      }
+    }, [load]),
+  );
 
   if (!social) {
     return (
@@ -202,24 +226,16 @@ export function ProfileScreen() {
   return (
     <GridBackground>
       <ScrollView
+        ref={scroll}
         contentContainerStyle={[
           styles.body,
           // Unten: die Tab-Leiste schwebt ueber dem Inhalt.
           { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + TAB_BAR_HEIGHT + space.xl },
         ]}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              await load();
-              setNeu((n) => n + 1);
-              setRefreshing(false);
-            }}
-            tintColor={color.ink.low}
-          />
-        }
+        onScroll={(e) => neuladen.beiScroll(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
+        {...neuladen.listenProps}
       >
         {/* --- Kopf: Bild, Name, Zahlen ---------------------------------- */}
         <View style={styles.head}>
@@ -344,7 +360,7 @@ export function ProfileScreen() {
         {/* Eigene Beitraege zuerst: sie sind das, was man selbst geschrieben
             hat, Empfohlenes und Likes sind Reaktionen auf andere. */}
         {tab === 'posts' ? (
-          <UserPosts key={neu} handle={social.handle} eigene onAnzahl={setPostAnzahl} />
+          <UserPosts handle={social.handle} eigene onAnzahl={setPostAnzahl} neuladen={neu} />
         ) : list.length === 0 ? (
           <Text style={styles.empty}>
             {tab === 'reposts'
@@ -418,6 +434,7 @@ export function ProfileScreen() {
 
         <KnowledgeRadar data={stats?.radar ?? []} />
       </ScrollView>
+      {neuladen.anzeige}
       {hinweis.zeigen ? (
         <TabHint
           icon="profile"

@@ -96,14 +96,21 @@ def build_row(item, card, *, embedding, approve: bool, script=None) -> dict:
         "language": src.default_language,
         "region_code": src.default_region_code,
         "primary_category_id": card["category_id"],
-        "category_ids": [card["category_id"]],
+        # Die Hauptkategorie zuerst, dann die weiteren Hashtags. Evergreen
+        # ueberschreibt category_id nach dem Modell mit der Themenkategorie -
+        # steht die dann auch unter den weiteren, faellt sie dort heraus.
+        "category_ids": [card["category_id"]] + [
+            c for c in card.get("extra_category_ids", []) if c != card["category_id"]
+        ][:2],
         "difficulty": card.get("difficulty", 2),
         "word_count": len(" ".join(
             b.get("text", "") or " ".join(b.get("items", []) or [])
             for b in card["body_blocks"]
         ).split()),
         "quiz_items": [card["quiz"]],
-        "media": {"tags": card.get("tags", [])},
+        # kategorien_geprueft: diese Karte hat ihre weiteren Hashtags schon beim
+        # Schreiben bekommen - pipeline/hashtags.py muss sie nicht nachfragen.
+        "media": {"tags": card.get("tags", []), "kategorien_geprueft": True},
         "content_hash": item.hash,
         "embedding": embedding,
         # Kein Verfallsdatum mehr - fuer nichts. Siehe Migration 0049:

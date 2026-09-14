@@ -13,7 +13,7 @@ import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
-import type { PublicProfile, RepostRef } from '@/lib/types.db';
+import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -61,7 +61,14 @@ function RefRow({
   );
 }
 
-export function PublicProfileScreen({ handle }: { handle: string }) {
+export function PublicProfileScreen({
+  handle,
+  herkunft,
+}: {
+  handle: string;
+  /** Woher man kam - fuer die Follower-Statistik (0080). Ohne: 'profil'. */
+  herkunft?: { quelle: FolgenQuelle; post?: string };
+}) {
   const insets = useSafeAreaInsets();
   // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
   const scrollY = useSharedValue(0);
@@ -123,7 +130,7 @@ export function PublicProfileScreen({ handle }: { handle: string }) {
     haptics.medium();
     setBusy(true);
     try {
-      await api.setFollowing(p.id, next);
+      await api.setFollowing(p.id, next, herkunft ?? { quelle: 'profil' });
     } catch {
       void load(); // zurückrollen über die Wahrheit vom Server
     } finally {

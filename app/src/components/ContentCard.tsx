@@ -19,6 +19,8 @@ import { ActionRail } from '@/components/ActionRail';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { CardBlock } from '@/components/CardBlock';
 import { CardTypeBadge, StaleBadge, isStale } from '@/components/CardTypeBadge';
+import { HashtagLauf, type Hashtag } from '@/components/HashtagLauf';
+import { useIsActiveCard } from '@/lib/activeCard';
 import { FitBox } from '@/components/FitBox';
 import { CommentSheet } from '@/features/comments/CommentSheet';
 import { KineticCard } from '@/features/kinetic/KineticCard';
@@ -45,6 +47,8 @@ type Props = {
   height: number;
   accentHex?: string | null;
   categoryLabel?: string;
+  /** Alle Hashtags der Karte, Hauptkategorie zuerst (HashtagLauf, 0081). */
+  hashtags?: Hashtag[];
   sourcesById: Record<string, Source>;
   index: number;
   scrollY: SharedValue<number>;
@@ -87,6 +91,7 @@ function ContentCardBase({
   height,
   accentHex,
   categoryLabel,
+  hashtags,
   sourcesById,
   index,
   scrollY,
@@ -94,6 +99,7 @@ function ContentCardBase({
 }: Props) {
   const { reduceMotion } = usePrefs();
   const m = reduceMotion ? 0 : 1;
+  const imBild = useIsActiveCard(item.id);
 
   /**
    * Like und Repost kommen aus dem gemeinsamen Speicher, nicht aus dem
@@ -326,6 +332,12 @@ function ContentCardBase({
     router.push(`/category/${encodeURIComponent(item.primary_category_id)}`);
   }, [item.primary_category_id]);
 
+  const onHashtag = useCallback((t: Hashtag) => {
+    haptics.select();
+    if (t.ziel.art === 'kategorie') router.push(`/category/${encodeURIComponent(t.ziel.id)}`);
+    else router.push(`/search?q=${encodeURIComponent(t.ziel.q)}`);
+  }, []);
+
   const rate = useCallback(
     (kind: 'too_easy' | 'too_hard') => {
       if (rated) return;
@@ -400,11 +412,6 @@ function ContentCardBase({
           <Pressable onPress={onSurf} hitSlop={6}>
             <CardTypeBadge contentType={item.content_type} tint={accent} />
           </Pressable>
-          {categoryLabel ? (
-            <Pressable onPress={onSurf} hitSlop={6}>
-              <Text style={[styles.category, { color: accent }]}>#{categoryLabel}</Text>
-            </Pressable>
-          ) : null}
           {/* Alte Nachricht: anschreiben statt verstecken. Frueher fiel
               sie nach vierzehn Tagen aus dem Feed; jetzt bleibt sie und
               sagt selbst, dass sie nicht mehr aktuell ist. */}
@@ -416,6 +423,15 @@ function ContentCardBase({
               <Icon name="refresh" size={12} color={color.signal.mastery} />
               <Text style={styles.repeatText}>nochmal</Text>
             </Animated.View>
+          ) : null}
+          {/* Hashtags zuletzt: sie bekommen den Rest der Zeile und laufen
+              durch, wenn er nicht reicht. Die Marken davor stehen still. */}
+          {hashtags && hashtags.length > 0 ? (
+            <HashtagLauf tags={hashtags} farbe={accent} aktiv={imBild} ruhig={reduceMotion} onPress={onHashtag} />
+          ) : categoryLabel ? (
+            <Pressable onPress={onSurf} hitSlop={6}>
+              <Text style={[styles.category, { color: accent }]}>#{categoryLabel}</Text>
+            </Pressable>
           ) : null}
         </View>
         <View style={styles.difficulty}>
@@ -653,11 +669,15 @@ const styles = StyleSheet.create({
     paddingBottom: space.sm,
   },
   headerLeft: {
+    // minWidth 0 und KEIN Umbruch mehr: frueher durfte die Zeile umbrechen,
+    // jetzt laufen die Hashtags stattdessen durch (HashtagLauf). Mit Umbruch
+    // rutschten sie in eine zweite Zeile und liefen nie.
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    flex: 1,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
   },
   category: { ...type.meta, textTransform: 'lowercase', letterSpacing: 0.6 },
   repeat: {

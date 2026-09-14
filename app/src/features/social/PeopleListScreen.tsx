@@ -66,7 +66,7 @@ export function PeopleListScreen({
     setBusy((b) => new Set(b).add(person.id));
 
     try {
-      await api.setFollowing(person.id, next);
+      await api.setFollowing(person.id, next, { quelle: 'liste' });
     } catch {
       setPeople((prev) =>
         (prev ?? []).map((p) => (p.id === person.id ? { ...p, i_follow: !next } : p)),

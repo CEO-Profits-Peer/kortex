@@ -111,8 +111,15 @@ export async function shareCard(opts: {
  * haengt davon ab, wie der Webserver unbekannte Adressen behandelt.
  * lib/deepLink.ts oeffnet den Beitrag danach.
  */
-export async function sharePost(opts: { postId: string; text: string }): Promise<ShareResult> {
-  const url = `${WEB_BASE}/?post=${encodeURIComponent(opts.postId)}`;
+export async function sharePost(opts: {
+  postId: string;
+  text: string;
+  /** Link auf einen Kommentar: die Beitragsseite springt dorthin (0080). */
+  kommentarId?: string;
+}): Promise<ShareResult> {
+  const url =
+    `${WEB_BASE}/?post=${encodeURIComponent(opts.postId)}` +
+    (opts.kommentarId ? `&kommentar=${encodeURIComponent(opts.kommentarId)}` : '');
   const kurz = opts.text.length > 90 ? `${opts.text.slice(0, 87)}…` : opts.text;
 
   if (Platform.OS === 'web') {

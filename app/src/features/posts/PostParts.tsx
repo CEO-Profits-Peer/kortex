@@ -27,9 +27,15 @@ export function wann(iso: string): string {
   return d === 1 ? 'gestern' : `${d} T`;
 }
 
-export function zuProfil(handle: string) {
+/**
+ * Aufs Profil. Mit `postId`, wenn der Weg ueber einen Beitrag DIESER Person
+ * fuehrt: folgt man dort, zaehlt der Follow fuer den Beitrag (0080).
+ */
+export function zuProfil(handle: string, postId?: string) {
   haptics.light();
-  router.push(`/u/${encodeURIComponent(handle)}`);
+  router.push(
+    `/u/${encodeURIComponent(handle)}${postId ? `?von=beitrag&post=${encodeURIComponent(postId)}` : ''}`,
+  );
 }
 
 export function name(p: HomePerson): string {
@@ -42,14 +48,17 @@ export function Kopf({
   verb,
   at,
   klein,
+  postId,
 }: {
   wer: HomePerson;
   verb?: string | null;
   at: string;
   klein?: boolean;
+  /** Der Beitrag von `wer`, ueber den man aufs Profil geht. */
+  postId?: string;
 }) {
   return (
-    <Pressable onPress={() => zuProfil(wer.handle)} style={styles.kopf}>
+    <Pressable onPress={() => zuProfil(wer.handle, wer.ich ? undefined : postId)} style={styles.kopf}>
       <Avatar seed={wer.avatar_seed} path={wer.avatar_path} size={klein ? 24 : 34} />
       <Text style={[styles.kopfText, klein && { fontSize: 13 }]} numberOfLines={2}>
         <Text style={styles.kopfName}>{name(wer)}</Text>
@@ -200,7 +209,7 @@ export function PostKarte({
 
   return (
     <View style={styles.karte}>
-      <Kopf wer={post.wer} verb={verb} at={post.at} />
+      <Kopf wer={post.wer} verb={verb} at={post.at} postId={post.id} />
 
       {post.body ? (
         <Pressable onPress={oeffnen} disabled={imDetail}>
@@ -215,7 +224,7 @@ export function PostKarte({
           onPress={() => router.push(`/post/${encodeURIComponent(post.original!.id)}`)}
           style={({ pressed }) => [styles.original, pressed && { opacity: 0.85 }]}
         >
-          <Kopf wer={post.original.wer} at={post.original.at} klein />
+          <Kopf wer={post.original.wer} at={post.original.at} klein postId={post.original.id} />
           {post.original.body ? (
             <Text style={styles.originalText} numberOfLines={6}>
               {post.original.body}

@@ -449,8 +449,14 @@ export type PostComment = {
   ist_meins: boolean;
   /** Eigene Kommentare - und alle unter dem eigenen Beitrag. */
   darf_loeschen: boolean;
+  /** Kommentar-Likes (0080). */
+  likes: number;
+  ich_like: boolean;
   antworten: PostComment[];
 };
+
+/** Wo ein Folgen-Knopf gedrueckt wurde (set_following, 0080). */
+export type FolgenQuelle = 'beitrag' | 'home' | 'profil' | 'suche' | 'liste';
 
 export type PostDetail =
   | { gesperrt: false; post: Post; kommentare: PostComment[] }
@@ -477,6 +483,7 @@ export type AppNotification = {
   kind:
     | 'follow' | 'repost' | 'review' | 'streak'
     | 'post_like' | 'post_comment' | 'comment_reply' | 'post_repost' | 'duel'
+    | 'comment_like'
     | string;
   title: string;
   body: string;

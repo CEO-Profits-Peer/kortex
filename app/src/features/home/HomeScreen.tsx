@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import { Avatar } from '@/components/Avatar';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
+import { useNeuladen, useTabNochmal } from '@/components/Neuladen';
 import { TabHint, useTabHint } from '@/components/TabHint';
 import { CommentSheet } from '@/features/comments/CommentSheet';
 import { Aktionen, Kopf, KartenVerweis, PostKarte, zuProfil } from '@/features/posts/PostParts';
@@ -49,6 +49,15 @@ import { color, radius, space, type } from '@/theme/tokens';
 
 const SEITE = 25;
 
+/**
+ * Nach so langer Abwesenheit laedt Home beim Zurueckkommen still nach.
+ *
+ * Nicht bei jedem Tabwechsel: wer kurz in den Feed schaut und zurueckkommt,
+ * soll dieselbe Liste an derselben Stelle vorfinden, nicht eine, die sich
+ * unter dem Daumen umsortiert.
+ */
+const VERALTET_MS = 30_000;
+
 const schluessel = (e: HomeEntry) => `${e.art}:${e.wer.handle}:${e.at}`;
 
 export function HomeScreen() {
@@ -57,7 +66,6 @@ export function HomeScreen() {
   const [daten, setDaten] = useState<HomeData | null>(null);
   const [eintraege, setEintraege] = useState<HomeEntry[]>([]);
   const [fehler, setFehler] = useState<string | null>(null);
-  const [laedt, setLaedt] = useState(false);
   const [mehr, setMehr] = useState(true);
   const [nachLaedt, setNachLaedt] = useState(false);
   const nachladen = useRef(false);
@@ -65,12 +73,16 @@ export function HomeScreen() {
   const [gefolgt, setGefolgt] = useState<Set<string>>(new Set());
   const [kommentare, setKommentare] = useState<{ id: string; titel: string } | null>(null);
   const [ungelesen, setUngelesen] = useState(0);
+  const liste = useRef<FlatList<HomeEntry>>(null);
+  const geladenAm = useRef(0);
+  const scrollOben = useRef(0);
 
   // Bei jedem Zurueckkommen neu zaehlen: wer die Glocke geleert hat, soll
   // den Punkt nicht mehr sehen, und wer lange im Feed war, den neuen schon.
   useFocusEffect(
     useCallback(() => {
       void api.unreadNotifications().then(setUngelesen).catch(() => undefined);
+      if (geladenAm.current && Date.now() - geladenAm.current > VERALTET_MS) void stillLaden.current();
     }, []),
   );
 
@@ -81,6 +93,7 @@ export function HomeScreen() {
   }, []);
 
   const laden = useCallback(async () => {
+    geladenAm.current = Date.now();
     try {
       const d = await api.home(SEITE);
       setDaten(d);
@@ -92,6 +105,36 @@ export function HomeScreen() {
       setDaten((alt) => alt ?? { eintraege: [], leute: [], folge_ich: 0, vorschlaege: [] });
     }
   }, []);
+
+  /**
+   * Neu laden, ohne die Stelle zu verlieren.
+   *
+   * Steht man oben, wird die Liste ersetzt. Ist man weiter unten, kommen nur
+   * die neuen Eintraege vorn dazu - Ersetzen wuerde alles Nachgeladene
+   * wegwerfen, und die Liste spraenge zurueck auf Seite eins.
+   *
+   * In einer Ref, weil der Fokus-Effekt oben vor dieser Stelle steht.
+   */
+  const stillLaden = useRef(async () => {
+    geladenAm.current = Date.now();
+    try {
+      const d = await api.home(SEITE);
+      setDaten(d);
+      if (scrollOben.current < 400) {
+        setEintraege(d.eintraege);
+        setMehr(d.eintraege.length >= SEITE);
+      } else {
+        setEintraege((alt) => {
+          const schon = new Set(alt.map(schluessel));
+          const neueste = alt[0]?.at ?? '';
+          return [...d.eintraege.filter((e) => !schon.has(schluessel(e)) && e.at > neueste), ...alt];
+        });
+      }
+      setFehler(null);
+    } catch {
+      // Still heisst auch: ein Fehler hier stoert niemanden. Die alte Liste bleibt.
+    }
+  });
 
   const weiter = useCallback(async () => {
     if (nachladen.current || !mehr || eintraege.length === 0) return;
@@ -121,6 +164,17 @@ export function HomeScreen() {
     return beiWiederOnline(() => void laden());
   }, [fehler, laden]);
 
+  const neuladen = useNeuladen(async () => {
+    await laden();
+    setGefolgt(new Set());
+  }, insets.top + space.sm);
+
+  // Zweiter Tipp auf "Home": nach oben, neu laden.
+  useTabNochmal(() => {
+    liste.current?.scrollToOffset({ offset: 0, animated: true });
+    void neuladen.ausloesen();
+  });
+
   const einladen = useCallback(async () => {
     haptics.light();
     try {
@@ -138,7 +192,7 @@ export function HomeScreen() {
     haptics.select();
     setGefolgt((s) => new Set(s).add(id));
     try {
-      await api.setFollowing(id, true);
+      await api.setFollowing(id, true, { quelle: 'home' });
     } catch {
       setGefolgt((s) => {
         const n = new Set(s);
@@ -267,6 +321,7 @@ export function HomeScreen() {
   return (
     <GridBackground>
       <FlatList
+        ref={liste}
         data={eintraege}
         keyExtractor={schluessel}
         renderItem={({ item }) => (
@@ -299,19 +354,14 @@ export function HomeScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={laedt}
-            onRefresh={async () => {
-              setLaedt(true);
-              await laden();
-              setGefolgt(new Set());
-              setLaedt(false);
-            }}
-            tintColor={color.ink.low}
-          />
-        }
+        onScroll={(e) => {
+          scrollOben.current = e.nativeEvent.contentOffset.y;
+          neuladen.beiScroll(e.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={16}
+        {...neuladen.listenProps}
       />
+      {neuladen.anzeige}
 
       {kommentare ? (
         <CommentSheet

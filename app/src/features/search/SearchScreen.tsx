@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -66,6 +66,13 @@ export function SearchScreen() {
   const [openRoot, setOpenRoot] = useState<string | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // `?q=`: ein Schlagwort-Hashtag auf einer Karte fuehrt hierher (HashtagLauf).
+  // Kategorien haben eine eigene Seite; Schlagworte gibt es nur als Suche.
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  useEffect(() => {
+    if (typeof q === 'string' && q.trim()) setQuery(q);
+  }, [q]);
+
   useEffect(() => {
     void api
       .listCategories()
@@ -109,7 +116,7 @@ export function SearchScreen() {
       router.push(`/category/${encodeURIComponent(hit.id)}`);
     } else if (hit.kind === 'profile') {
       // subtitle ist '@handle' - das fuehrt direkt aufs Profil.
-      router.push(`/u/${encodeURIComponent(hit.subtitle.replace(/^@/, ''))}`);
+      router.push(`/u/${encodeURIComponent(hit.subtitle.replace(/^@/, ''))}?von=suche`);
     } else if (hit.kind === 'course') {
       router.push(`/course/${encodeURIComponent(hit.id)}`);
     } else if (hit.kind === 'content') {

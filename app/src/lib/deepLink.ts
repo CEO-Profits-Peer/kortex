@@ -17,15 +17,19 @@ import { Platform } from 'react-native';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-let offen: { art: 'card' | 'post'; id: string } | null = null;
+let offen: { art: 'card' | 'post'; id: string; kommentar?: string } | null = null;
 
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   try {
     const u = new URL(window.location.href);
     const post = u.searchParams.get('post');
     const card = u.searchParams.get('card');
-    if (post && UUID.test(post)) offen = { art: 'post', id: post };
-    else if (card && UUID.test(card)) offen = { art: 'card', id: card };
+    // `&kommentar=` - ein geteilter Kommentar (0080). Ohne gueltigen
+    // Beitrag daneben bedeutet er nichts.
+    const kommentar = u.searchParams.get('kommentar');
+    if (post && UUID.test(post)) {
+      offen = { art: 'post', id: post, kommentar: kommentar && UUID.test(kommentar) ? kommentar : undefined };
+    } else if (card && UUID.test(card)) offen = { art: 'card', id: card };
   } catch {
     /* keine lesbare Adresse - dann eben kein Link */
   }
@@ -40,7 +44,7 @@ export function geteiltenLinkOeffnen(): void {
   setTimeout(() => {
     router.push(
       ziel.art === 'post'
-        ? `/post/${encodeURIComponent(ziel.id)}`
+        ? `/post/${encodeURIComponent(ziel.id)}${ziel.kommentar ? `?kommentar=${ziel.kommentar}` : ''}`
         : `/reel/${encodeURIComponent(ziel.id)}`,
     );
   }, 150);

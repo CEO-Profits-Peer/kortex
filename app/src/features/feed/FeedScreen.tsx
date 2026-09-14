@@ -8,6 +8,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ContentCard } from '@/components/ContentCard';
+import { hashtagsFuer } from '@/components/HashtagLauf';
 import { BatchCheckpoint } from '@/features/quiz/BatchCheckpoint';
 import { EnoughForToday } from '@/features/feed/EnoughForToday';
 import { analytics } from '@/lib/analytics';
@@ -357,6 +358,7 @@ export function FeedScreen({
           height={cardHeight}
           accentHex={cat?.accent_hex}
           categoryLabel={cat?.slug}
+          hashtags={hashtagsFuer(item, categories)}
           sourcesById={sources}
         />
       );
