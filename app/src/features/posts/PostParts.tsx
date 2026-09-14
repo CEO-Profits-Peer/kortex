@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { ErwaehnungsText } from '@/components/Erwaehnungen';
 import { Icon, type IconName } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { sharePost } from '@/lib/share';
@@ -213,7 +214,7 @@ export function PostKarte({
 
       {post.body ? (
         <Pressable onPress={oeffnen} disabled={imDetail}>
-          <Text style={[styles.text, post.art === 'frage' && styles.frage]}>{post.body}</Text>
+          <ErwaehnungsText text={post.body} style={[styles.text, post.art === 'frage' && styles.frage]} />
         </Pressable>
       ) : null}
 
@@ -226,9 +227,7 @@ export function PostKarte({
         >
           <Kopf wer={post.original.wer} at={post.original.at} klein postId={post.original.id} />
           {post.original.body ? (
-            <Text style={styles.originalText} numberOfLines={6}>
-              {post.original.body}
-            </Text>
+            <ErwaehnungsText text={post.original.body} style={styles.originalText} numberOfLines={6} />
           ) : null}
           {post.original.karte ? <KartenVerweis karte={post.original.karte} /> : null}
         </Pressable>

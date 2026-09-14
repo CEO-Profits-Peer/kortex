@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { ErwaehnungsText, useErwaehnung } from '@/components/Erwaehnungen';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -59,6 +60,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
   const [notiz, setNotiz] = useState<string | null>(null);
   const [menue, setMenue] = useState(false);
   const [hervor, setHervor] = useState<string | null>(kommentarId ?? null);
+  const erwaehnung = useErwaehnung(text, setText);
 
   const scroll = useRef<ScrollView>(null);
   const eingabe = useRef<TextInput>(null);
@@ -323,11 +325,13 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
               </Pressable>
             </View>
           ) : null}
+          {erwaehnung.leiste}
           <View style={styles.eingabe}>
             <TextInput
               ref={eingabe}
               value={text}
               onChangeText={setText}
+              onSelectionChange={erwaehnung.onSelectionChange}
               placeholder={antwortAn ? 'Deine Antwort' : 'Kommentieren'}
               placeholderTextColor={color.ink.low}
               style={styles.input}
@@ -408,7 +412,7 @@ function Kommentar({
           </Text>
           <Text style={styles.kommentarWann}>{wann(k.at)}</Text>
         </View>
-        <Text style={styles.kommentarText}>{k.body}</Text>
+        <ErwaehnungsText text={k.body} style={styles.kommentarText} />
         <View style={styles.kommentarAktionen}>
           <Pressable onPress={onAntworten} hitSlop={8}>
             <Text style={styles.menueText}>Antworten</Text>

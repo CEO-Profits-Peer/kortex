@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useErwaehnung } from '@/components/Erwaehnungen';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { KartenVerweis, Kopf } from '@/features/posts/PostParts';
@@ -43,6 +44,7 @@ export function ComposeScreen() {
   const [busy, setBusy] = useState(false);
   const [notiz, setNotiz] = useState<string | null>(null);
   const [original, setOriginal] = useState<Post | null>(null);
+  const erwaehnung = useErwaehnung(text, setText);
 
   useEffect(() => {
     if (!params.repost) return;
@@ -137,6 +139,7 @@ export function ComposeScreen() {
           <TextInput
             value={text}
             onChangeText={setText}
+            onSelectionChange={erwaehnung.onSelectionChange}
             placeholder={platzhalter}
             placeholderTextColor={color.ink.low}
             style={styles.eingabe}
@@ -144,6 +147,7 @@ export function ComposeScreen() {
             autoFocus
             maxLength={500}
           />
+          {erwaehnung.leiste}
           <Text style={styles.zaehler}>{text.length} / 500</Text>
 
           {karte ? <KartenVerweis karte={karte} /> : null}
@@ -163,8 +167,8 @@ export function ComposeScreen() {
           {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
 
           <Text style={styles.regeln}>
-            Deine Follower sehen das in ihrem Home, nicht im Feed. Sei fair - keine Links, keine
-            Kontaktdaten.
+            Deine Follower sehen das in ihrem Home, nicht im Feed. Mit @name erwähnst du jemanden –
+            die Person bekommt eine Benachrichtigung. Sei fair: keine Links, keine Kontaktdaten.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Appear } from '@/components/Appear';
 import { Avatar } from '@/components/Avatar';
+import { ErwaehnungsText, useErwaehnung } from '@/components/Erwaehnungen';
 import { Icon } from '@/components/Icon';
 import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
@@ -73,7 +74,7 @@ function Entry({
           </Text>
           <Text style={styles.when}>{timeAgo(item.at)}</Text>
         </View>
-        <Text style={styles.body}>{item.body}</Text>
+        <ErwaehnungsText text={item.body} style={styles.body} />
 
         <View style={styles.entryActions}>
           {onReply ? (
@@ -126,6 +127,7 @@ export function CommentSheet({
   const [replyTo, setReplyTo] = useState<CommentQuestion | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const erwaehnung = useErwaehnung(text, setText);
 
   const load = useCallback(async () => {
     try {
@@ -258,10 +260,12 @@ export function CommentSheet({
             </View>
           ) : null}
 
+          {erwaehnung.leiste}
           <View style={styles.composer}>
             <TextInput
               value={text}
               onChangeText={setText}
+              onSelectionChange={erwaehnung.onSelectionChange}
               placeholder={replyTo ? 'Deine Antwort' : 'Schreib etwas dazu'}
               placeholderTextColor={color.ink.low}
               style={styles.input}
@@ -288,7 +292,7 @@ export function CommentSheet({
           </View>
 
           <Text style={styles.rules}>
-            Sei fair. Keine Links, keine Kontaktdaten.
+            Sei fair. Keine Links, keine Kontaktdaten. Mit @name erwähnst du jemanden.
           </Text>
         </View>
       </KeyboardAvoidingView>

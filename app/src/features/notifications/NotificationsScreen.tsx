@@ -41,6 +41,7 @@ const ICON: Record<string, IconName> = {
   post_repost: 'refresh',
   post_like: 'like-filled',
   comment_like: 'like-filled',
+  mention: 'comment',
   post_comment: 'comment',
   comment_reply: 'comment',
   duel: 'xp',

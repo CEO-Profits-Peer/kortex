@@ -533,7 +533,7 @@ export type AppNotification = {
   kind:
     | 'follow' | 'repost' | 'review' | 'streak'
     | 'post_like' | 'post_comment' | 'comment_reply' | 'post_repost' | 'duel'
-    | 'comment_like'
+    | 'comment_like' | 'mention'
     | string;
   title: string;
   body: string;
