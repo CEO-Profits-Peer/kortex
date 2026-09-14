@@ -212,6 +212,9 @@ const styles = StyleSheet.create({
   artText: { ...type.meta, color: color.ink.mid },
   artTextAn: { color: color.signal.primary },
 
+  // Eigene, weich gerundete Flaeche. Vorher zeichnete der Browser beim
+  // Antippen seinen eigenen weissen Fokusrahmen mit fast eckigen Kanten -
+  // der einzige harte Rand auf einem sonst runden Bildschirm.
   eingabe: {
     minHeight: 140,
     ...type.body,
@@ -219,6 +222,12 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: color.ink.max,
     textAlignVertical: 'top',
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   zaehler: { ...type.meta, color: color.ink.low, textAlign: 'right' },
 

@@ -291,23 +291,6 @@ export function HomeScreen() {
         </View>
       </View>
 
-      {/* Following | Explore (0084) */}
-      <View style={styles.umschalter}>
-        {(['following', 'explore'] as const).map((a) => (
-          <Pressable
-            key={a}
-            onPress={() => umschalten(a)}
-            style={[styles.umschalterTeil, ansicht === a && styles.umschalterAn]}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: ansicht === a }}
-          >
-            <Text style={[styles.umschalterText, ansicht === a && styles.umschalterTextAn]}>
-              {a === 'following' ? 'Following' : 'Explore'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
       {/* Das Schreibfeld - der wichtigste Knopf auf dem Bildschirm. */}
       <Pressable
         onPress={() => {
@@ -379,6 +362,25 @@ export function HomeScreen() {
           </ScrollView>
         </View>
       ) : null}
+
+      {/* Following | Explore (0084). Direkt ueber den Beitraegen, nicht unter
+          dem Titel: der Schalter bestimmt, was DARUNTER steht - Schreibfeld,
+          Leute und Vorschlaege gehoeren nicht dazu. */}
+      <View style={styles.umschalter}>
+        {(['following', 'explore'] as const).map((a) => (
+          <Pressable
+            key={a}
+            onPress={() => umschalten(a)}
+            style={[styles.umschalterTeil, ansicht === a && styles.umschalterAn]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: ansicht === a }}
+          >
+            <Text style={[styles.umschalterText, ansicht === a && styles.umschalterTextAn]}>
+              {a === 'following' ? 'Following' : 'Explore'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
       {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
       {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}

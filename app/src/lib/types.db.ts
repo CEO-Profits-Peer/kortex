@@ -398,6 +398,14 @@ export type PublicProfile = {
   likes_bekommen?: number;
 };
 
+/** Stand der Wiederholungen (my_review_overview, 0087). */
+export type ReviewUeberblick = {
+  faellig: number;
+  geplant: number;
+  naechste: string | null;
+  sitzt: number;
+};
+
 /** Die eigene Statistik (get_my_statistik, 0083). */
 export type Statistik = {
   dabei_seit: string;

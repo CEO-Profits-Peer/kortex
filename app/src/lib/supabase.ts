@@ -30,6 +30,7 @@ import type {
   HomeData,
   Post,
   PostDetail,
+  ReviewUeberblick,
   Statistik,
   UserPostsPage,
   InvitePreview,
@@ -489,6 +490,13 @@ export const api = {
     const { data, error } = await supabase.rpc('get_explore', { p_limit: limit, p_ausser: ausser });
     if (error) throw error;
     return ((data as { beitraege?: Post[] } | null)?.beitraege ?? []) as Post[];
+  },
+
+  /** Wiederholungen: faellig, eingeplant, naechste (0087). */
+  async reviewOverview(): Promise<ReviewUeberblick> {
+    const { data, error } = await supabase.rpc('my_review_overview');
+    if (error) throw error;
+    return data as ReviewUeberblick;
   },
 
   /** Eigene Statistik (0083). */

@@ -9,8 +9,9 @@ import { feedback } from '@/lib/feedback';
 
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { api } from '@/lib/supabase';
-import type { DueReview } from '@/lib/types.db';
+import type { DueReview, ReviewUeberblick } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
@@ -30,6 +31,19 @@ import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 type Answered = { correct: boolean; correctIndex: number; xp: number };
 
+/** "in 3 Stunden", "morgen", "am 18.09." */
+function wannNaechste(iso: string | null): string {
+  if (!iso) return 'bald';
+  const d = new Date(iso);
+  const std = Math.round((d.getTime() - Date.now()) / 3_600_000);
+  if (std <= 1) return 'in unter einer Stunde';
+  if (std < 20) return `in ${std} Stunden`;
+  const tage = Math.round(std / 24);
+  if (tage <= 1) return 'morgen';
+  if (tage < 7) return `in ${tage} Tagen`;
+  return `am ${d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })}`;
+}
+
 export function ReviewScreen() {
   const insets = useSafeAreaInsets();
   const [queue, setQueue] = useState<DueReview[] | null>(null);
@@ -39,6 +53,11 @@ export function ReviewScreen() {
   const [busy, setBusy] = useState(false);
   const [gained, setGained] = useState({ xp: 0, correct: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [ueberblick, setUeberblick] = useState<ReviewUeberblick | null>(null);
+
+  useEffect(() => {
+    void api.reviewOverview().then(setUeberblick).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     void api
@@ -97,18 +116,57 @@ export function ReviewScreen() {
 
   // --- Nichts faellig -------------------------------------------------------
 
+  /**
+   * Gemeldet als "Knopf Wiederholungen macht nichts". Er oeffnete genau
+   * diesen Zustand - "Nichts faellig" und ein Knopf "Zum Feed", der nur
+   * zurueck ins Profil ging. Jetzt steht hier, wozu das gut ist, wann die
+   * naechste Frage kommt, und die Knoepfe tun, was draufsteht.
+   */
   if (queue.length === 0) {
+    const u = ueberblick;
     return (
       <GridBackground>
-        <View style={[styles.center, { paddingTop: insets.top }]}>
-          <Text style={styles.emptyTitle}>Nichts fällig</Text>
-          <Text style={styles.emptyBody}>
-            {error ??
-              'Wiederholungen entstehen aus Quizfragen, die du richtig beantwortet hast. ' +
-                'Die erste kommt einen Tag später zurück.'}
-          </Text>
-          <Button label="Zum Feed" variant="ghost" onPress={() => router.back()} />
+        <View style={{ paddingTop: insets.top }}>
+          <ScreenHeader title="Wiederholen" titleInBarOnly />
         </View>
+        <ScrollView contentContainerStyle={styles.leer}>
+          <Text style={styles.emptyTitle}>Gerade nichts fällig</Text>
+          {error ? <Text style={styles.emptyBody}>{error}</Text> : null}
+
+          <View style={styles.stand}>
+            <Text style={[styles.standZahl, { color: color.signal.mastery }]}>{u?.geplant ?? '–'}</Text>
+            <Text style={styles.standText}>
+              {!u
+                ? 'Stand wird geladen …'
+                : u.geplant === 0
+                  ? 'Noch keine Fragen eingeplant.'
+                  : `Fragen eingeplant – die nächste ${wannNaechste(u.naechste)}.`}
+            </Text>
+            {u && u.sitzt > 0 ? (
+              <Text style={styles.standKlein}>{u.sitzt} sitzen schon dauerhaft.</Text>
+            ) : null}
+          </View>
+
+          <Text style={styles.wozuTitel}>Wozu das gut ist</Text>
+          <Text style={styles.wozu}>
+            Was du nur einmal liest, ist nach einer Woche zum größten Teil weg. Deshalb kommen
+            Quizfragen, die du richtig beantwortet hast, nach 1, 3, 7 und mehr Tagen zurück – genau
+            dann, wenn du sie fast vergessen hättest. So bleibt es hängen.
+          </Text>
+          <Text style={styles.wozu}>
+            Jede richtige Wiederholung bringt 15 XP und 15 Mastery – mehr als jede andere Aufgabe.
+          </Text>
+          <Text style={styles.wozuTitel}>Wie neue Fragen dazukommen</Text>
+          <Text style={styles.wozu}>
+            Im Feed kommt nach 15 gelesenen Karten eine kurze Fragerunde. Was du dort richtig hast,
+            landet hier.
+          </Text>
+
+          <View style={styles.knoepfe}>
+            <Button label="Zum Feed" onPress={() => router.navigate('/')} />
+            <Button label="Zurück" variant="ghost" onPress={() => router.back()} />
+          </View>
+        </ScrollView>
       </GridBackground>
     );
   }
@@ -275,6 +333,22 @@ const styles = StyleSheet.create({
   optionText: { ...type.body, color: color.ink.high },
 
   verdict: { ...type.label, fontSize: 16 },
+
+  leer: { padding: space.xl, gap: space.md },
+  stand: {
+    gap: 4,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  standZahl: { ...type.display, fontSize: 40, lineHeight: 46 },
+  standText: { ...type.body, fontSize: 15, color: color.ink.high },
+  standKlein: { ...type.meta, color: color.ink.low },
+  wozuTitel: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1.2, paddingTop: space.sm },
+  wozu: { ...type.body, fontSize: 15, lineHeight: 22, color: color.ink.mid },
+  knoepfe: { gap: space.sm, paddingTop: space.md },
 
   emptyTitle: { ...type.title, color: color.ink.max },
   emptyBody: { ...type.body, fontSize: 15, color: color.ink.mid, textAlign: 'center', maxWidth: 380 },
