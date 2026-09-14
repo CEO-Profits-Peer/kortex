@@ -3,12 +3,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
@@ -185,11 +187,19 @@ export function HomeScreen() {
     }
   }, [explore]);
 
+  // Wo der Umschalter in der Liste steht, und ob er gerade fest oben haengt.
+  const umschalterY = useRef(0);
+  const [festOben, setFestOben] = useState(false);
+  const festObenRef = useRef(false);
+  const schwelle = () => Math.max(0, umschalterY.current - insets.top - space.sm);
+
   const umschalten = (a: 'following' | 'explore') => {
     if (a === ansicht) return;
     haptics.select();
     setAnsicht(a);
-    liste.current?.scrollToOffset({ offset: 0, animated: false });
+    // War man schon unter dem Umschalter, beginnt die andere Liste direkt
+    // darunter - nicht wieder beim Schreibfeld ganz oben.
+    if (festObenRef.current) liste.current?.scrollToOffset({ offset: schwelle(), animated: false });
     if (a === 'explore' && explore === null) void ladenExplore(true);
   };
 
@@ -261,6 +271,24 @@ export function HomeScreen() {
       </GridBackground>
     );
   }
+
+  const umschalterLeiste = (
+    <View style={styles.umschalter}>
+      {(['following', 'explore'] as const).map((a) => (
+        <Pressable
+          key={a}
+          onPress={() => umschalten(a)}
+          style={[styles.umschalterTeil, ansicht === a && styles.umschalterAn]}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: ansicht === a }}
+        >
+          <Text style={[styles.umschalterText, ansicht === a && styles.umschalterTextAn]}>
+            {a === 'following' ? 'Following' : 'Explore'}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 
   const kopf = (
     <View style={styles.kopfBereich}>
@@ -365,21 +393,15 @@ export function HomeScreen() {
 
       {/* Following | Explore (0084). Direkt ueber den Beitraegen, nicht unter
           dem Titel: der Schalter bestimmt, was DARUNTER steht - Schreibfeld,
-          Leute und Vorschlaege gehoeren nicht dazu. */}
-      <View style={styles.umschalter}>
-        {(['following', 'explore'] as const).map((a) => (
-          <Pressable
-            key={a}
-            onPress={() => umschalten(a)}
-            style={[styles.umschalterTeil, ansicht === a && styles.umschalterAn]}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: ansicht === a }}
-          >
-            <Text style={[styles.umschalterText, ansicht === a && styles.umschalterTextAn]}>
-              {a === 'following' ? 'Following' : 'Explore'}
-            </Text>
-          </Pressable>
-        ))}
+          Leute und Vorschlaege gehoeren nicht dazu. Die Position wird
+          gemessen: ist er beim Scrollen oben hinausgelaufen, steht eine
+          Kopie fest am oberen Rand (siehe unten). */}
+      <View
+        onLayout={(e) => {
+          umschalterY.current = insets.top + space.xl + e.nativeEvent.layout.y;
+        }}
+      >
+        {umschalterLeiste}
       </View>
 
       {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
@@ -439,13 +461,30 @@ export function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
-          scrollOben.current = e.nativeEvent.contentOffset.y;
-          neuladen.beiScroll(e.nativeEvent.contentOffset.y);
+          const y = e.nativeEvent.contentOffset.y;
+          scrollOben.current = y;
+          neuladen.beiScroll(y);
+          const fest = umschalterY.current > 0 && y > schwelle();
+          if (fest !== festObenRef.current) {
+            festObenRef.current = fest;
+            setFestOben(fest);
+          }
         }}
         scrollEventThrottle={16}
         {...neuladen.listenProps}
       />
       {neuladen.anzeige}
+
+      {/* Following | Explore bleibt oben, sobald er aus dem Bild gescrollt ist. */}
+      {festOben ? (
+        <Animated.View
+          entering={FadeIn.duration(140)}
+          exiting={FadeOut.duration(120)}
+          style={[styles.festOben, { paddingTop: insets.top + space.sm }]}
+        >
+          {umschalterLeiste}
+        </Animated.View>
+      ) : null}
 
       {kommentare ? (
         <CommentSheet
@@ -645,6 +684,19 @@ const styles = StyleSheet.create({
   umschalterAn: { backgroundColor: color.bgElevated },
   umschalterText: { ...type.label, fontSize: 13, color: color.ink.low },
   umschalterTextAn: { color: color.ink.max },
+  festOben: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: space.xl,
+    paddingBottom: space.sm,
+    zIndex: 10,
+    backgroundColor: 'rgba(11, 12, 14, 0.9)',
+    ...(Platform.OS === 'web'
+      ? ({ backdropFilter: 'blur(18px)' } as object)
+      : null),
+  },
   titelZeile: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titel: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
   einladen: {

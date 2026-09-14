@@ -1,12 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,6 +78,26 @@ export function StudioScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const entwuerfe = useEntwuerfe();
+  const [suche, setSuche] = useState('');
+  const [kategorie, setKategorie] = useState<string | null>(null);
+
+  // Kategorien aus den Kursen selbst - nur die, zu denen es Kurse gibt.
+  const kursKategorien = useMemo(() => {
+    const je = new Map<string, { id: string; name: string; emoji: string | null; accent: string | null }>();
+    (courses ?? []).forEach((c) => {
+      if (!je.has(c.category_id)) je.set(c.category_id, { id: c.category_id, name: c.category, emoji: c.emoji, accent: c.accent });
+    });
+    return [...je.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  }, [courses]);
+
+  const gefiltert = useMemo(() => {
+    const q = suche.trim().toLocaleLowerCase('de');
+    return (courses ?? []).filter(
+      (c) =>
+        (!kategorie || c.category_id === kategorie) &&
+        (!q || `${c.title} ${c.description} ${c.category}`.toLocaleLowerCase('de').includes(q)),
+    );
+  }, [courses, suche, kategorie]);
   const scroll = useRef<ScrollView>(null);
   const labY = useRef(0);
 
@@ -333,14 +355,71 @@ export function StudioScreen() {
 
             <DailyBanner />
 
-            <Abschnitt titel="Kurse" />
+            <Abschnitt titel="Kurse" zahl={courses?.length} />
+
+            {/* Suche und Kategorien ueber den Kursen - "fuer die Zukunft
+                geruestet": die Pipeline baut zwei Kurse am Tag, und eine
+                lange Liste ohne Filter findet man nach ein paar Wochen nicht
+                mehr durch. Gefiltert wird hier, ohne Anfrage. */}
+            {courses && courses.length > 0 ? (
+              <>
+                <View style={styles.suche}>
+                  <Icon name="search" size={16} color={color.ink.low} />
+                  <TextInput
+                    value={suche}
+                    onChangeText={setSuche}
+                    placeholder="Kurse durchsuchen"
+                    placeholderTextColor={color.ink.low}
+                    style={styles.sucheEingabe}
+                    returnKeyType="search"
+                  />
+                  {suche ? (
+                    <Pressable onPress={() => setSuche('')} hitSlop={10} accessibilityLabel="Suche leeren">
+                      <Icon name="close" size={14} color={color.ink.low} />
+                    </Pressable>
+                  ) : null}
+                </View>
+                {kursKategorien.length > 1 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.reihe}
+                    style={styles.bleed}
+                  >
+                    {[{ id: null, name: 'Alle', emoji: null, accent: null }, ...kursKategorien].map((k) => {
+                      const an = kategorie === k.id;
+                      const akzent = k.accent ? categoryAccent(k.accent) : color.signal.primary;
+                      return (
+                        <Pressable
+                          key={k.id ?? 'alle'}
+                          onPress={() => {
+                            haptics.select();
+                            setKategorie(k.id);
+                          }}
+                          style={[styles.kursChip, an && { borderColor: akzent, backgroundColor: color.bgElevated }]}
+                        >
+                          <Text style={[styles.kursChipText, an && { color: akzent }]}>
+                            {k.emoji ? `${k.emoji} ` : ''}
+                            {k.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                ) : null}
+              </>
+            ) : null}
 
             {courses === null ? (
               <ActivityIndicator color={color.ink.low} />
             ) : courses.length === 0 ? (
               <Text style={styles.leer}>{error ?? 'Noch keine Kurse in deiner Sprache freigegeben.'}</Text>
+            ) : gefiltert.length === 0 ? (
+              <Text style={styles.leer}>
+                {suche.trim() ? `Kein Kurs passt zu „${suche.trim()}".` : 'In dieser Kategorie gibt es noch keinen Kurs.'}
+              </Text>
             ) : (
-              courses.map((c) => {
+              gefiltert.map((c) => {
                 const accent = categoryAccent(c.accent);
                 const done = c.lessons > 0 ? c.position / c.lessons : 0;
                 return (
@@ -566,6 +645,33 @@ const styles = StyleSheet.create({
   labTag: { ...type.meta, fontSize: 10 },
   labTitel: { ...type.label, fontSize: 16, color: color.ink.max },
   labKurz: { ...type.meta, fontSize: 11, lineHeight: 15, color: color.ink.low },
+
+  suche: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  sucheEingabe: {
+    flex: 1,
+    ...type.body,
+    fontSize: 15,
+    color: color.ink.max,
+    paddingVertical: 10,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+  },
+  kursChip: {
+    paddingHorizontal: space.md,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  kursChipText: { ...type.label, fontSize: 13, color: color.ink.mid },
 
   kacheln: { flexDirection: 'row', gap: space.md },
   kachel: {
