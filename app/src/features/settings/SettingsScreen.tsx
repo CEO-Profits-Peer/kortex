@@ -14,17 +14,18 @@ import {
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { SectionTitle } from '@/components/SectionTitle';
-import { Icon } from '@/components/Icon';
+import { Icon, type IconName } from '@/components/Icon';
 import { COUNTRIES } from '@/features/onboarding/regions';
 import { BRAND } from '@/lib/brand';
 import { haptics } from '@/lib/haptics';
 import { resetTabHints } from '@/components/TabHint';
 import { resetFeedTutorial } from '@/features/feed/FeedTutorial';
 import { stopMusic } from '@/lib/music';
+import { personName } from '@/lib/name';
 import { sound } from '@/lib/sound';
 import i18n, { SUPPORTED, type Language } from '@/lib/i18n';
 import { setPref, usePrefs } from '@/lib/prefs';
@@ -43,6 +44,14 @@ import { color, radius, space, type } from '@/theme/tokens';
  *             Tagesziel)
  *   Geraet -> AsyncStorage, gilt nur hier (Haptik, Bewegung, Ton)
  *
+ * Zweite Fassung ("Einstellungen verbessern"). Die erste war eine lange Liste
+ * ohne Halt: acht Ueberschriften, jede Zeile mit einem Satz als Hinweis, und
+ * Knoepfe wie "Erklärungen nochmal zeigen". Jetzt:
+ *   - oben das eigene Profil, weil man von dort am haeufigsten weiter will
+ *   - jede Gruppe eine eigene Flaeche mit Symbol - man findet "Push" am Bild,
+ *     nicht durch Lesen
+ *   - Beschriftungen kurz, Knoepfe EIN Wort, Hinweise hoechstens eine Zeile
+ *
  * Der Datenbereich unten ist keine Kür: Auskunft und Löschung sind bei einer
  * Zielgruppe ab 13 Jahren gesetzlich verlangt (DSGVO Art. 15 und 17) - und
  * zwar in der App erreichbar, nicht per Mail an den Betreiber.
@@ -53,15 +62,14 @@ import { color, radius, space, type } from '@/theme/tokens';
  *
  * DE und EN als Beschriftung, dazwischen das Mischungsverhältnis. Wer
  * "DE" wählt, bekommt ausschließlich deutsche Karten - auch wenn dadurch
- * weniger nachkommt. Das ist der Sinn der Einstellung: vorher entschied
- * das die App selbst, sobald der Vorrat dünn wurde.
+ * weniger nachkommt.
  */
 const LANGUAGE_STEPS = [
-  { pct: 0,   label: 'DE',    hint: 'Nur deutsche Inhalte' },
-  { pct: 25,  label: '¾ DE',  hint: 'Überwiegend Deutsch, etwas Englisch' },
-  { pct: 50,  label: '½',     hint: 'Deutsch und Englisch gemischt' },
-  { pct: 75,  label: '¾ EN',  hint: 'Überwiegend Englisch, etwas Deutsch' },
-  { pct: 100, label: 'EN',    hint: 'Nur englische Inhalte' },
+  { pct: 0,   label: 'DE',    hint: 'Nur Deutsch' },
+  { pct: 25,  label: '¾ DE',  hint: 'Meist Deutsch' },
+  { pct: 50,  label: '½',     hint: 'Halb, halb' },
+  { pct: 75,  label: '¾ EN',  hint: 'Meist Englisch' },
+  { pct: 100, label: 'EN',    hint: 'Nur Englisch' },
 ] as const;
 
 /** Alte oder von Hand gesetzte Werte auf die nächste Stufe abbilden. */
@@ -71,85 +79,144 @@ function nearestStep(pct: number): number {
   LANGUAGE_STEPS[0].pct as number);
 }
 
+const GOALS = [30, 60, 100, 200];
+
+/** Was unter dem Push-Schalter steht - je nachdem, warum er so aussieht. */
+const PUSH_HINT: Record<PushState, string | null> = {
+  on: 'Follower, Kommentare, Erwähnungen, Duelle. Likes nur in der Glocke.',
+  off: 'Der Browser fragt einmal um Erlaubnis.',
+  denied: null, // steht als Fehlermeldung darunter, sonst zweimal dasselbe
+  unsupported: 'Dieser Browser kann das nicht.',
+  'needs-install': 'Am iPhone nur als installierte App.',
+};
+
+/** Eine Gruppe: Symbol, Titel, eine Flaeche fuer ihre Zeilen. */
+function Gruppe({
+  icon,
+  titel,
+  children,
+}: {
+  icon: IconName;
+  titel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.gruppe}>
+      <View style={styles.gruppeKopf}>
+        <Icon name={icon} size={15} color={color.ink.low} />
+        <Text style={styles.gruppeTitel}>{titel}</Text>
+      </View>
+      <View style={styles.flaeche}>{children}</View>
+    </View>
+  );
+}
+
 /**
  * Eine Zeile.
  *
- * `right` steht neben der Beschriftung, `unten` darunter ueber die ganze
- * Breite. Der Unterschied ist nicht Geschmack: eine Reihe aus fuenf
- * Auswahlknoepfen neben einem Text laesst dem Text etwa sechzig Pixel, und
- * dann bricht "Sprache der Inhalte" auf vier Zeilen zu je einem halben Wort.
- * Genau so stand es hier.
- *
- * Eine Breitenangabe haette das auch geloest und beim naechsten laengeren
- * Wort wieder nicht. Etwas Breites gehoert unter die Beschriftung, nicht
- * daneben.
+ * `rechts` steht neben der Beschriftung, `unten` darunter ueber die ganze
+ * Breite - eine Reihe aus fuenf Auswahlknoepfen neben einem Text liesse dem
+ * Text sechzig Pixel, und dann bricht er auf vier Zeilen.
  */
-function Row({
+function Zeile({
   label,
   hint,
-  right,
+  rechts,
   unten,
   onPress,
-  danger,
+  gefahr,
   erste,
 }: {
   label: string;
-  hint?: string;
-  right?: React.ReactNode;
+  hint?: string | null;
+  rechts?: React.ReactNode;
   unten?: React.ReactNode;
   onPress?: () => void;
-  danger?: boolean;
+  gefahr?: boolean;
   /** Die erste Zeile einer Gruppe bekommt keine Trennlinie oben. */
   erste?: boolean;
 }) {
-  const content = (
-    <View style={[styles.row, !erste && styles.rowLinie]}>
-      <View style={styles.rowOben}>
-        <View style={styles.rowText}>
-          <Text style={[styles.rowLabel, danger && { color: color.signal.error }]}>{label}</Text>
-          {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
+  const inhalt = (
+    <View style={[styles.zeile, !erste && styles.zeileLinie]}>
+      <View style={styles.zeileOben}>
+        <View style={styles.zeileText}>
+          <Text style={[styles.label, gefahr && { color: color.signal.error }]}>{label}</Text>
+          {hint ? <Text style={styles.hint}>{hint}</Text> : null}
         </View>
-        {right}
+        {rechts}
       </View>
-      {unten ? <View style={styles.rowUnten}>{unten}</View> : null}
+      {unten ? <View style={styles.zeileUnten}>{unten}</View> : null}
     </View>
   );
-  if (!onPress) return content;
+  if (!onPress) return inhalt;
   return (
     <Pressable onPress={onPress} style={({ pressed }) => pressed && { opacity: 0.7 }}>
-      {content}
+      {inhalt}
     </Pressable>
   );
 }
 
-/**
- * Eine Gruppe.
- *
- * Ohne Kasten. Vorher lag jede Gruppe in einem umrandeten, abgesetzten Feld -
- * acht solche Felder untereinander sehen aus wie ein Formular, und ein
- * Formular ist das Letzte, was man gestaltet hat, bevor man aufgehoert hat zu
- * gestalten. Jetzt tragen Ueberschrift, Haarlinie und Abstand die Gliederung,
- * genau wie im Kontrollzentrum.
- */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** Ein Wort rechts in der Zeile - fuer Zeilen, die etwas tun statt umschalten. */
+function Aktion({ text, gefahr }: { text: string; gefahr?: boolean }) {
   return (
-    <View style={styles.section}>
-      <SectionTitle>{title}</SectionTitle>
-      <View>{children}</View>
+    <View style={styles.aktion}>
+      <Text style={[styles.aktionText, gefahr && { color: color.signal.error }]}>{text}</Text>
+      <Icon name="chevron" size={13} color={gefahr ? color.signal.error : color.ink.low} />
     </View>
   );
 }
 
-const GOALS = [30, 60, 100, 200];
+function Schalter({
+  wert,
+  onChange,
+  farbe = color.signal.primary,
+  aus,
+}: {
+  wert: boolean;
+  onChange: (v: boolean) => void;
+  farbe?: string;
+  aus?: boolean;
+}) {
+  return (
+    <Switch
+      value={wert}
+      disabled={aus}
+      onValueChange={onChange}
+      trackColor={{ true: farbe, false: color.ink.faint }}
+      thumbColor={color.bg}
+    />
+  );
+}
 
-/** Was unter dem Schalter steht - je nachdem, warum er so aussieht, wie er aussieht. */
-const PUSH_HINT: Record<PushState, string | null> = {
-  on: 'Neue Follower, Kommentare, Antworten, Duelle und geteilte Beiträge. Likes stehen nur in der Glocke.',
-  off: 'Beim Einschalten fragt der Browser einmal um Erlaubnis.',
-  denied: null, // steht als Fehlermeldung darunter, sonst zweimal dasselbe
-  unsupported: 'Dieser Browser kann keine Benachrichtigungen.',
-  'needs-install': 'Auf dem iPhone nur, wenn ElyCic vom Startbildschirm läuft.',
-};
+/** Auswahl als zusammenhaengende Leiste statt einzelner Kaestchen. */
+function Auswahl<T extends string | number>({
+  optionen,
+  wert,
+  onChange,
+}: {
+  optionen: { wert: T; label: string }[];
+  wert: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={styles.auswahl}>
+      {optionen.map((o) => {
+        const an = o.wert === wert;
+        return (
+          <Pressable
+            key={String(o.wert)}
+            onPress={() => onChange(o.wert)}
+            style={[styles.auswahlTeil, an && styles.auswahlAn]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: an }}
+          >
+            <Text style={[styles.auswahlText, an && styles.auswahlTextAn]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -176,8 +243,7 @@ export function SettingsScreen() {
    *
    * Die Berechtigungsfrage des Browsers braucht eine Nutzergeste, und die
    * gilt nur so lange, wie der Klick noch "frisch" ist. Ein await vor
-   * `Notification.requestPermission()` kostet sie - dann erscheint die
-   * Frage kommentarlos nicht, und der Schalter springt einfach zurueck.
+   * `Notification.requestPermission()` kostet sie.
    */
   const togglePush = (want: boolean) => {
     setPushBusy(true);
@@ -186,32 +252,19 @@ export function SettingsScreen() {
       .then((next) => {
         setPush(next);
         if (next === 'denied') {
-          setPushError(
-            'Dein Browser hat Benachrichtigungen für diese Seite blockiert. ' +
-              'Das lässt sich nur in den Browsereinstellungen zurücknehmen.',
-          );
+          setPushError('Im Browser blockiert. Nur in den Browsereinstellungen zu ändern.');
         } else {
           haptics.select();
         }
       })
-      .catch((e: unknown) =>
-        setPushError(fehlerText(e, 'Hat nicht geklappt')),
-      )
+      .catch((e: unknown) => setPushError(fehlerText(e, 'Hat nicht geklappt')))
       .finally(() => setPushBusy(false));
   };
 
   /**
-   * Speichern - und die Auswahl SOFORT zeigen.
-   *
-   * Vorher wartete die Anzeige auf die Antwort des Servers. Wer schnell zwei
-   * Stufen hintereinander antippt, sah erst nichts und dann die Antworten in
-   * der Reihenfolge, in der sie ankamen - nicht unbedingt der, in der getippt
-   * wurde. Jetzt steht die Auswahl sofort da, und nur die Antwort auf den
-   * LETZTEN Tipp darf sie noch ueberschreiben.
-   *
-   * Die Sprache der Oberflaeche wechselt mit. Das fehlte ganz: `language`
-   * wurde gespeichert, aber die App las beim Start nur die Geraetesprache
-   * und nie das Profil - wer "EN" waehlte, sah weiter alles auf Deutsch.
+   * Speichern - und die Auswahl SOFORT zeigen. Nur die Antwort auf den
+   * LETZTEN Tipp darf sie noch ueberschreiben. Die Sprache der Oberflaeche
+   * wechselt mit.
    */
   const letzteAnfrage = useRef(0);
   const patch = useCallback(async (p: Record<string, unknown>) => {
@@ -225,8 +278,6 @@ export function SettingsScreen() {
       if (nr === letzteAnfrage.current) setProfile(neu);
     } catch (e) {
       setNote(fehlerText(e, 'Speichern fehlgeschlagen'));
-      // Die sofortige Anzeige zuruecknehmen: lieber den echten Stand zeigen
-      // als eine Auswahl, die nie gespeichert wurde.
       void api
         .getMyProfile()
         .then((echt) => {
@@ -289,13 +340,10 @@ export function SettingsScreen() {
 
   const country = COUNTRIES.find((c) => c.code === profile.country_code);
   const region = country?.regions.find((r) => r.code === profile.region_code);
+  const sprachStufe = nearestStep(profile.feed_english_pct);
 
   return (
     <GridBackground>
-      {/* Die Kopfzeile liegt AUSSERHALB der Liste. Sie muss stehen
-          bleiben, um beim Scrollen zusammenklappen zu koennen - mit der
-          Liste mitzuscrollen und dabei zu schrumpfen waere zweimal
-          dieselbe Bewegung. */}
       <View style={{ paddingTop: insets.top }}>
         <ScreenHeader title="Einstellungen" eyebrow="konto & app" scrollY={scrollY} />
       </View>
@@ -312,394 +360,329 @@ export function SettingsScreen() {
       >
         {note ? <Text style={styles.note}>{note}</Text> : null}
 
-        {/* --- Konto ---------------------------------------------------- */}
-        <Section title="Konto">
-          <Row erste label="Benutzername" hint="Öffentlich auf der Rangliste" right={
-            <Text style={styles.value}>@{profile.handle}</Text>
-          } />
-          <Row
-            label="Profil und E-Mail"
-            hint="Bild, Name, Bio — und dein Konto sichern"
-            onPress={() => router.push('/account')}
-            right={<Icon name="chevron" size={15} color={color.ink.low} />}
-          />
-          <Row
-            label="Mein öffentliches Profil"
-            hint="So sehen andere dich"
+        {/* --- Profil ----------------------------------------------------- */}
+        <Pressable
+          onPress={() => router.push('/account')}
+          style={({ pressed }) => [styles.profil, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+        >
+          <Avatar seed={profile.avatar_seed} path={profile.avatar_path} size={52} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.profilName} numberOfLines={1}>
+              {personName(profile)}
+            </Text>
+            <Text style={styles.profilHandle} numberOfLines={1}>
+              @{profile.handle}
+            </Text>
+          </View>
+          <Aktion text="Bearbeiten" />
+        </Pressable>
+
+        {/* --- Konto -------------------------------------------------------- */}
+        <Gruppe icon="profile" titel="Konto">
+          <Zeile
+            erste
+            label="Öffentliches Profil"
+            hint="So sehen dich andere"
             onPress={() => router.push(`/u/${encodeURIComponent(profile.handle)}`)}
-            right={<Icon name="chevron" size={15} color={color.ink.low} />}
+            rechts={<Aktion text="Ansehen" />}
           />
-        </Section>
-
-        {/* --- Inhalte -------------------------------------------------- */}
-        <Section title="Inhalte">
-          {/* Stand hier als "Bestimmt, welche Karten du bekommst" - das
-              stimmte nie: welche Karten kommen, entscheidet allein die
-              Mischung darunter (get_feed liest nur feed_english_pct). Diese
-              Zeile ist die Sprache der Oberflaeche. */}
-          <Row erste label="App-Sprache" hint="Menüs und Beschriftungen – noch nicht überall übersetzt" right={
-            <View style={styles.choices}>
-              {SUPPORTED.map((lang: Language) => (
-                <Pressable
-                  key={lang}
-                  onPress={() => void patch({ language: lang })}
-                  style={[styles.choice, profile.language === lang && styles.choiceOn]}
-                >
-                  <Text style={[
-                    styles.choiceText,
-                    profile.language === lang && { color: color.signal.primary },
-                  ]}>
-                    {lang.toUpperCase()}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          } />
-
-          <Row
+          <Zeile
             label="Region"
-            hint="Lokale Themen und deine Rangliste"
-            right={<Text style={styles.value}>{region?.label ?? country?.label ?? '—'}</Text>}
+            hint="Lokale Themen und Rangliste"
+            rechts={<Text style={styles.wert}>{region?.label ?? country?.label ?? '—'}</Text>}
           />
+        </Gruppe>
 
-          {/**
-            * Sprachmischung.
-            *
-            * Fünf Stufen statt eines stufenlosen Reglers: "ein bisschen
-            * mehr Englisch" ist keine Absicht, die jemand hat. Die Enden
-            * sind die beiden klaren Fälle, die Mitte ist die Mischung -
-            * und alles davon ist mit einem Tipp erreichbar statt mit
-            * einer Zielübung.
-            */}
-          <Row
-            label="Sprache der Inhalte"
-            hint={LANGUAGE_STEPS.find((s2) => s2.pct === nearestStep(profile.feed_english_pct))?.hint}
+        {/* --- Inhalte ------------------------------------------------------- */}
+        <Gruppe icon="sliders" titel="Inhalte">
+          {/* Die Sprache der OBERFLAECHE. Welche Karten kommen, entscheidet
+              allein die Mischung darunter (get_feed liest feed_english_pct). */}
+          <Zeile
+            erste
+            label="App-Sprache"
+            hint="Noch nicht überall übersetzt"
+            rechts={
+              <Auswahl
+                optionen={SUPPORTED.map((l: Language) => ({ wert: l as string, label: l.toUpperCase() }))}
+                wert={profile.language}
+                onChange={(l) => void patch({ language: l })}
+              />
+            }
+          />
+          {/* Fünf Stufen statt eines stufenlosen Reglers: "ein bisschen mehr
+              Englisch" ist keine Absicht, die jemand hat. */}
+          <Zeile
+            label="Sprache der Karten"
+            hint={LANGUAGE_STEPS.find((s) => s.pct === sprachStufe)?.hint}
             unten={
-              <View style={styles.choicesBreit}>
-                {LANGUAGE_STEPS.map((step) => {
-                  const on = nearestStep(profile.feed_english_pct) === step.pct;
-                  return (
-                    <Pressable
-                      key={step.pct}
-                      onPress={() => void patch({ feed_english_pct: step.pct })}
-                      style={[styles.choice, styles.choiceBreit, on && styles.choiceOn]}
-                      accessibilityLabel={step.hint}
-                    >
-                      <Text style={[styles.choiceText, on && { color: color.signal.primary }]}>
-                        {step.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <Auswahl
+                optionen={LANGUAGE_STEPS.map((s) => ({ wert: s.pct as number, label: s.label }))}
+                wert={sprachStufe}
+                onChange={(pct) => void patch({ feed_english_pct: pct })}
+              />
             }
           />
+          <Zeile
+            label="Tagesziel"
+            hint="Danach bietet die App eine Pause an"
+            unten={
+              <Auswahl
+                optionen={GOALS.map((g) => ({ wert: g, label: String(g) }))}
+                wert={profile.daily_goal_cards}
+                onChange={(g) => void patch({ daily_goal_cards: g })}
+              />
+            }
+          />
+        </Gruppe>
 
-          <Row label="Genug für heute" hint="Ab dieser Zahl bietet die App das Aufhören an" unten={
-            <View style={styles.choicesBreit}>
-              {GOALS.map((g) => (
-                <Pressable
-                  key={g}
-                  onPress={() => void patch({ daily_goal_cards: g })}
-                  style={[
-                    styles.choice,
-                    styles.choiceBreit,
-                    profile.daily_goal_cards === g && styles.choiceOn,
-                  ]}
-                >
-                  <Text style={[
-                    styles.choiceText,
-                    profile.daily_goal_cards === g && { color: color.signal.primary },
-                  ]}>
-                    {g}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          } />
-        </Section>
-
-        {/* --- Sichtbarkeit --------------------------------------------- */}
-        <Section title="Sichtbarkeit">
-          <Row erste
-            label="Likes öffentlich zeigen"
-            hint="Aus bedeutet: niemand sieht namentlich, was du likest. Der allgemeine Zähler auf der Karte läuft trotzdem mit."
-            right={
-              <Switch
-                value={profile.likes_public}
-                onValueChange={(v) => void patch({ likes_public: v })}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
+        {/* --- Sichtbarkeit -------------------------------------------------- */}
+        <Gruppe icon="lock" titel="Sichtbarkeit">
+          <Zeile
+            erste
+            label="Beiträge öffentlich"
+            hint="Aus: nur Follower sehen sie, nicht in Explore"
+            rechts={
+              // `!== false`: ohne Feld gilt der Standard der Datenbank, "an" (0084).
+              <Schalter
+                wert={profile.beitraege_oeffentlich !== false}
+                onChange={(v) => void patch({ beitraege_oeffentlich: v })}
               />
             }
           />
-          <Row
-            label="Auf der Rangliste erscheinen"
-            hint="Aus bedeutet: niemand sieht dich, du siehst weiterhin alle."
-            right={
-              <Switch
-                value={profile.leaderboard_opt_in}
-                onValueChange={(v) => void patch({ leaderboard_opt_in: v })}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
-              />
-            }
-          />
-          {/* 0084. `!== false`: ein Profil von vor der Migration kennt das
-              Feld nicht, und in der Datenbank steht dann der Standard "an". */}
-          <Row
-            label="Beiträge in Explore zeigen"
-            hint="An: deine Beiträge können in Explore auftauchen und alle Angemeldeten sehen sie. Aus: nur deine Follower."
-            right={
-              <Switch
-                value={profile.beitraege_oeffentlich !== false}
-                onValueChange={(v) => void patch({ beitraege_oeffentlich: v })}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
-              />
-            }
-          />
-          <Row
+          <Zeile
             label="Reposts nur im Profil"
-            hint="Was du teilst oder empfiehlst, steht in deinem Profil – aber nicht im Home deiner Follower."
-            right={
-              <Switch
-                value={Boolean(profile.reposts_nur_profil)}
-                onValueChange={(v) => void patch({ reposts_nur_profil: v })}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
+            hint="Nicht im Home deiner Follower"
+            rechts={
+              <Schalter
+                wert={Boolean(profile.reposts_nur_profil)}
+                onChange={(v) => void patch({ reposts_nur_profil: v })}
               />
             }
           />
-        </Section>
+          <Zeile
+            label="Likes öffentlich"
+            hint="Aus: niemand sieht, was du likest"
+            rechts={<Schalter wert={profile.likes_public} onChange={(v) => void patch({ likes_public: v })} />}
+          />
+          <Zeile
+            label="Rangliste"
+            hint="Aus: du erscheinst nicht, siehst aber alle"
+            rechts={
+              <Schalter wert={profile.leaderboard_opt_in} onChange={(v) => void patch({ leaderboard_opt_in: v })} />
+            }
+          />
+        </Gruppe>
 
-        {/* --- Home ------------------------------------------------------ */}
-        <Section title="Home">
-          <Row erste
-            label="Keine Reposts in meinem Home"
-            hint="Du siehst nur, was deine Leute selbst schreiben – nichts Geteiltes, keine Karten-Empfehlungen. Explore zeigt ohnehin keine Reposts."
-            right={
-              <Switch
-                value={Boolean(profile.home_ohne_reposts)}
-                onValueChange={(v) => void patch({ home_ohne_reposts: v })}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
+        {/* --- Home ------------------------------------------------------------ */}
+        <Gruppe icon="feed" titel="Home">
+          <Zeile
+            erste
+            label="Keine Reposts"
+            hint="Nur, was deine Leute selbst schreiben"
+            rechts={
+              <Schalter
+                wert={Boolean(profile.home_ohne_reposts)}
+                onChange={(v) => void patch({ home_ohne_reposts: v })}
               />
             }
           />
-        </Section>
+        </Gruppe>
 
-        {/* --- Erinnerungen --------------------------------------------- */}
-        <Section title="Erinnerungen">
-          <Row erste
-            label="Fällige Wiederholungen"
-            hint="Die Erinnerung, die tatsächlich beim Lernen hilft"
-            right={
-              <Switch
-                value={profile.notify_reviews}
-                onValueChange={(v) => void patch({ notify_reviews: v })}
-                trackColor={{ true: color.signal.mastery, false: color.ink.faint }}
-                thumbColor={color.bg}
-              />
-            }
-          />
-          <Row
-            label="Streak in Gefahr"
-            right={
-              <Switch
-                value={profile.notify_streak}
-                onValueChange={(v) => void patch({ notify_streak: v })}
-                trackColor={{ true: color.signal.warn, false: color.ink.faint }}
-                thumbColor={color.bg}
-              />
-            }
-          />
-        </Section>
-
-        {/* --- Push ------------------------------------------------------ */}
-        <Section title="Benachrichtigungen">
-          <Row erste
-            label="Follower, Kommentare & Duelle"
-            hint={PUSH_HINT[push] ?? undefined}
-            right={
+        {/* --- Benachrichtigungen ---------------------------------------------- */}
+        <Gruppe icon="bell" titel="Benachrichtigungen">
+          <Zeile
+            erste
+            label="Push"
+            hint={pushError ?? PUSH_HINT[push]}
+            rechts={
               push === 'unsupported' || push === 'needs-install' ? (
-                <Text style={styles.pushNote}>
-                  {push === 'needs-install' ? 'nur als App' : 'nicht möglich'}
-                </Text>
+                <Text style={styles.wert}>{push === 'needs-install' ? 'nur als App' : 'nicht möglich'}</Text>
               ) : (
-                <Switch
-                  value={push === 'on'}
-                  disabled={push === 'denied' || pushBusy}
-                  // Kein `void`: der Browser verlangt fuer die
-                  // Berechtigungsfrage eine echte Nutzergeste, und die
-                  // ueberlebt keinen zusaetzlichen Umweg.
-                  onValueChange={(v) => togglePush(v)}
-                  trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                  thumbColor={color.bg}
-                />
+                // Kein `void`: der Browser verlangt fuer die Berechtigungsfrage
+                // eine echte Nutzergeste.
+                <Schalter wert={push === 'on'} aus={push === 'denied' || pushBusy} onChange={(v) => togglePush(v)} />
               )
             }
           />
           {push === 'on' ? (
-            <Row
-              label=""
-              hint="Ob du sie überhaupt bekommen willst, steht hier; wer dir was schickt, steuerst du übers Folgen."
-              right={
-                <Switch
-                  value={profile.notify_social}
-                  onValueChange={(v) => void patch({ notify_social: v })}
-                  trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                  thumbColor={color.bg}
-                />
-              }
+            <Zeile
+              label="Soziales"
+              hint="Follower, Kommentare, Duelle"
+              rechts={<Schalter wert={profile.notify_social} onChange={(v) => void patch({ notify_social: v })} />}
             />
           ) : null}
-          {pushError ? <Row label="" hint={pushError} /> : null}
-        </Section>
+          <Zeile
+            label="Wiederholungen"
+            hint="Erinnerung, wenn Fragen fällig sind"
+            rechts={
+              <Schalter
+                wert={profile.notify_reviews}
+                farbe={color.signal.mastery}
+                onChange={(v) => void patch({ notify_reviews: v })}
+              />
+            }
+          />
+          <Zeile
+            label="Streak"
+            hint="Erinnerung, bevor sie reißt"
+            rechts={
+              <Schalter
+                wert={profile.notify_streak}
+                farbe={color.signal.warn}
+                onChange={(v) => void patch({ notify_streak: v })}
+              />
+            }
+          />
+        </Gruppe>
 
-        {/* --- Dieses Gerät --------------------------------------------- */}
-        <Section title="Dieses Gerät">
-          <Row erste
-            label="Haptisches Feedback"
-            hint="Vibration bei Interaktionen"
-            right={
-              <Switch
-                value={prefs.haptics}
-                onValueChange={(v) => void setPref('haptics', v)}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
-              />
-            }
+        {/* --- Dieses Gerät ------------------------------------------------------ */}
+        <Gruppe icon="settings" titel="Dieses Gerät">
+          <Zeile
+            erste
+            label="Vibration"
+            rechts={<Schalter wert={prefs.haptics} onChange={(v) => void setPref('haptics', v)} />}
           />
-          <Row
-            label="Bewegung reduzieren"
-            hint="Weniger Animationen, ruhigerer Bildaufbau"
-            right={
-              <Switch
-                value={prefs.reduceMotion}
-                onValueChange={(v) => void setPref('reduceMotion', v)}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
-              />
-            }
+          <Zeile
+            label="Weniger Bewegung"
+            hint="Ruhigere Animationen"
+            rechts={<Schalter wert={prefs.reduceMotion} onChange={(v) => void setPref('reduceMotion', v)} />}
           />
-          <Row
-            label="Hintergrundmusik"
-            hint="Eine ruhige Fläche pro Karte. Jede Karte klingt anders."
-            right={
-              <Switch
-                value={prefs.musicEnabled}
-                onValueChange={(v) => {
+          <Zeile
+            label="Musik"
+            hint="Leise Fläche unter jeder Karte"
+            rechts={
+              <Schalter
+                wert={prefs.musicEnabled}
+                onChange={(v) => {
                   void setPref('musicEnabled', v);
                   if (!v) stopMusic();
                 }}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
               />
             }
           />
-          <Row
+          <Zeile
             label="Töne"
-            hint="Kurze Klänge beim Einrasten, Lösen und Aufsteigen"
-            right={
-              <Switch
-                value={prefs.audioEnabled}
-                onValueChange={(v) => {
+            hint="Kurze Klänge beim Tippen"
+            rechts={
+              <Schalter
+                wert={prefs.audioEnabled}
+                onChange={(v) => {
                   void setPref('audioEnabled', v);
-                  // Beim Einschalten sofort ein Beispiel: sonst schaltet man
-                  // etwas ein, hört nichts und weiß nicht, ob es geht.
+                  // Beim Einschalten sofort ein Beispiel - sonst weiss man nicht, ob es geht.
                   if (v) sound.correct();
                 }}
-                trackColor={{ true: color.signal.primary, false: color.ink.faint }}
-                thumbColor={color.bg}
               />
             }
           />
-          <Row
-            label={tutorialWieder ? 'Erklärungen kommen wieder' : 'Erklärungen nochmal zeigen'}
-            hint="Die drei Schritte im Feed und die Hinweise in Home, Studio, Suche und Profil"
+          <Zeile
+            label="Erklärungen"
+            hint={tutorialWieder ? 'Kommen beim nächsten Öffnen wieder' : 'Feed-Tutorial und Tab-Hinweise'}
             onPress={() => {
               void resetFeedTutorial();
               void resetTabHints(['home', 'studio', 'profil', 'suche']);
               setTutorialWieder(true);
+              haptics.select();
             }}
+            rechts={<Aktion text={tutorialWieder ? 'Erledigt' : 'Zeigen'} />}
           />
-        </Section>
+        </Gruppe>
 
-        {/* --- Daten ----------------------------------------------------- */}
-        <Section title="Deine Daten">
-          <Row erste
+        {/* --- Daten ---------------------------------------------------------------- */}
+        <Gruppe icon="source" titel="Deine Daten">
+          <Zeile
+            erste
             label="Daten exportieren"
-            hint="Alles über dich als JSON in die Zwischenablage (DSGVO Art. 15)"
+            hint="Alles über dich als JSON (DSGVO Art. 15)"
             onPress={exportData}
-            right={<Icon name="chevron" size={15} color={color.ink.low} />}
+            rechts={<Aktion text="Export" />}
           />
-          <Row
+          <Zeile
             label="Konto löschen"
-            hint="Sofort und endgültig, inklusive aller Fortschritte (DSGVO Art. 17)"
+            hint="Sofort und endgültig (DSGVO Art. 17)"
             onPress={confirmDelete}
-            danger
-            right={<Icon name="chevron" size={15} color={color.signal.error} />}
+            gefahr
+            rechts={<Aktion text="Löschen" gefahr />}
           />
-        </Section>
-
-        <Section title={`Über ${BRAND.name}`}>
-          <Row erste label="Version" right={<Text style={styles.value}>0.1.0 · Prototyp</Text>} />
-          <Row label="Konto-ID" hint="Bei Fehlermeldungen hilfreich" right={
-            <Text style={styles.mono} numberOfLines={1}>{profile.id.slice(0, 8)}…</Text>
-          } />
-        </Section>
+        </Gruppe>
 
         <Button label="Abmelden" variant="ghost" busy={busy} onPress={() => void signOut()} />
+
+        <Text style={styles.fuss}>
+          {BRAND.name} 0.1.0 · Prototyp · Konto {profile.id.slice(0, 8)}
+        </Text>
       </ScrollView>
     </GridBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  pushNote: { ...type.meta, color: color.ink.low },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: space.xl, gap: space.lg },
+  body: { paddingHorizontal: space.xl, gap: space.xl },
 
   note: { ...type.body, fontSize: 14, color: color.signal.primary },
 
-  section: { gap: space.sm },
-
-  row: { paddingVertical: space.md, gap: space.sm },
-  rowLinie: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: color.ink.faint,
+  profil: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
   },
-  rowOben: {
+  profilName: { ...type.title, fontSize: 18, color: color.ink.max },
+  profilHandle: { ...type.meta, color: color.ink.low },
+
+  gruppe: { gap: space.sm },
+  gruppeKopf: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.xs },
+  gruppeTitel: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1.2 },
+  flaeche: {
+    paddingHorizontal: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+
+  zeile: { paddingVertical: space.md, gap: space.sm },
+  zeileLinie: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.ink.faint },
+  zeileOben: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: space.lg,
-    minHeight: 30,
+    minHeight: 32,
   },
-  rowUnten: { paddingTop: 2 },
-  rowText: { flex: 1, gap: 2 },
-  rowLabel: { ...type.body, fontSize: 16, color: color.ink.high },
-  rowHint: { ...type.meta, color: color.ink.low, lineHeight: 16 },
+  zeileUnten: { paddingTop: 2 },
+  zeileText: { flex: 1, gap: 2 },
+  label: { ...type.body, fontSize: 16, color: color.ink.high },
+  hint: { ...type.meta, color: color.ink.low, lineHeight: 16 },
 
-  value: { ...type.body, fontSize: 15, color: color.ink.mid },
-  mono: { ...type.mono, color: color.ink.low, maxWidth: 110 },
-  soon: { ...type.meta, color: color.ink.low },
-  chevron: { fontSize: 16, color: color.ink.low },
+  wert: { ...type.body, fontSize: 15, color: color.ink.mid },
 
-  choices: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  /** Ueber die volle Breite, wenn die Auswahl unter der Beschriftung steht. */
-  choicesBreit: { flexDirection: 'row', gap: 6 },
-  choice: {
-    minWidth: 38,
+  aktion: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  aktionText: { ...type.label, fontSize: 14, color: color.signal.primary },
+
+  auswahl: {
+    flexDirection: 'row',
+    padding: 3,
+    gap: 2,
+    borderRadius: radius.pill,
+    backgroundColor: color.bgSunken,
+  },
+  auswahlTeil: {
+    flex: 1,
+    minWidth: 40,
     alignItems: 'center',
     paddingHorizontal: space.sm,
-    paddingVertical: 5,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
   },
-  choiceOn: { borderColor: color.signal.primary, backgroundColor: color.bgElevated },
-  choiceBreit: { flex: 1, paddingVertical: 8 },
-  choiceText: { ...type.meta, color: color.ink.mid },
+  auswahlAn: { backgroundColor: color.bg, borderWidth: StyleSheet.hairlineWidth, borderColor: color.signal.primary },
+  auswahlText: { ...type.meta, color: color.ink.mid },
+  auswahlTextAn: { color: color.signal.primary },
+
+  fuss: { ...type.meta, fontSize: 10, color: color.ink.low, textAlign: 'center' },
 });

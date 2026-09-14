@@ -84,13 +84,15 @@ function IconBase({ name, size = 20, color: tint = color.ink.mid }: Props) {
       {name === 'back' && <Path d="M14.5 5 8 12l6.5 7" {...s} />}
       {name === 'chevron' && <Path d="m9.5 5 6.5 7-6.5 7" {...s} />}
       {name === 'close' && <Path d="M6 6l12 12M18 6L6 18" {...s} />}
+      {/* Zahnrad. Vorher ein Kreis mit acht Strahlen - gemeldet als "Sonne,
+          nicht Zahnrad". Jetzt ein geschlossener Umriss mit Zaehnen. */}
       {name === 'settings' && (
         <>
-          <Circle cx={12} cy={12} r={3} {...s} />
           <Path
-            d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9 5.3 5.3"
+            d="M10.3 3h3.4l.5 2.4a7 7 0 0 1 1.8 1l2.3-.8 1.7 2.9-1.8 1.6a7 7 0 0 1 0 2.1l1.8 1.6-1.7 2.9-2.3-.8a7 7 0 0 1-1.8 1l-.5 2.4h-3.4l-.5-2.4a7 7 0 0 1-1.8-1l-2.3.8-1.7-2.9 1.8-1.6a7 7 0 0 1 0-2.1L3.9 9.5l1.7-2.9 2.3.8a7 7 0 0 1 1.8-1Z"
             {...s}
           />
+          <Circle cx={12} cy={12} r={2.8} {...s} />
         </>
       )}
 

@@ -8,7 +8,10 @@ feedparser==6.0.11        # RSS/Atom parsen
 trafilatura==2.0.0        # Artikeltext aus HTML (entfernt Werbung, Navigation, Scripts)
 httpx==0.28.1             # HTTP: Feeds, Artikel, PostgREST
 google-genai==1.44.0      # Gemini: Structured Output + Embeddings
-python-dotenv==1.1.1
+# 1.2.2 statt 1.1.1: Dependabot #3 (CVE-2026-28684, set_key folgt Symlinks).
+# Die Pipeline liest .env nur (load_dotenv) und war nicht betroffen - der
+# Sprung kostet nichts und nimmt die Warnung vom Tisch.
+python-dotenv==1.2.2
 # Festgenagelt wie alles andere hier. Es stand als >=2.0.0 drin und war
 # damit die einzige Zeile, die sich ohne Commit aendern kann: eine neue
 # Version auf PyPI, und der naechste CI-Lauf installiert etwas anderes als
