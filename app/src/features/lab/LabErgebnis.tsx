@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { haptics } from '@/lib/haptics';
 import { color, radius, space, type } from '@/theme/tokens';
+import { ZWEI, flaeche } from '@/theme/design';
 
 import { ergebnis, werkzeug } from './rechnen';
 
@@ -94,6 +95,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
+    ...flaeche(12),
+    ...(ZWEI ? { backgroundColor: color.bordeaux } : null),
   },
   kopf: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
   meta: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1 },

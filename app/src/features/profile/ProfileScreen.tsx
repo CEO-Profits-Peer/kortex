@@ -28,6 +28,7 @@ import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { beiWiederOnline } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Das eigene Profil.
@@ -477,6 +478,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
+    ...flaeche(6),
   },
   editText: { ...type.label, fontSize: 13, color: color.ink.high },
 
@@ -490,6 +492,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(8),
   },
   shortcutIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   shortcutLabel: { ...type.meta, fontSize: 9.5, color: color.ink.mid },
@@ -529,6 +532,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     backgroundColor: color.bgElevated,
+    ...flaeche(8),
   },
   tileTitle: { ...type.body, fontSize: 13.5, lineHeight: 19, color: color.ink.high },
   tileFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -554,6 +558,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
+    ...flaeche(6),
   },
   allText: { ...type.label, fontSize: 13, color: color.ink.mid },
 

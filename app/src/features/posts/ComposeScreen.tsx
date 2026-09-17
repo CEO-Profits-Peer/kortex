@@ -26,6 +26,7 @@ import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CollectionEntry, Post, PostArt } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Etwas erstellen.
@@ -583,6 +584,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+    ...flaeche(10),
   },
   eingabeKlein: { minHeight: 64, fontSize: 16, lineHeight: 23 },
   zaehler: { ...type.meta, color: color.ink.low, textAlign: 'right' },
@@ -598,6 +600,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(6),
   },
   optionEingabe: {
     flex: 1,
@@ -630,6 +633,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(6),
   },
   sucheEingabe: {
     flex: 1,
@@ -648,6 +652,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(8),
   },
   wahlKarteAn: { borderColor: color.signal.primary },
   nummer: {
@@ -670,6 +675,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
+    ...flaeche(8),
   },
   originalText: { ...type.body, fontSize: 15, lineHeight: 21, color: color.ink.high },
 

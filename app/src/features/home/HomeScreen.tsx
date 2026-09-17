@@ -30,6 +30,7 @@ import { shareCard, shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomeData, HomeEntry, Post } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Home - was die Leute machen, denen du folgst. Nach unten ohne Ende.
@@ -679,6 +680,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
+    ...flaeche(8),
   },
   umschalterTeil: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: radius.pill },
   umschalterAn: { backgroundColor: color.bgElevated },
@@ -708,6 +710,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
+    ...flaeche(6),
   },
   einladenText: { ...type.meta, color: color.signal.primary },
   kopfKnoepfe: { flexDirection: 'row', alignItems: 'center', gap: space.md },
@@ -737,6 +740,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   schreibenText: { ...type.body, fontSize: 15, color: color.ink.low, flex: 1 },
   schreibenKnopf: {
@@ -764,6 +768,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   vorschlagWer: { alignItems: 'center', gap: 4, width: '100%' },
   vorschlagName: { ...type.body, fontSize: 14, color: color.ink.high, maxWidth: '100%' },
@@ -795,6 +800,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(12),
   },
   zitat: { ...type.body, fontSize: 15, lineHeight: 21, color: color.signal.primary, fontStyle: 'italic' },
 

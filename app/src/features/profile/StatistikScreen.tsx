@@ -11,6 +11,7 @@ import { fehlerText } from '@/lib/fehler';
 import { api } from '@/lib/supabase';
 import type { Statistik } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Deine Statistik.
@@ -293,6 +294,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     backgroundColor: color.bgElevated,
+    ...flaeche(8),
   },
   beitragText: { ...type.body, fontSize: 14, color: color.ink.high },
   beitragZahlen: { ...type.meta, fontSize: 10, color: color.ink.low },

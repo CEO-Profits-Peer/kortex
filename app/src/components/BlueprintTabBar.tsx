@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import Svg, { Polygon } from 'react-native-svg';
+
 import { haptics } from '@/lib/haptics';
+import { ZWEI, facette, sechseckPunkte } from '@/theme/design';
 
 import { TabIcon, type TabName } from '@/components/TabIcon';
 import { color, type } from '@/theme/tokens';
@@ -45,8 +48,26 @@ const ABSTAND_UNTEN = 8;
 const RAND = 14;
 const LINSE_INNEN = 5;
 
-const GLAS: ViewStyle =
-  Platform.OS === 'web'
+/**
+ * Design 2.0: dieselbe Glas-Pille, aber mit facettierten Ecken statt runder
+ * Enden, einer Goldkante und einer SECHSECKIGEN Linse. Die Linse gleitet
+ * beim Wechsel hinueber und dreht sich dabei um 60 Grad - nach 60 Grad sieht
+ * ein Sechseck wieder genau gleich aus, also gibt es am Ende keinen Sprung.
+ * Das ist der eine Moment Bewegung, der teuer wirken soll; sonst bleibt die
+ * Leiste still.
+ */
+const FACETTE_LEISTE = 14;
+const LINSE = 46;
+
+const GLAS: ViewStyle = ZWEI
+  ? Platform.OS === 'web'
+    ? ({
+        backgroundColor: 'rgba(26, 24, 27, 0.6)',
+        backdropFilter: 'blur(24px) saturate(160%)',
+        ...facette(FACETTE_LEISTE),
+      } as unknown as ViewStyle)
+    : { backgroundColor: 'rgba(26, 24, 27, 0.95)' }
+  : Platform.OS === 'web'
     ? ({
         backgroundColor: 'rgba(11, 12, 14, 0.58)',
         // react-native-web reicht beides durch und setzt die Praefixe selbst.
@@ -90,7 +111,9 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
   const tabBreite = breite / Math.max(1, state.routes.length);
 
   const slide = useRef(new Animated.Value(0)).current;
+  const dreh = useRef(new Animated.Value(0)).current;
   const erstesMal = useRef(true);
+  const [pillenHoehe, setPillenHoehe] = useState(PILLE);
 
   useEffect(() => {
     if (!breite) return;
@@ -108,18 +131,70 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
       easing: Easing.out(Easing.cubic),
       useNativeDriver: Platform.OS !== 'web',
     }).start();
-  }, [state.index, tabBreite, breite, slide]);
+    if (ZWEI) {
+      dreh.setValue(0);
+      Animated.timing(dreh, {
+        toValue: 1,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: Platform.OS !== 'web',
+      }).start();
+    }
+  }, [state.index, tabBreite, breite, slide, dreh]);
 
   return (
     <View
       pointerEvents="box-none"
       style={[styles.huelle, { paddingBottom: insets.bottom + ABSTAND_UNTEN }]}
     >
-      <View style={[styles.pille, GLAS]} onLayout={(e) => setBreite(e.nativeEvent.layout.width)}>
-        {/* Lichtkante: ein Hauch Helligkeit oben, wie eine Glaskante. */}
-        <View pointerEvents="none" style={styles.lichtkante} />
+      <View
+        style={[styles.pille, ZWEI && styles.pilleZwei, GLAS]}
+        onLayout={(e) => {
+          setBreite(e.nativeEvent.layout.width);
+          setPillenHoehe(e.nativeEvent.layout.height);
+        }}
+      >
+        {ZWEI ? (
+          // Goldkante entlang der facettierten Form - ein Rahmen per CSS
+          // wuerde vom clip-path an den Schraegen abgeschnitten.
+          breite > 0 ? (
+            <Svg width={breite} height={pillenHoehe} style={StyleSheet.absoluteFill} pointerEvents="none">
+              <Polygon
+                points={`${FACETTE_LEISTE},0.5 ${breite - 0.5},0.5 ${breite - 0.5},${pillenHoehe - FACETTE_LEISTE} ${breite - FACETTE_LEISTE},${pillenHoehe - 0.5} 0.5,${pillenHoehe - 0.5} 0.5,${FACETTE_LEISTE}`}
+                fill="none"
+                stroke="rgba(212, 175, 106, 0.28)"
+                strokeWidth={1}
+              />
+            </Svg>
+          ) : null
+        ) : (
+          /* Lichtkante: ein Hauch Helligkeit oben, wie eine Glaskante. */
+          <View pointerEvents="none" style={styles.lichtkante} />
+        )}
 
-        {breite > 0 ? (
+        {breite > 0 && ZWEI ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.linseZwei, { width: tabBreite, transform: [{ translateX: slide }] }]}
+          >
+            <Animated.View
+              style={{
+                transform: [{ rotate: dreh.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '60deg'] }) }],
+              }}
+            >
+              <Svg width={LINSE} height={LINSE}>
+                <Polygon
+                  points={sechseckPunkte(LINSE, LINSE, 1)}
+                  fill="rgba(212, 175, 106, 0.12)"
+                  stroke="rgba(212, 175, 106, 0.6)"
+                  strokeWidth={1}
+                />
+              </Svg>
+            </Animated.View>
+          </Animated.View>
+        ) : null}
+
+        {breite > 0 && !ZWEI ? (
           <Animated.View
             pointerEvents="none"
             style={[styles.linse, { width: tabBreite, transform: [{ translateX: slide }] }]}
@@ -192,6 +267,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.10)',
   },
 
+  pilleZwei: { borderRadius: 0, borderWidth: 0, overflow: 'visible' },
+  linseZwei: { position: 'absolute', top: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
   linse: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: LINSE_INNEN },
   linseInnen: {
     flex: 1,

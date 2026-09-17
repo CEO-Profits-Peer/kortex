@@ -14,6 +14,7 @@ import { api } from '@/lib/supabase';
 import type { DueReview, ReviewUeberblick } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Wiederholungs-Modus.
@@ -326,6 +327,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(8),
   },
   optionPressed: { borderColor: color.ink.mid },
   optionCorrect: { borderColor: color.signal.success, borderWidth: 1.5 },
@@ -342,6 +344,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(12),
   },
   standZahl: { ...type.display, fontSize: 40, lineHeight: 46 },
   standText: { ...type.body, fontSize: 15, color: color.ink.high },

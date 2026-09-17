@@ -34,6 +34,15 @@ import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { signOut } from '@/lib/useSession';
 import { fehlerText } from '@/lib/fehler';
+import {
+  MUSTER,
+  UMSCHALTBAR,
+  ZWEI,
+  designWechseln,
+  flaeche,
+  musterWechseln,
+  type Muster,
+} from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -232,6 +241,9 @@ export function SettingsScreen() {
   // Nur die Beschriftung. Ob das Tutorial wirklich laeuft, entscheidet der
   // Feed beim naechsten Oeffnen - hier steht nur, dass die Merkung weg ist.
   const [tutorialWieder, setTutorialWieder] = useState(false);
+  const [designAn, setDesignAn] = useState(ZWEI);
+  const [muster, setMuster] = useState<Muster>(MUSTER);
+  const [designLaedt, setDesignLaedt] = useState(false);
 
   useEffect(() => {
     void api.getMyProfile().then(setProfile).catch(() => setProfile(null));
@@ -377,6 +389,50 @@ export function SettingsScreen() {
           </View>
           <Aktion text="Bearbeiten" />
         </Pressable>
+
+        {/* --- Design ----------------------------------------------------------
+            Oben, direkt unter dem Profil: solange zwei Designs verglichen
+            werden, ist das der Schalter, den man am oeftesten sucht. */}
+        {UMSCHALTBAR ? (
+          <Gruppe icon="mastery" titel="Design">
+            <Zeile
+              erste
+              label="Design 2.0"
+              hint={designLaedt ? 'Lädt neu …' : 'Gold, Bordeaux, Facetten. Gilt für dieses Gerät.'}
+              rechts={
+                <Schalter
+                  wert={designAn}
+                  aus={designLaedt}
+                  onChange={(v) => {
+                    setDesignAn(v);
+                    setDesignLaedt(true);
+                    designWechseln(v ? 'zwei' : 'klassisch');
+                  }}
+                />
+              }
+            />
+            {ZWEI ? (
+              <Zeile
+                label="Hintergrund"
+                unten={
+                  <Auswahl
+                    optionen={[
+                      { wert: 'sechseck' as Muster, label: 'Waben' },
+                      { wert: 'dreieck' as Muster, label: 'Dreiecke' },
+                      { wert: 'keins' as Muster, label: 'Ohne' },
+                    ]}
+                    wert={muster}
+                    onChange={(m) => {
+                      setMuster(m);
+                      setDesignLaedt(true);
+                      musterWechseln(m);
+                    }}
+                  />
+                }
+              />
+            ) : null}
+          </Gruppe>
+        ) : null}
 
         {/* --- Konto -------------------------------------------------------- */}
         <Gruppe icon="profile" titel="Konto">
@@ -631,6 +687,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(12),
   },
   profilName: { ...type.title, fontSize: 18, color: color.ink.max },
   profilHandle: { ...type.meta, color: color.ink.low },
@@ -644,6 +701,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(12),
   },
 
   zeile: { paddingVertical: space.md, gap: space.sm },

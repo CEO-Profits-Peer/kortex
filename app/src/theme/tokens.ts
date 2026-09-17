@@ -1,3 +1,4 @@
+import { ZWEI } from './design';
 import { font } from './fonts';
 
 /**
@@ -10,7 +11,7 @@ import { font } from './fonts';
  * Wer hier eine bunte Farbe in `ink` eintraegt, bricht das ganze Konzept.
  */
 
-export const color = {
+const farbenKlassisch = {
   // --- Grund: tiefes Obsidian, kein reines Schwarz (OLED-Schwarz wirkt tot)
   bg: '#0B0C0E',
   bgElevated: '#0F1114',
@@ -54,7 +55,83 @@ export const color = {
   // --- Semantisch
   overlay: 'rgba(8, 9, 11, 0.72)',
   scrim: 'rgba(0, 0, 0, 0.45)',
-} as const;
+
+  // --- Neu fuer Design 2.0; im klassischen Design auf die alten Rollen gelegt,
+  // damit gemeinsame Bausteine nicht verzweigen muessen.
+  bordeaux: '#0F1114',
+  bordeauxHell: '#2A2F3A',
+  goldHell: '#00F0FF',
+  goldDunkel: '#00F0FF',
+};
+
+/**
+ * Design 2.0 (entschieden 16.09.2026) - 60 / 30 / 10.
+ *
+ *   60 %  Graphit: Grund und Feed. Fast schwarz mit einem Hauch Rot, damit
+ *         Bordeaux und Gold darauf zu Hause sind statt aufgeklebt.
+ *   30 %  Dunkelgrau fuer Flaechen, Bordeaux NUR fuer besondere Karten
+ *         (Tagesfrage, LAB-Ergebnis, der Haupt-Knopf "Beitrag"). Waeren alle
+ *         Karten rot, waere keine mehr besonders.
+ *   10 %  Gold: was man druecken oder verdienen kann - Aktion, aktiver Tab,
+ *         XP. Nie fuer laengeren Text, dafuer ist es zu schwer lesbar.
+ *
+ * Gold ersetzt Cyan als Signalfarbe. Richtig/falsch bleiben eigene Farben,
+ * und das Rot fuer "falsch" ist bewusst Koralle - neben Bordeaux darf es
+ * nicht wie Deko aussehen.
+ *
+ * Kontrast nachgerechnet gegen #0E0D0F: ink.low #8F877F liegt bei rund
+ * 5,4:1, ink.high bei ueber 11:1.
+ */
+const farbenZwei: typeof farbenKlassisch = {
+  bg: '#0E0D0F',
+  bgElevated: '#1A181B',
+  bgSunken: '#0A090B',
+
+  gridLine: '#1B191C',
+  gridLineMajor: '#262228',
+
+  ink: {
+    max: '#F5F1EB',
+    high: '#D6CFC7',
+    mid: '#A1988F',
+    low: '#8F877F',
+    faint: '#2F2A2E',
+  },
+
+  signal: {
+    primary: '#D4AF6A',
+    success: '#6FCF97',
+    warn: '#E9A45B',
+    error: '#F07167',
+    mastery: '#BFA2EE',
+  },
+
+  overlay: 'rgba(10, 9, 11, 0.76)',
+  scrim: 'rgba(0, 0, 0, 0.5)',
+
+  bordeaux: '#4E1626',
+  bordeauxHell: '#6E2436',
+  goldHell: '#E6C987',
+  goldDunkel: '#B8893F',
+};
+
+type Farben = {
+  bg: string;
+  bgElevated: string;
+  bgSunken: string;
+  gridLine: string;
+  gridLineMajor: string;
+  ink: { max: string; high: string; mid: string; low: string; faint: string };
+  signal: { primary: string; success: string; warn: string; error: string; mastery: string };
+  overlay: string;
+  scrim: string;
+  bordeaux: string;
+  bordeauxHell: string;
+  goldHell: string;
+  goldDunkel: string;
+};
+
+export const color: Farben = ZWEI ? farbenZwei : farbenKlassisch;
 
 /** 4px-Basisraster — passt visuell zum karierten Hintergrund */
 export const space = {
@@ -70,13 +147,19 @@ export const space = {
 /** Der Raster-Hintergrund verwendet exakt diese Zellgroesse */
 export const GRID_CELL = 24;
 
-export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 20,
-  pill: 999,
-} as const;
+const radiusKlassisch = { sm: 6, md: 10, lg: 14, xl: 20, pill: 999 };
+
+/**
+ * Design 2.0: keine weich gerundeten Ecken mehr ("was mich nervt, sind die
+ * Karten mit den regulaeren abgerundeten Ecken"). Ein, zwei Pixel bleiben,
+ * damit Kanten auf hochaufloesenden Bildschirmen nicht flimmern. Die Form
+ * tragen die Facetten (design.ts), nicht der Radius.
+ */
+const radiusZwei = { sm: 2, md: 2, lg: 3, xl: 4, pill: 4 };
+
+export const radius: { sm: number; md: number; lg: number; xl: number; pill: number } = ZWEI
+  ? radiusZwei
+  : radiusKlassisch;
 
 /**
  * Typografie.
@@ -151,5 +234,19 @@ export const motion = {
 /** Kategoriefarbe aus der DB, mit sicherem Rueckfall auf die Signalfarbe */
 export function categoryAccent(hex?: string | null): string {
   if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return color.signal.primary;
-  return hex;
+  return ZWEI ? gedaempft(hex) : hex;
+}
+
+/**
+ * Design 2.0: die Kategoriefarben bleiben, aber gedaempft. Neon-Gruen und
+ * Cyan neben Gold und Bordeaux sehen aus wie zwei Apps auf einem Bildschirm.
+ * Ein Drittel Richtung warmes Grau - die Farbe bleibt erkennbar, verliert
+ * aber das Leuchten.
+ */
+function gedaempft(hex: string): string {
+  const mix = (a: number, b: number) => Math.round(a * 0.66 + b * 0.34);
+  const r = mix(parseInt(hex.slice(1, 3), 16), 0x9a);
+  const g = mix(parseInt(hex.slice(3, 5), 16), 0x92);
+  const b = mix(parseInt(hex.slice(5, 7), 16), 0x8b);
+  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
 }

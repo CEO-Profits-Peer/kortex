@@ -11,6 +11,7 @@ import { sharePost } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomePerson, Post, PostCard } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Bausteine fuer Beitraege - im Home und auf der Beitragsseite dieselben.
@@ -266,6 +267,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(12),
   },
 
   kopf: { flexDirection: 'row', alignItems: 'center', gap: space.md },
@@ -283,6 +285,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     backgroundColor: color.bgSunken,
+    ...flaeche(8),
   },
   verweisTitel: { ...type.body, fontSize: 15, color: color.ink.high },
   verweisUnter: { ...type.meta, color: color.ink.mid },
@@ -294,6 +297,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
+    ...flaeche(8),
   },
   originalText: { ...type.body, fontSize: 15, lineHeight: 21, color: color.ink.high },
 

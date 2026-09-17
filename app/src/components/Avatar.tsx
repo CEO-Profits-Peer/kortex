@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import React, { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Polygon, Rect } from 'react-native-svg';
 
 import { type AvatarDesign, PALETTE, decodeAvatar } from '@/lib/avatarDesign';
 import { api } from '@/lib/supabase';
+import { ZWEI, sechseck, sechseckPunkte } from '@/theme/design';
 import { color, radius } from '@/theme/tokens';
 
 /**
@@ -31,7 +32,8 @@ export function AvatarArt({ design, size }: { design: AvatarDesign; size: number
 
   return (
     <Svg width={size} height={size}>
-      <Rect width={size} height={size} fill={color.bgSunken} rx={size * 0.28} />
+      {/* Design 2.0: keine Rundung - das Sechseck schneidet der Rahmen. */}
+      <Rect width={size} height={size} fill={color.bgSunken} rx={ZWEI ? 0 : size * 0.28} />
       {[0, 1, 2, 3].map((row) =>
         [0, 1, 2, 3].map((col) => {
           // Gespiegelt: symmetrische Muster wirken wie ein Zeichen,
@@ -110,7 +112,10 @@ function AvatarBase({
       style={[
         styles.wrap,
         { width: size, height: size, borderRadius: size * 0.28 },
-        ring ? { borderWidth: 1.5, borderColor: ring } : null,
+        // Design 2.0: das Profilbild ist ein Sechseck - das eine Zeichen, an
+        // dem man die App auf einen Blick wiedererkennt. Ein Rahmen wuerde
+        // vom clip-path mit abgeschnitten, deshalb zeichnet den Ring ein SVG.
+        ZWEI ? sechseck() : ring ? { borderWidth: 1.5, borderColor: ring } : null,
       ]}
     >
       {url ? (
@@ -128,6 +133,11 @@ function AvatarBase({
       ) : (
         <GeneratedAvatar seed={seed} size={size} />
       )}
+      {ZWEI && ring ? (
+        <Svg width={size} height={size} style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Polygon points={sechseckPunkte(size, size, 1)} fill="none" stroke={ring} strokeWidth={2} />
+        </Svg>
+      ) : null}
     </View>
   );
 }

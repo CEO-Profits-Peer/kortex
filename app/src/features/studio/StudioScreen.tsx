@@ -28,6 +28,7 @@ import { beiWiederOnline } from '@/lib/online';
 import { api } from '@/lib/supabase';
 import type { CourseSummary, Post, PostArt } from '@/lib/types.db';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
+import { ZWEI, flaeche } from '@/theme/design';
 
 /**
  * Studio - mit einem Umschalter: Erstellen | Lernen (entschieden: Option B).
@@ -553,6 +554,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
+    ...flaeche(8),
   },
   umschalterTeil: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: radius.pill },
   umschalterAn: { backgroundColor: color.bgElevated },
@@ -570,8 +572,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
-  neuHaupt: { borderColor: color.signal.primary },
+  // Design 2.0: der Haupt-Knopf ist eine der wenigen Bordeaux-Flaechen.
+  neuHaupt: ZWEI ? { backgroundColor: color.bordeaux } : { borderColor: color.signal.primary },
   neuIcon: {
     width: 36,
     height: 36,
@@ -599,6 +603,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   entwurfKopf: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   entwurfArt: { ...type.meta, fontSize: 10, color: color.signal.warn, textTransform: 'uppercase', letterSpacing: 1 },
@@ -612,6 +617,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
     overflow: 'hidden',
+    ...flaeche(10),
   },
   meinZeile: {
     flexDirection: 'row',
@@ -640,6 +646,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   labBald: { backgroundColor: 'transparent', borderStyle: 'dashed' },
   labTag: { ...type.meta, fontSize: 10 },
@@ -655,6 +662,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(8),
   },
   sucheEingabe: {
     flex: 1,
@@ -682,6 +690,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   kachelKopf: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.xs },
   kachelZahl: { ...type.mono, fontSize: 18 },
@@ -694,6 +703,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
     overflow: 'hidden',
+    ...flaeche(12),
   },
   cardBody: { padding: space.lg, gap: space.xs },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

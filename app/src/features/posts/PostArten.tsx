@@ -10,6 +10,7 @@ import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { AbstimmDaten, LabDaten, PostArt, PostDaten, StapelDaten } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
 
 /**
  * Was ein Beitrag je nach Art unter seinem Text zeigt (0088).
@@ -200,6 +201,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
     overflow: 'hidden',
+    ...flaeche(6),
   },
   fuellung: { position: 'absolute', left: 0, top: 0, bottom: 0, opacity: 0.14 },
   optionText: { ...type.body, fontSize: 15, color: color.ink.high, flex: 1 },
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
+    ...flaeche(8),
   },
   stapelNr: { ...type.mono, fontSize: 11, color: color.signal.primary },
   stapelKartenTitel: { ...type.body, fontSize: 13, lineHeight: 18, color: color.ink.high, flex: 1 },

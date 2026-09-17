@@ -9,6 +9,7 @@ import Animated, {
 
 import { haptics } from '@/lib/haptics';
 
+import { ZWEI, facette, goldVerlauf } from '@/theme/design';
 import { color, motion, radius, type } from '@/theme/tokens';
 
 type Variant = 'primary' | 'ghost' | 'quiet';
@@ -72,10 +73,13 @@ export function Button({
       style={[
         styles.base,
         variant === 'primary' && { backgroundColor: tint },
-        variant === 'ghost' && {
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: color.ink.faint,
-        },
+        // Design 2.0: Gold als Verlauf - aber nur, wenn keine eigene
+        // Farbe (Kategorie, Mastery) gesetzt ist.
+        variant === 'primary' && !accent ? goldVerlauf() : null,
+        variant === 'ghost' &&
+          (ZWEI
+            ? { backgroundColor: color.bgElevated }
+            : { borderWidth: StyleSheet.hairlineWidth, borderColor: color.ink.faint }),
         off && styles.off,
         animated,
         style,
@@ -105,6 +109,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    ...facette(9),
   },
   off: { opacity: 0.45 },
   label: { ...type.label, fontSize: 16 },
