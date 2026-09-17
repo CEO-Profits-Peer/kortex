@@ -11,6 +11,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
+import { ProAbzeichen } from '@/components/ProSperre';
 import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
 import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
@@ -187,7 +188,10 @@ export function PublicProfileScreen({
           <View style={styles.headText}>
             {/* Name gross, Handle klein: das Handle braucht man nur, um die
                 Person weiterzuempfehlen, nicht um sie zu erkennen. */}
-            <Text style={styles.handle} numberOfLines={1}>{personName(p)}</Text>
+            <View style={styles.nameZeile}>
+              <Text style={[styles.handle, { flexShrink: 1 }]} numberOfLines={1}>{personName(p)}</Text>
+              {p.pro ? <ProAbzeichen /> : null}
+            </View>
             <Text style={styles.name}>@{p.handle}</Text>
           </View>
         </View>
@@ -331,6 +335,7 @@ export function PublicProfileScreen({
 }
 
 const styles = StyleSheet.create({
+  nameZeile: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   knoepfe: { flexDirection: 'row', gap: space.sm },
   duellFehler: { ...type.body, fontSize: 13.5, color: color.signal.warn },
 

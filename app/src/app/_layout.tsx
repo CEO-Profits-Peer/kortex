@@ -6,6 +6,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { ProSperreHost } from '@/components/ProSperre';
 import { RewardLayer } from '@/components/RewardLayer';
 /**
  * Nur wegen der Nebenwirkung geladen, und die ist wichtig: das Modul
@@ -185,6 +186,7 @@ export default function RootLayout() {
         {/* Liegt ueber allem und faengt jede Belohnung ab, egal von welchem
             Bildschirm sie kommt. Siehe lib/rewards.ts. */}
         <RewardLayer />
+        <ProSperreHost />
         <OfflineBanner />
       </SafeAreaProvider>
     </GestureHandlerRootView>

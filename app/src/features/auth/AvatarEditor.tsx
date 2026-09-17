@@ -17,7 +17,10 @@ import {
   wabenLeer,
   wabenMitte,
   wabenWuerfeln,
+  PRO_AB_GRUND,
+  PRO_AB_STIL,
 } from '@/lib/avatarWaben';
+import { ProMarke } from '@/components/ProSperre';
 import { haptics } from '@/lib/haptics';
 import { KANTE, ZWEI, flaeche, sechseckRegel, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -43,9 +46,27 @@ const MASSSTAB_FELD = 0.078;
 
 const SWATCH = 30;
 
-function Swatch({ farbe, an, onPress, label }: { farbe: string; an: boolean; onPress: () => void; label: string }) {
+function Swatch({
+  farbe,
+  an,
+  onPress,
+  label,
+  pro,
+}: {
+  farbe: string;
+  an: boolean;
+  onPress: () => void;
+  label: string;
+  /** Braucht PRO - zum Anprobieren waehlbar, gespeichert wird es nur mit PRO. */
+  pro?: boolean;
+}) {
   return (
     <Pressable onPress={onPress} hitSlop={3} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: an }}>
+      {pro ? (
+        <View style={styles.swatchMarke} pointerEvents="none">
+          <ProMarke klein />
+        </View>
+      ) : null}
       <Svg width={SWATCH} height={SWATCH}>
         {/* Feine helle Linie um jede Probe: die dunklen Gruende waeren sonst
             auf der Karte kaum voneinander zu unterscheiden. */}
@@ -93,9 +114,12 @@ function Wahl<T extends string>({
 export function AvatarEditor({
   design,
   onChange,
+  pro = false,
 }: {
   design: WabenDesign;
   onChange: (d: WabenDesign) => void;
+  /** Ohne PRO tragen PRO-Stile und -Gruende ein Schloss. Anprobieren geht trotzdem. */
+  pro?: boolean;
 }) {
   const { width } = useWindowDimensions();
   const [pinsel, setPinsel] = useState<Pinsel>(1);
@@ -216,9 +240,9 @@ export function AvatarEditor({
       <View style={styles.karte}>
         {(
           [
-            { label: 'Farbe', liste: WABEN_FARBEN, wert: design.farbe1, setzen: (i: number) => onChange({ ...design, farbe1: i }) },
-            { label: 'Akzent', liste: WABEN_FARBEN, wert: design.farbe2, setzen: (i: number) => onChange({ ...design, farbe2: i }) },
-            { label: 'Grund', liste: WABEN_GRUENDE, wert: design.grund, setzen: (i: number) => onChange({ ...design, grund: i }) },
+            { label: 'Farbe', liste: WABEN_FARBEN, wert: design.farbe1, setzen: (i: number) => onChange({ ...design, farbe1: i }), proAb: 99 },
+            { label: 'Akzent', liste: WABEN_FARBEN, wert: design.farbe2, setzen: (i: number) => onChange({ ...design, farbe2: i }), proAb: 99 },
+            { label: 'Grund', liste: WABEN_GRUENDE, wert: design.grund, setzen: (i: number) => onChange({ ...design, grund: i }), proAb: PRO_AB_GRUND },
           ] as const
         ).map((gruppe) => (
           <View key={gruppe.label} style={styles.gruppe}>
@@ -230,6 +254,7 @@ export function AvatarEditor({
                   farbe={hex}
                   an={gruppe.wert === i}
                   label={`${gruppe.label} ${i + 1}`}
+                  pro={!pro && i >= gruppe.proAb}
                   onPress={() => {
                     haptics.light();
                     gruppe.setzen(i);
@@ -267,7 +292,10 @@ export function AvatarEditor({
               <View style={[{ width: 60, height: 60, overflow: 'hidden', borderRadius: ZWEI ? 0 : 14 }, sechseckRegel()]}>
                 <WabenArt design={{ ...design, stil: st }} size={60} />
               </View>
-              <Text style={[styles.stilText, an && styles.wahlTextAn]}>{WABEN_STIL_LABEL[st]}</Text>
+              <View style={styles.stilUnten}>
+                <Text style={[styles.stilText, an && styles.wahlTextAn]}>{WABEN_STIL_LABEL[st]}</Text>
+                {!pro && WABEN_STILE.indexOf(st) >= PRO_AB_STIL ? <ProMarke klein /> : null}
+              </View>
             </Pressable>
           );
         })}
@@ -328,9 +356,13 @@ const styles = StyleSheet.create({
   probeFeld: { flexDirection: 'row', gap: 6, padding: 8, borderRadius: radius.sm },
   probePunkt: { width: 14, height: 14, borderRadius: ZWEI ? 2 : 7 },
 
-  stile: { flexDirection: 'row', gap: space.sm },
+  // Sechs Stile: drei je Zeile. In einer Reihe waeren die Vorschauen zu klein.
+  stile: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  stilUnten: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  swatchMarke: { position: 'absolute', right: -4, bottom: -4, zIndex: 2 },
   stil: {
-    flex: 1,
+    width: '31%',
+    flexGrow: 1,
     alignItems: 'center',
     gap: space.xs,
     paddingVertical: space.md,

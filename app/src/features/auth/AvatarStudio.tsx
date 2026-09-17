@@ -8,7 +8,9 @@ import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
-import { type WabenDesign, wabenDekodieren, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
+import { type WabenDesign, wabenBrauchtPro, wabenDekodieren, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
+import { useIchPro } from '@/lib/pro';
+import { zeigeProSperre } from '@/components/ProSperre';
 import { haptics } from '@/lib/haptics';
 import { pickAvatarImage } from '@/lib/pickImage';
 import { api } from '@/lib/supabase';
@@ -43,6 +45,7 @@ export function AvatarStudio() {
   const scrollY = useSharedValue(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [design, setDesign] = useState<WabenDesign | null>(null);
+  const ichPro = useIchPro();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -64,6 +67,12 @@ export function AvatarStudio() {
 
   const saveDesign = async () => {
     if (!design || !profile) return;
+    // Der Server behaelt ohne PRO still das alte Bild (0091). Hier vorher
+    // fragen, statt "gespeichert" zu melden und nichts zu aendern.
+    if (wabenBrauchtPro(design) && !ichPro.pro) {
+      zeigeProSperre('Metall, Glas und die besonderen Gründe gibt es mit PRO. Anprobieren geht auch so.');
+      return;
+    }
     setBusy(true);
     try {
       // Das Foto muss weg, sonst liegt es ueber dem Muster und der Nutzer
@@ -170,7 +179,7 @@ export function AvatarStudio() {
           </View>
         ) : null}
 
-        <AvatarEditor design={design} onChange={setDesign} />
+        <AvatarEditor design={design} onChange={setDesign} pro={ichPro.pro} />
 
         <Button label="Speichern" busy={busy} onPress={saveDesign} />
 

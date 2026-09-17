@@ -12,12 +12,18 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { BordeauxMuster, SechseckLinse } from '@/components/Sechseck';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
+import { bisText, useIchPro } from '@/lib/pro';
 import { ZWEI, facette, flaeche, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
- * PRO - eine Vorschau, noch ohne Kauf und ohne Wirkung.
+ * PRO - was es gibt, was kommt, und der eigene Stand.
  *
+ * Seit 0091 ist ein Teil ECHT: Grenzen, Anpinnen, Profilbild-Stile,
+ * Abzeichen. Diese Punkte tragen "Da", der Rest "Bald". Einen Kauf gibt es
+ * noch nicht - PRO kommt vorerst nur ueber Codes (Einstellungen).
+ *
+ * (Urspruenglich:)
  * Gewuenscht (17.09.2026): "erst mal ohne Effekt, nur im Profil ein Banner
  * 'PRO werden'". Nichts hier schaltet etwas frei, und es gibt keinen Preis.
  * Die Seite zeigt, was geplant ist, und misst mit "Vormerken", ob es
@@ -34,25 +40,27 @@ import { color, radius, space, type } from '@/theme/tokens';
 
 const VORGEMERKT = 'pro_vorgemerkt_v1';
 
-type Punkt = { icon: IconName; titel: string; text: string };
+/** `da`: schon eingebaut und vom Server durchgesetzt (0091). */
+type Punkt = { icon: IconName; titel: string; text: string; da?: boolean };
 
 const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
   {
     titel: 'Sammeln',
     punkte: [
-      { icon: 'mastery', titel: 'Profilbild-Stile', text: 'Metall, animierter Stein, besondere Gründe' },
+      { icon: 'mastery', titel: 'Profilbild-Stile', text: 'Metall, Glas und besondere Gründe', da: true },
       { icon: 'sliders', titel: 'Profil-Themes', text: 'Bordeaux-Kopfkarte, eigene Muster' },
       { icon: 'streak', titel: 'Saison-Rahmen', text: 'Nur eine Saison lang – ohne Zufallsboxen' },
-      { icon: 'check', titel: 'Abzeichen', text: 'Zeigt, dass du ElyCic unterstützt' },
+      { icon: 'check', titel: 'Abzeichen', text: 'PRO neben deinem Namen', da: true },
     ],
   },
   {
     titel: 'Erstellen',
     punkte: [
-      { icon: 'courses', titel: 'Größere Stapel', text: 'Bis zu 50 Karten statt 10' },
-      { icon: 'comment', titel: 'Mehr Antworten', text: 'Umfragen mit 6, Quiz mit 4 Antworten' },
+      { icon: 'courses', titel: 'Größere Stapel', text: 'Bis zu 50 Karten statt 10', da: true },
+      { icon: 'knowledge', titel: 'Längere Beiträge', text: 'Bis zu 1500 Zeichen statt 500', da: true },
+      { icon: 'comment', titel: 'Mehr Antworten', text: 'Umfragen mit 6, Quiz mit 4 Antworten', da: true },
       { icon: 'clock', titel: 'Planen', text: 'Beiträge zu einer Uhrzeit veröffentlichen' },
-      { icon: 'plus', titel: 'Anpinnen', text: 'Mehrere Beiträge oben im Profil' },
+      { icon: 'plus', titel: 'Anpinnen', text: 'Drei Beiträge oben im Profil statt einem', da: true },
     ],
   },
   {
@@ -78,6 +86,7 @@ function Zeile({ p, erste }: { p: Punkt; erste: boolean }) {
         <Text style={styles.zeileTitel}>{p.titel}</Text>
         <Text style={styles.zeileUnter}>{p.text}</Text>
       </View>
+      <Text style={[styles.status, p.da && styles.statusDa]}>{p.da ? 'Da' : 'Bald'}</Text>
     </View>
   );
 }
@@ -86,6 +95,7 @@ export function ProScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const [vorgemerkt, setVorgemerkt] = useState(false);
+  const stand = useIchPro();
 
   useEffect(() => {
     AsyncStorage.getItem(VORGEMERKT)
@@ -125,10 +135,12 @@ export function ProScreen() {
           </View>
           <Text style={styles.heldTitel}>ElyCic PRO</Text>
           <Text style={styles.heldText}>
-            Mehr sammeln, mehr erstellen, mehr sehen. Noch in Arbeit – merk dich vor, dann erfährst du es zuerst.
+            {stand.pro
+              ? `Du hast PRO – ${bisText(stand.bis)}. Danke, dass du ElyCic unterstützt.`
+              : 'Mehr sammeln, mehr erstellen, mehr sehen. Ein Teil ist schon da, der Rest kommt.'}
           </Text>
           <View style={styles.bald}>
-            <Text style={styles.baldText}>Bald</Text>
+            <Text style={styles.baldText}>{stand.pro ? 'Aktiv' : 'Noch nicht käuflich'}</Text>
           </View>
         </View>
 
@@ -147,12 +159,14 @@ export function ProScreen() {
           Lernen, Wiederholen und XP bleiben immer kostenlos. Punkte in der Rangliste kann man nicht kaufen.
         </Text>
 
-        <Button label={vorgemerkt ? 'Vorgemerkt' : 'Vormerken'} onPress={vormerken} variant={vorgemerkt ? 'ghost' : 'primary'} />
-        {vorgemerkt ? (
-          <Pressable onPress={() => router.back()} hitSlop={8} style={styles.zurueck}>
-            <Text style={styles.zurueckText}>Zurück</Text>
-          </Pressable>
-        ) : null}
+        {stand.pro ? null : (
+          <>
+            <Button label={vorgemerkt ? 'Vorgemerkt' : 'Vormerken'} onPress={vormerken} variant={vorgemerkt ? 'ghost' : 'primary'} />
+            <Pressable onPress={() => router.push('/settings')} hitSlop={8} style={styles.zurueck}>
+              <Text style={styles.zurueckText}>Code einlösen</Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </GridBackground>
   );
@@ -210,6 +224,8 @@ const styles = StyleSheet.create({
   zeileText: { flex: 1, gap: 1 },
   zeileTitel: { ...type.label, fontSize: 15, color: color.ink.max },
   zeileUnter: { ...type.meta, color: color.ink.low, lineHeight: 16 },
+  status: { ...type.meta, fontSize: 10, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1 },
+  statusDa: { color: color.signal.primary },
 
   versprechen: { ...type.body, fontSize: 14, lineHeight: 20, color: color.ink.mid, textAlign: 'center' },
   zurueck: { alignSelf: 'center', paddingVertical: space.sm },

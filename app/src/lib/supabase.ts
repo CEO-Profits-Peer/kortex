@@ -514,6 +514,22 @@ export const api = {
     if (error) throw error;
   },
 
+  /** Eigenen Beitrag im Profil oben anpinnen oder loesen (0091). Grenze: 1, mit PRO 3. */
+  async postAnpinnen(id: string, an: boolean): Promise<void> {
+    const { error } = await supabase.rpc('post_anpinnen', { p_post: id, p_an: an });
+    if (error) throw error;
+  },
+
+  /**
+   * Code einloesen (0091). Ein falscher Code ist kein Fehler, sondern eine
+   * Antwort mit `ok: false` - so zaehlt der Server auch Fehlversuche mit.
+   */
+  async proCodeEinloesen(code: string): Promise<{ ok: true; tage: number; bis: string | null } | { ok: false; fehler: string }> {
+    const { data, error } = await supabase.rpc('pro_code_einloesen', { p_code: code });
+    if (error) throw error;
+    return data as { ok: true; tage: number; bis: string | null } | { ok: false; fehler: string };
+  },
+
   /**
    * Explore (0084): Beitraege von Leuten, denen ich nicht folge, ohne Reposts.
    * Seitenweise ueber die schon gezeigten IDs - die Reihenfolge ist eine

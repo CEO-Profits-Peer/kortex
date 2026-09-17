@@ -34,6 +34,7 @@ import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { signOut } from '@/lib/useSession';
 import { fehlerText } from '@/lib/fehler';
+import { CodeEinloesen } from '@/features/pro/CodeEinloesen';
 import {
   LINSE,
   MUSTER,
@@ -684,6 +685,10 @@ export function SettingsScreen() {
             gefahr
             rechts={<Aktion text="Löschen" gefahr />}
           />
+        </Gruppe>
+
+        <Gruppe icon="mastery" titel="PRO">
+          <CodeEinloesen />
         </Gruppe>
 
         <Button label="Abmelden" variant="ghost" busy={busy} onPress={() => void signOut()} />

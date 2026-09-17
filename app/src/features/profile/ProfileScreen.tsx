@@ -27,6 +27,8 @@ import { UserPosts } from '@/features/posts/UserPosts';
 import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { ProBanner } from '@/features/pro/ProBanner';
+import { ProAbzeichen } from '@/components/ProSperre';
+import { useIchPro } from '@/lib/pro';
 import { beiWiederOnline } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
@@ -126,6 +128,7 @@ function Shortcut({
 
 export function ProfileScreen() {
   const hinweis = useTabHint('profil');
+  const ichPro = useIchPro();
   const insets = useSafeAreaInsets();
   const [social, setSocial] = useState<MySocial | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -246,9 +249,12 @@ export function ProfileScreen() {
           </Pressable>
 
           <View style={styles.identity}>
-            <Text style={styles.handle} numberOfLines={1}>
-              {personName(social)}
-            </Text>
+            <View style={styles.nameZeile}>
+              <Text style={[styles.handle, { flexShrink: 1 }]} numberOfLines={1}>
+                {personName(social)}
+              </Text>
+              {ichPro.pro ? <ProAbzeichen /> : null}
+            </View>
             <Text style={styles.name} numberOfLines={1}>
               @{social.handle}
             </Text>
@@ -486,6 +492,7 @@ const styles = StyleSheet.create({
   editText: { ...type.label, fontSize: 13, color: color.ink.high },
 
   shortcuts: { flexDirection: 'row', gap: space.sm },
+  nameZeile: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   shortcut: {
     flex: 1,
     alignItems: 'center',

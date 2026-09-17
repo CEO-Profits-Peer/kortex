@@ -131,6 +131,8 @@ export type Profile = {
   focus_seconds_total: number;
   referral_code: string;
   plan: 'free' | 'pro' | 'gifted';
+  /** null = ohne Ablauf. Nur der Server schreibt es (0091). */
+  plan_expires_at?: string | null;
   leaderboard_opt_in: boolean;
   likes_public: boolean;
   bio: string | null;
@@ -396,6 +398,8 @@ export type PublicProfile = {
   dabei_seit?: string;
   beitraege?: number;
   likes_bekommen?: number;
+  /** 0091: Abzeichen */
+  pro?: boolean;
 };
 
 /** LAB Ankereffekt: Schnitt je Gruppe (lab_anker_eintragen, 0088). */
@@ -471,6 +475,8 @@ export type HomePerson = {
   avatar_path: string | null;
   /** Das bin ich - die App schreibt dann "Du". */
   ich?: boolean;
+  /** PRO-Abzeichen (0091, nur in Beitraegen). */
+  pro?: boolean;
 };
 
 /** Eine Karte als Verweis in einem Beitrag. */
@@ -512,6 +518,8 @@ export type Post = {
   reposts: number;
   karte: PostCard | null;
   daten?: PostDaten;
+  /** Im Profil oben angepinnt (0091). */
+  angepinnt?: boolean;
   /** Gesetzt, wenn der Beitrag einen anderen weiterteilt. */
   original: {
     id: string;

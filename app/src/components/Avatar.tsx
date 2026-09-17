@@ -166,6 +166,30 @@ export function WabenArt({
           );
         }
         const e = wabenEcken(x, y, s * 0.92);
+        if (design.stil === 'metall') {
+          // PRO: poliertes Metall - kraeftiges Licht oben links, tiefer
+          // Schatten unten rechts und eine helle Kante oben.
+          return (
+            <React.Fragment key={i}>
+              <Polygon points={punkteText(e)} fill={farbe} />
+              <Polygon points={punkteText([e[0], e[1], e[2], [x, y]])} fill="#FFFFFF" opacity={0.38} />
+              <Polygon points={punkteText([[x, y], e[2], e[3], e[4]])} fill="#000000" opacity={0.18} />
+              <Polygon points={punkteText([[x, y], e[4], e[5], e[0]])} fill="#000000" opacity={0.34} />
+              <Polygon points={punkteText([e[1], e[2]])} fill="none" stroke="#FFFFFF" strokeOpacity={0.7} strokeWidth={Math.max(0.5, s * 0.08)} />
+            </React.Fragment>
+          );
+        }
+        if (design.stil === 'glas') {
+          // PRO: Glas - die Farbe durchscheinend, eine klare Kante und ein
+          // Lichtfleck oben.
+          const innen = wabenEcken(x, y, s * 0.55);
+          return (
+            <React.Fragment key={i}>
+              <Polygon points={punkteText(e)} fill={farbe} opacity={0.32} stroke={farbe} strokeWidth={Math.max(0.6, s * 0.12)} />
+              <Polygon points={punkteText([innen[0], innen[1], innen[2]])} fill="#FFFFFF" opacity={0.45} />
+            </React.Fragment>
+          );
+        }
         if (design.stil === 'stein') {
           // Licht von oben: obere Haelfte heller, unten rechts dunkler -
           // wie das Sechseck auf dem aktiven Tab.

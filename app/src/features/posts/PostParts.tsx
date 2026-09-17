@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { ProAbzeichen } from '@/components/ProSperre';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -67,6 +68,7 @@ export function Kopf({
         <Text style={styles.kopfName}>{name(wer)}</Text>
         {verb ? ` ${verb}` : ''}
       </Text>
+      {wer.pro ? <ProAbzeichen /> : null}
       <Text style={styles.kopfWann}>{wann(at)}</Text>
     </Pressable>
   );
@@ -211,6 +213,7 @@ export function PostKarte({
 
   return (
     <View style={styles.karte}>
+      {post.angepinnt ? <Text style={styles.angepinnt}>Angepinnt</Text> : null}
       <Kopf wer={post.wer} verb={verb} at={post.at} postId={post.id} />
 
       {post.body ? (
@@ -271,6 +274,7 @@ const styles = StyleSheet.create({
   },
 
   kopf: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  angepinnt: { ...type.meta, color: color.akzent, textTransform: 'uppercase', letterSpacing: 1 },
   kopfText: { ...type.body, fontSize: 14, color: color.ink.mid, flex: 1 },
   kopfName: { color: color.ink.max, fontWeight: '600' },
   kopfWann: { ...type.meta, color: color.ink.low },

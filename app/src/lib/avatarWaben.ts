@@ -47,15 +47,31 @@ export const WABEN_GRUENDE = [
   '#1C2620', // Moos
   '#3A3024', // Sand
   '#0F0D10', // Tinte
+  // Ab hier PRO (0091: avatar_braucht_pro prueft Index >= 8). Reihenfolge
+  // nie aendern - der Index steckt in gespeicherten Profilbildern.
+  '#0F2A24', // Smaragd
+  '#15193F', // Koenigsblau
+  '#3B1E28', // Rose-Samt
+  '#221C12', // Onyx
 ] as const;
 
-export const WABEN_STILE = ['waben', 'stein', 'kontur', 'punkte'] as const;
+/** Ab diesem Index sind Stile und Gruende PRO. Muss zu avatar_braucht_pro (0091) passen. */
+export const PRO_AB_STIL = 4;
+export const PRO_AB_GRUND = 8;
+
+export function wabenBrauchtPro(d: WabenDesign): boolean {
+  return WABEN_STILE.indexOf(d.stil) >= PRO_AB_STIL || d.grund >= PRO_AB_GRUND;
+}
+
+export const WABEN_STILE = ['waben', 'stein', 'kontur', 'punkte', 'metall', 'glas'] as const;
 export type WabenStil = (typeof WABEN_STILE)[number];
 export const WABEN_STIL_LABEL: Record<WabenStil, string> = {
   waben: 'Waben',
   stein: 'Stein',
   kontur: 'Kontur',
   punkte: 'Punkte',
+  metall: 'Metall',
+  glas: 'Glas',
 };
 
 export type Symmetrie = 'spiegel' | 'sechs' | 'frei';
@@ -240,10 +256,12 @@ export function wabenWuerfeln(sym: Symmetrie = 'spiegel', start?: string): Waben
   let farbe2 = Math.floor(r() * WABEN_FARBEN.length);
   if (farbe2 === farbe1) farbe2 = (farbe1 + 5) % WABEN_FARBEN.length;
   return {
-    grund: Math.floor(r() * WABEN_GRUENDE.length),
+    // Wuerfeln bleibt bei den freien Stilen und Gruenden: ein Zufallsbild,
+    // das man dann nicht speichern darf, waere eine Falle.
+    grund: Math.floor(r() * PRO_AB_GRUND),
     farbe1,
     farbe2,
-    stil: WABEN_STILE[Math.floor(r() * WABEN_STILE.length)],
+    stil: WABEN_STILE[Math.floor(r() * PRO_AB_STIL)],
     waben,
   };
 }

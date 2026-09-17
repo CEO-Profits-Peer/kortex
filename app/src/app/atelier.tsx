@@ -18,6 +18,7 @@ import { AdminOverview } from '@/features/admin/AdminOverview';
 import { AdminPeople } from '@/features/admin/AdminPeople';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
 import { ProBanner } from '@/features/pro/ProBanner';
+import { zeigeProSperre } from '@/components/ProSperre';
 import { ProScreen } from '@/features/pro/ProScreen';
 import { type WabenDesign, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
 import type {
@@ -454,6 +455,7 @@ export default function Atelier() {
 
           <Text style={styles.werkTitel}>PRO</Text>
           <ProBanner />
+          <Button label="Fenster" variant="ghost" onPress={() => zeigeProSperre('Mehr als zehn Karten im Stapel gibt es mit PRO – bis zu 50.')} />
 
           <Text style={styles.werkTitel}>Feed-Leiste</Text>
           <View style={{ height: 330, alignSelf: 'flex-end', width: 80 }}>

@@ -21,6 +21,8 @@ import { ergebnis, werkzeug } from '@/features/lab/rechnen';
 import { KartenVerweis, Kopf } from '@/features/posts/PostParts';
 import { entwurfHolen, entwurfLoeschen, entwurfSpeichern, neueEntwurfId } from '@/lib/entwuerfe';
 import { fehlerText } from '@/lib/fehler';
+import { GRENZEN, grenzen, proMeldung, useIchPro } from '@/lib/pro';
+import { ProMarke, zeigeProSperre } from '@/components/ProSperre';
 import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
@@ -119,6 +121,9 @@ export function ComposeScreen() {
   const [art, setArt] = useState<PostArt>(startArt);
   const [text, setText] = useState('');
   const [optionen, setOptionen] = useState<string[]>(leereOptionen(startArt));
+  // PRO nur fuer die Anzeige: der Server setzt die Grenzen selbst durch (0091).
+  const { pro } = useIchPro();
+  const g = grenzen(pro);
   const [richtig, setRichtig] = useState<number | null>(null);
   const [karten, setKarten] = useState<string[]>([]);
   const [auswahl, setAuswahl] = useState<CollectionEntry[] | null>(null);
@@ -268,11 +273,11 @@ export function ComposeScreen() {
     (art === 'lab'
       ? labGueltig
       : art === 'stapel'
-        ? karten.length >= 2 && karten.length <= 10
+        ? karten.length >= 2 && karten.length <= g.stapel
         : art === 'umfrage'
-          ? t.length >= 2 && optionenOk && opt.length <= 4
+          ? t.length >= 2 && optionenOk && opt.length <= g.umfrage
           : art === 'quiz'
-            ? t.length >= 2 && optionenOk && opt.length === 3 && richtig !== null
+            ? t.length >= 2 && optionenOk && opt.length >= 3 && opt.length <= g.quiz && richtig !== null && richtig < opt.length
             : t.length >= 2 || (Boolean(params.repost || params.card) && t.length === 0));
 
   const posten = async () => {
@@ -308,6 +313,11 @@ export function ComposeScreen() {
       haptics.success();
       router.replace('/home');
     } catch (e) {
+      const angebot = proMeldung(e);
+      if (angebot) {
+        zeigeProSperre(angebot);
+        return;
+      }
       setNotiz(fehlerText(e, 'Posten ging nicht.'));
     } finally {
       setBusy(false);
@@ -318,14 +328,37 @@ export function ComposeScreen() {
     haptics.select();
     setArt(a);
     if ((a === 'quiz' || a === 'umfrage') && optionen.every((o) => !o.trim())) setOptionen(leereOptionen(a));
-    if (a === 'quiz' && optionen.length !== 3) setOptionen((alt) => [...alt, '', ''].slice(0, 3));
+    if (a === 'quiz' && (optionen.length < 3 || optionen.length > g.quiz)) {
+      setOptionen((alt) => [...alt, '', ''].slice(0, Math.max(3, Math.min(alt.length, g.quiz))));
+    }
   };
 
   const karteUmschalten = (id: string) => {
     haptics.select();
-    setKarten((alt) =>
-      alt.includes(id) ? alt.filter((x) => x !== id) : alt.length >= 10 ? alt : [...alt, id],
-    );
+    if (!karten.includes(id) && karten.length >= g.stapel) {
+      if (!pro) zeigeProSperre('Mehr als zehn Karten im Stapel gibt es mit PRO – bis zu 50.');
+      return;
+    }
+    setKarten((alt) => (alt.includes(id) ? alt.filter((x) => x !== id) : [...alt, id]));
+  };
+
+  /** Eine Antwort dazu - oder das PRO-Fenster, wenn die freie Grenze erreicht ist. */
+  const antwortDazu = () => {
+    const frei = art === 'quiz' ? GRENZEN.frei.quiz : GRENZEN.frei.umfrage;
+    if (!pro && optionen.length >= frei) {
+      zeigeProSperre(
+        art === 'quiz'
+          ? 'Eine vierte Antwort im Quiz gibt es mit PRO.'
+          : 'Mehr als vier Antworten gibt es mit PRO – bis zu sechs.',
+      );
+      return;
+    }
+    setOptionen((alt) => [...alt, '']);
+  };
+
+  const antwortWeg = (i: number) => {
+    setOptionen((alt) => alt.filter((_, j) => j !== i));
+    setRichtig((r) => (r === null ? r : r === i ? null : r > i ? r - 1 : r));
   };
 
   const titel = params.repost
@@ -376,16 +409,30 @@ export function ComposeScreen() {
             style={[styles.eingabe, (art === 'stapel' || art === 'lab') && styles.eingabeKlein]}
             multiline
             autoFocus={art !== 'stapel'}
-            maxLength={500}
+            maxLength={g.text}
           />
           {erwaehnung.leiste}
-          <Text style={styles.zaehler}>{text.length} / 500</Text>
+          <View style={styles.zaehlerZeile}>
+            {!pro && text.length >= GRENZEN.frei.text ? (
+              <Pressable
+                onPress={() => zeigeProSperre('Mehr als 500 Zeichen gibt es mit PRO – bis zu 1500.')}
+                hitSlop={8}
+                style={styles.mehrPro}
+              >
+                <ProMarke klein />
+                <Text style={styles.mehrProText}>Länger</Text>
+              </Pressable>
+            ) : null}
+            <Text style={styles.zaehler}>
+              {text.length} / {g.text}
+            </Text>
+          </View>
 
           {/* --- Umfrage / Quiz ------------------------------------------------ */}
           {art === 'umfrage' || art === 'quiz' ? (
             <View style={styles.optionen}>
               <Text style={styles.abschnitt}>
-                {art === 'quiz' ? 'Drei Antworten – tippe den Kreis bei der richtigen' : 'Antworten'}
+                {art === 'quiz' ? 'Antworten – tippe den Kreis bei der richtigen' : 'Antworten'}
               </Text>
               {optionen.map((o, i) => (
                 <View key={i} style={styles.option}>
@@ -410,9 +457,9 @@ export function ComposeScreen() {
                     style={styles.optionEingabe}
                     maxLength={80}
                   />
-                  {art === 'umfrage' && optionen.length > 2 ? (
+                  {(art === 'umfrage' && optionen.length > 2) || (art === 'quiz' && optionen.length > 3) ? (
                     <Pressable
-                      onPress={() => setOptionen((alt) => alt.filter((_, j) => j !== i))}
+                      onPress={() => antwortWeg(i)}
                       hitSlop={8}
                       accessibilityLabel="Antwort entfernen"
                     >
@@ -421,10 +468,13 @@ export function ComposeScreen() {
                   ) : null}
                 </View>
               ))}
-              {art === 'umfrage' && optionen.length < 4 ? (
-                <Pressable onPress={() => setOptionen((alt) => [...alt, ''])} style={styles.dazu} hitSlop={6}>
+              {optionen.length < (art === 'quiz' ? GRENZEN.pro.quiz : GRENZEN.pro.umfrage) ? (
+                <Pressable onPress={antwortDazu} style={styles.dazu} hitSlop={6}>
                   <Icon name="plus" size={14} color={color.akzent} />
                   <Text style={styles.dazuText}>Antwort</Text>
+                  {!pro && optionen.length >= (art === 'quiz' ? GRENZEN.frei.quiz : GRENZEN.frei.umfrage) ? (
+                    <ProMarke klein />
+                  ) : null}
                 </Pressable>
               ) : null}
             </View>
@@ -453,7 +503,7 @@ export function ComposeScreen() {
               {/* Ausgewählt - in der Reihenfolge, in der der Stapel abläuft. */}
               {karten.length > 0 ? (
                 <>
-                  <Text style={styles.abschnitt}>Ausgewählt · {karten.length} von 2–10</Text>
+                  <Text style={styles.abschnitt}>Ausgewählt · {karten.length} von 2–{g.stapel}</Text>
                   {karten.map((id, i) => (
                     <WahlZeile
                       key={id}
@@ -464,7 +514,7 @@ export function ComposeScreen() {
                   ))}
                 </>
               ) : (
-                <Text style={styles.abschnitt}>Wähle 2 bis 10 Karten</Text>
+                <Text style={styles.abschnitt}>Wähle 2 bis {g.stapel} Karten</Text>
               )}
 
               {kartenSuche.trim().length >= 2 ? (
@@ -591,6 +641,9 @@ const styles = StyleSheet.create({
 
   abschnitt: { ...type.meta, color: color.ink.low },
   optionen: { gap: space.sm },
+  zaehlerZeile: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space.md },
+  mehrPro: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  mehrProText: { ...type.meta, color: color.akzent },
   option: {
     flexDirection: 'row',
     alignItems: 'center',

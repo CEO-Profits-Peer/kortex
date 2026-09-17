@@ -27,6 +27,8 @@ import { haptics } from '@/lib/haptics';
 import { sharePost } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomePerson, PostComment, PostDetail } from '@/lib/types.db';
+import { proMeldung } from '@/lib/pro';
+import { zeigeProSperre } from '@/components/ProSperre';
 import { flaeche, goldVerlauf, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -179,6 +181,19 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
     }
   };
 
+  const anpinnen = async (an: boolean) => {
+    haptics.select();
+    try {
+      await api.postAnpinnen(id, an);
+      setD((alt) => (alt && !alt.gesperrt ? { ...alt, post: { ...alt.post, angepinnt: an } } : alt));
+      zeige(an ? 'Oben in deinem Profil angepinnt.' : 'Gelöst.');
+    } catch (e) {
+      const angebot = proMeldung(e);
+      if (angebot) zeigeProSperre(angebot);
+      else zeige(fehlerText(e, 'Anpinnen ging nicht.'));
+    }
+  };
+
   const beitragLoeschen = async () => {
     haptics.light();
     try {
@@ -244,9 +259,14 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
 
           <View style={styles.menueZeile}>
             {post.ist_meins ? (
-              <Pressable onPress={() => void beitragLoeschen()} hitSlop={8}>
-                <Text style={styles.menueText}>Beitrag löschen</Text>
-              </Pressable>
+              <View style={styles.menueEigen}>
+                <Pressable onPress={() => void anpinnen(!post.angepinnt)} hitSlop={8}>
+                  <Text style={styles.menueText}>{post.angepinnt ? 'Lösen' : 'Anpinnen'}</Text>
+                </Pressable>
+                <Pressable onPress={() => void beitragLoeschen()} hitSlop={8}>
+                  <Text style={styles.menueText}>Löschen</Text>
+                </Pressable>
+              </View>
             ) : menue ? (
               <Pressable onPress={() => void beitragMelden()} hitSlop={8}>
                 <Text style={[styles.menueText, { color: color.signal.error }]}>Wirklich melden</Text>
@@ -465,6 +485,7 @@ const styles = StyleSheet.create({
   gesperrtText: { ...type.body, fontSize: 16, color: color.ink.mid, textAlign: 'center' },
 
   menueZeile: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: -space.sm },
+  menueEigen: { flexDirection: 'row', gap: space.lg },
   menueText: { ...type.meta, color: color.ink.mid },
 
   abschnitt: { ...type.meta, color: color.ink.low },
