@@ -17,6 +17,8 @@ import { AdminCategories } from '@/features/admin/AdminCategories';
 import { AdminOverview } from '@/features/admin/AdminOverview';
 import { AdminPeople } from '@/features/admin/AdminPeople';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
+import { ProBanner } from '@/features/pro/ProBanner';
+import { ProScreen } from '@/features/pro/ProScreen';
 import { type WabenDesign, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
 import type {
   AdminCategory,
@@ -361,7 +363,7 @@ const KONTROLLE: AdminData = {
 };
 
 export default function Atelier() {
-  const [reiter, setReiter] = useState<'karten' | 'kopfzeile' | 'bausteine' | 'kontrolle' | 'design'>('karten');
+  const [reiter, setReiter] = useState<'karten' | 'kopfzeile' | 'bausteine' | 'kontrolle' | 'design' | 'pro'>('karten');
   // Design 2.0: Bausteine, die sonst nur hinter der Anmeldung zu sehen sind.
   const [waben, setWaben] = useState<WabenDesign>(() => wabenWuerfeln('sechs', 'atelier'));
   const [tab, setTab] = useState(1);
@@ -373,7 +375,7 @@ export default function Atelier() {
   return (
     <GridBackground>
       <View style={styles.reiter}>
-        {(['karten', 'kopfzeile', 'bausteine', 'kontrolle', 'design'] as const).map((k) => (
+        {(['karten', 'kopfzeile', 'bausteine', 'kontrolle', 'design', 'pro'] as const).map((k) => (
           <Pressable
             key={k}
             onPress={() => setReiter(k)}
@@ -438,6 +440,8 @@ export default function Atelier() {
         </ScrollView>
       ) : null}
 
+      {reiter === 'pro' ? <View style={styles.voll}><ProScreen /></View> : null}
+
       {reiter === 'design' ? (
         <ScrollView contentContainerStyle={[styles.bahn, { paddingBottom: 140 }]}>
           <Text style={styles.werkTitel}>Profilbilder</Text>
@@ -447,6 +451,9 @@ export default function Atelier() {
             <Avatar seed="v1-210-a7" size={64} />
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
           </View>
+
+          <Text style={styles.werkTitel}>PRO</Text>
+          <ProBanner />
 
           <Text style={styles.werkTitel}>Feed-Leiste</Text>
           <View style={{ height: 330, alignSelf: 'flex-end', width: 80 }}>

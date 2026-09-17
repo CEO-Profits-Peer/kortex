@@ -108,6 +108,12 @@ export const analytics = {
   searched: (length: number, hits: number) => capture('searched', { length, hits }),
   sourceOpened: (sourceId: string) => capture('source_opened', { source: sourceId }),
 
+  // --- PRO: interessiert das ueberhaupt jemanden? ---------------------------
+  // Zwei Zahlen, bevor Wochen in ein Abo fliessen: wie viele sehen sich die
+  // Vorschau an, und wie viele merken sich vor.
+  proGeoeffnet: () => capture('pro_opened'),
+  proVorgemerkt: () => capture('pro_interest'),
+
   // --- Das Signal, das mir am wichtigsten ist ------------------------------
   /** Hört jemand freiwillig auf, wenn die App es anbietet? */
   enoughForToday: (cardsRead: number, accepted: boolean) =>

@@ -26,6 +26,7 @@ import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
 import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { ProBanner } from '@/features/pro/ProBanner';
 import { beiWiederOnline } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
@@ -329,6 +330,8 @@ export function ProfileScreen() {
           />
           <Shortcut icon="chart" label="Statistik" onPress={() => router.push('/statistik')} />
         </View>
+
+        <ProBanner />
 
         {/* Verschwindet von selbst, sobald die App installiert ist - und
             ist auf dem Handy und im installierten Fenster nie da. */}
