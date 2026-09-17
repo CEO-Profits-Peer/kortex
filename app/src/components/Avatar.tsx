@@ -25,6 +25,9 @@ import { color, radius } from '@/theme/tokens';
  * Beschreibung.
  */
 
+/** Design 2.0: der Grund des Sechsecks - eine Spur heller als die Karten, damit es sich abhebt. */
+const AVATAR_GRUND = '#241D22';
+
 /** Das reine Bild, ohne Rahmen und ohne Foto-Logik. Auch der Editor zeichnet damit. */
 export function AvatarArt({ design, size }: { design: AvatarDesign; size: number }) {
   const cell = size / 4;
@@ -33,7 +36,7 @@ export function AvatarArt({ design, size }: { design: AvatarDesign; size: number
   return (
     <Svg width={size} height={size}>
       {/* Design 2.0: keine Rundung - das Sechseck schneidet der Rahmen. */}
-      <Rect width={size} height={size} fill={color.bgSunken} rx={ZWEI ? 0 : size * 0.28} />
+      <Rect width={size} height={size} fill={ZWEI ? AVATAR_GRUND : color.bgSunken} rx={ZWEI ? 0 : size * 0.28} />
       {[0, 1, 2, 3].map((row) =>
         [0, 1, 2, 3].map((col) => {
           // Gespiegelt: symmetrische Muster wirken wie ein Zeichen,
@@ -130,12 +133,27 @@ function AvatarBase({
           // einen eigenen Dateinamen (siehe api.uploadAvatar).
           cachePolicy="memory-disk"
         />
+      ) : ZWEI ? (
+        // Das gezeichnete Muster ist quadratisch. Randvoll ins Sechseck
+        // gelegt, schnitt die Spitze mitten durch die Kaestchen - das sah
+        // nicht gewollt aus. Verkleinert und mittig sitzt es ganz im Sechseck.
+        <View style={styles.mitte}>
+          <GeneratedAvatar seed={seed} size={Math.round(size * 0.64)} />
+        </View>
       ) : (
         <GeneratedAvatar seed={seed} size={size} />
       )}
       {ZWEI && ring ? (
+        // Design 2.0: ein duenner warmgrauer Ring statt eines dicken goldenen.
+        // Gold um jeden Menschen war zu laut - die Farbe des Aufrufers (meist
+        // Gold) wird hier bewusst nicht uebernommen.
         <Svg width={size} height={size} style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Polygon points={sechseckPunkte(size, size, 1)} fill="none" stroke={ring} strokeWidth={2} />
+          <Polygon
+            points={sechseckPunkte(size, size, 0.75)}
+            fill="none"
+            stroke="rgba(214, 207, 199, 0.35)"
+            strokeWidth={1}
+          />
         </Svg>
       ) : null}
     </View>
@@ -143,7 +161,8 @@ function AvatarBase({
 }
 
 const styles = StyleSheet.create({
-  wrap: { overflow: 'hidden', backgroundColor: color.bgSunken, borderRadius: radius.md },
+  wrap: { overflow: 'hidden', backgroundColor: ZWEI ? AVATAR_GRUND : color.bgSunken, borderRadius: radius.md },
+  mitte: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
 
 export const Avatar = memo(AvatarBase);

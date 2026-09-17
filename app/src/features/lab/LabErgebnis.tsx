@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { haptics } from '@/lib/haptics';
 import { color, radius, space, type } from '@/theme/tokens';
-import { ZWEI, flaeche } from '@/theme/design';
+import { BordeauxMuster } from '@/components/Sechseck';
+import { ZWEI, facette, flaeche } from '@/theme/design';
 
 import { ergebnis, werkzeug } from './rechnen';
 
@@ -42,6 +43,7 @@ export function LabErgebnis({
 
   return (
     <View style={styles.karte}>
+      {ZWEI ? <BordeauxMuster /> : null}
       <View style={styles.kopf}>
         <Text style={[styles.meta, { color: w.farbe }]}>LAB · {w.titel}</Text>
         <Text style={styles.tag}>#{w.hashtag}</Text>
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgSunken,
     ...flaeche(12),
-    ...(ZWEI ? { backgroundColor: color.bordeaux } : null),
+    ...(ZWEI ? { backgroundColor: color.bordeaux, borderTopWidth: 0, overflow: 'hidden', ...facette(10) } : null),
   },
   kopf: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
   meta: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1 },

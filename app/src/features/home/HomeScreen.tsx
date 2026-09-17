@@ -30,7 +30,7 @@ import { shareCard, shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomeData, HomeEntry, Post } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
-import { flaeche } from '@/theme/design';
+import { ZWEI, facette, flaeche, goldVerlauf } from '@/theme/design';
 
 /**
  * Home - was die Leute machen, denen du folgst. Nach unten ohne Ende.
@@ -297,7 +297,7 @@ export function HomeScreen() {
         <Text style={styles.titel}>Home</Text>
         <View style={styles.kopfKnoepfe}>
           <Pressable onPress={() => void einladen()} hitSlop={8} style={styles.einladen}>
-            <Icon name="plus" size={14} color={color.signal.primary} />
+            <Icon name="plus" size={14} color={color.akzent} />
             <Text style={styles.einladenText}>Einladen</Text>
           </Pressable>
           <Pressable
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     paddingBottom: space.sm,
     zIndex: 10,
-    backgroundColor: 'rgba(11, 12, 14, 0.9)',
+    backgroundColor: ZWEI ? 'rgba(15, 13, 16, 0.9)' : 'rgba(11, 12, 14, 0.9)',
     ...(Platform.OS === 'web'
       ? ({ backdropFilter: 'blur(18px)' } as object)
       : null),
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     ...flaeche(6),
   },
-  einladenText: { ...type.meta, color: color.signal.primary },
+  einladenText: { ...type.meta, color: color.akzent },
   kopfKnoepfe: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   glocke: { padding: 4 },
   glockePunkt: {
@@ -748,6 +748,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.pill,
     backgroundColor: color.signal.primary,
+    ...facette(6),
+    ...goldVerlauf(),
   },
   schreibenKnopfText: { ...type.label, fontSize: 13, color: color.bg },
 
@@ -778,17 +780,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 7,
     borderRadius: radius.pill,
-    backgroundColor: color.signal.primary,
+    // Design 2.0: zweitrangig, also Bordeaux statt Gold - Gold hat auf Home
+    // nur "Posten".
+    backgroundColor: ZWEI ? color.bordeaux : color.signal.primary,
   },
   folgenKnopfAn: {
     backgroundColor: 'transparent',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
   },
-  folgenText: { ...type.label, fontSize: 13, color: color.bg },
+  folgenText: { ...type.label, fontSize: 13, color: ZWEI ? color.ink.max : color.bg },
   folgenTextAn: { color: color.ink.mid },
 
-  notiz: { ...type.meta, color: color.signal.primary },
+  notiz: { ...type.meta, color: color.akzent },
   fehler: { ...type.body, fontSize: 14, color: color.signal.error },
   leer: { ...type.body, fontSize: 15, lineHeight: 22, color: color.ink.mid },
   ende: { ...type.meta, color: color.ink.low, textAlign: 'center', marginVertical: space.xl },
@@ -802,7 +806,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.bgElevated,
     ...flaeche(12),
   },
-  zitat: { ...type.body, fontSize: 15, lineHeight: 21, color: color.signal.primary, fontStyle: 'italic' },
+  zitat: { ...type.body, fontSize: 15, lineHeight: 21, color: color.akzent, fontStyle: 'italic' },
 
   zeile: {
     flexDirection: 'row',

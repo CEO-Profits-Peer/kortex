@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   handle: { ...type.label, color: color.ink.high, flex: 1 },
   when: { ...type.meta, color: color.ink.low },
 
-  comment: { ...type.body, fontSize: 15, color: color.signal.primary, fontStyle: 'italic' },
+  comment: { ...type.body, fontSize: 15, color: color.akzent, fontStyle: 'italic' },
 
   ref: {
     flexDirection: 'row',

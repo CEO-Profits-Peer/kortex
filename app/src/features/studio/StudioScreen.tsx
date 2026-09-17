@@ -28,7 +28,8 @@ import { beiWiederOnline } from '@/lib/online';
 import { api } from '@/lib/supabase';
 import type { CourseSummary, Post, PostArt } from '@/lib/types.db';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
-import { ZWEI, flaeche } from '@/theme/design';
+import { BordeauxMuster } from '@/components/Sechseck';
+import { ZWEI, facette, flaeche, sechseck } from '@/theme/design';
 
 /**
  * Studio - mit einem Umschalter: Erstellen | Lernen (entschieden: Option B).
@@ -216,8 +217,18 @@ export function StudioScreen() {
                   style={({ pressed }) => [styles.neu, n.art === 'post' && styles.neuHaupt, pressed && { opacity: 0.85 }]}
                   accessibilityRole="button"
                 >
-                  <View style={[styles.neuIcon, n.art === 'post' && { backgroundColor: color.signal.primary }]}>
-                    <Icon name={n.icon} size={17} color={n.art === 'post' ? color.bg : color.signal.primary} />
+                  {ZWEI && n.art === 'post' ? <BordeauxMuster /> : null}
+                  <View
+                    style={[
+                      styles.neuIcon,
+                      n.art === 'post' && { backgroundColor: ZWEI ? color.bordeauxHell : color.signal.primary },
+                    ]}
+                  >
+                    <Icon
+                      name={n.icon}
+                      size={17}
+                      color={n.art === 'post' ? (ZWEI ? color.signal.primary : color.bg) : color.akzent}
+                    />
                   </View>
                   <Text style={styles.neuLabel}>{n.label}</Text>
                 </Pressable>
@@ -575,7 +586,12 @@ const styles = StyleSheet.create({
     ...flaeche(10),
   },
   // Design 2.0: der Haupt-Knopf ist eine der wenigen Bordeaux-Flaechen.
-  neuHaupt: ZWEI ? { backgroundColor: color.bordeaux } : { borderColor: color.signal.primary },
+  // Geschliffen (alle vier Ecken) und mit Muster - die einzige Karte hier,
+  // die so aussehen darf.
+  neuHaupt: ZWEI
+    ? { backgroundColor: color.bordeaux, borderTopWidth: 0, overflow: 'hidden', ...facette(10) }
+    : { borderColor: color.signal.primary },
+  // Design 2.0: Sechseck statt Kreis - Kreise gibt es in 2.0 nicht mehr.
   neuIcon: {
     width: 36,
     height: 36,
@@ -583,13 +599,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.bgSunken,
+    ...(ZWEI ? { width: 34, height: 38, backgroundColor: '#2A2227', ...sechseck() } : null),
   },
   neuLabel: { ...type.label, fontSize: 14, color: color.ink.high },
 
   abschnittBlock: { gap: space.sm },
   abschnittKopf: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.sm },
   abschnitt: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1.2 },
-  abschnittLink: { ...type.label, fontSize: 13, color: color.signal.primary },
+  abschnittLink: { ...type.label, fontSize: 13, color: color.akzent },
 
   bleed: { marginHorizontal: -space.xl },
   reihe: { paddingHorizontal: space.xl, gap: space.md },
@@ -629,7 +646,7 @@ const styles = StyleSheet.create({
     borderTopColor: color.ink.faint,
     marginTop: -StyleSheet.hairlineWidth,
   },
-  meinArt: { ...type.meta, fontSize: 10, color: color.signal.primary, width: 58, textTransform: 'uppercase', letterSpacing: 0.8 },
+  meinArt: { ...type.meta, fontSize: 10, color: color.akzent, width: 58, textTransform: 'uppercase', letterSpacing: 0.8 },
   meinText: { ...type.body, fontSize: 14, color: color.ink.high, flex: 1 },
   meinZahlenReihe: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   meinZahlen: { ...type.mono, fontSize: 11, color: color.ink.low, marginRight: 4 },

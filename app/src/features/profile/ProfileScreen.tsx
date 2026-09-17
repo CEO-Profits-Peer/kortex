@@ -304,7 +304,7 @@ export function ProfileScreen() {
             ]}
             accessibilityRole="button"
           >
-            <Text style={[styles.editText, { color: color.signal.primary }]}>
+            <Text style={[styles.editText, { color: color.akzent }]}>
               Freunde einladen
             </Text>
           </Pressable>

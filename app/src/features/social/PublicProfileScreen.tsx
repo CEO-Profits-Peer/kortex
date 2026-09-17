@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   refBody: { flex: 1, gap: 2 },
   refTitle: { ...type.body, fontSize: 15, color: color.ink.high },
-  refComment: { ...type.body, fontSize: 14, color: color.signal.primary, fontStyle: 'italic' },
+  refComment: { ...type.body, fontSize: 14, color: color.akzent, fontStyle: 'italic' },
   refMeta: { ...type.meta, color: color.ink.low },
 
   private: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.lg },

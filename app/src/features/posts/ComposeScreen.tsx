@@ -79,7 +79,7 @@ function WahlZeile({ k, nr, onPress }: { k: Wahl; nr: number; onPress: () => voi
         </Text>
         {k.category ? <Text style={styles.wahlTag}>#{k.category.split('.').pop()}</Text> : null}
       </View>
-      {an ? <Icon name="close" size={13} color={color.ink.low} /> : <Icon name="plus" size={14} color={color.signal.primary} />}
+      {an ? <Icon name="close" size={13} color={color.ink.low} /> : <Icon name="plus" size={14} color={color.akzent} />}
     </Pressable>
   );
 }
@@ -423,7 +423,7 @@ export function ComposeScreen() {
               ))}
               {art === 'umfrage' && optionen.length < 4 ? (
                 <Pressable onPress={() => setOptionen((alt) => [...alt, ''])} style={styles.dazu} hitSlop={6}>
-                  <Icon name="plus" size={14} color={color.signal.primary} />
+                  <Icon name="plus" size={14} color={color.akzent} />
                   <Text style={styles.dazuText}>Antwort</Text>
                 </Pressable>
               ) : null}
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   },
   kreisAn: { borderColor: color.signal.success, backgroundColor: color.signal.success },
   dazu: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 },
-  dazuText: { ...type.label, fontSize: 14, color: color.signal.primary },
+  dazuText: { ...type.label, fontSize: 14, color: color.akzent },
 
   leer: { ...type.body, fontSize: 14, color: color.ink.mid },
   suche: {

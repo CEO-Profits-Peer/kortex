@@ -162,11 +162,11 @@ function StapelVorschau({ postId, daten }: { postId: string; daten: StapelDaten 
   return (
     <View style={styles.stapel}>
       <Pressable onPress={() => oeffnen()} style={styles.stapelKopf} hitSlop={6}>
-        <Icon name="lesson" size={15} color={color.signal.primary} />
+        <Icon name="lesson" size={15} color={color.akzent} />
         <Text style={styles.stapelTitel}>{karten.length} Karten</Text>
         <View style={{ flex: 1 }} />
         <Text style={styles.stapelAktion}>Wischen</Text>
-        <Icon name="chevron" size={13} color={color.signal.primary} />
+        <Icon name="chevron" size={13} color={color.akzent} />
       </Pressable>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stapelReihe}>
         {karten.map((k, i) => (
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   stapel: { gap: space.sm },
   stapelKopf: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stapelTitel: { ...type.label, fontSize: 14, color: color.ink.high },
-  stapelAktion: { ...type.label, fontSize: 13, color: color.signal.primary },
+  stapelAktion: { ...type.label, fontSize: 13, color: color.akzent },
   stapelReihe: { gap: space.sm },
   stapelKarte: {
     width: 132,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.bgSunken,
     ...flaeche(8),
   },
-  stapelNr: { ...type.mono, fontSize: 11, color: color.signal.primary },
+  stapelNr: { ...type.mono, fontSize: 11, color: color.akzent },
   stapelKartenTitel: { ...type.body, fontSize: 13, lineHeight: 18, color: color.ink.high, flex: 1 },
   stapelTag: { ...type.meta, fontSize: 10, color: color.ink.low },
 });

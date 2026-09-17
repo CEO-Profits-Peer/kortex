@@ -6,6 +6,7 @@ import { Appear } from '@/components/Appear';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
+import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette, sechseck } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -64,6 +65,7 @@ export function DailyBanner() {
           pressed && { opacity: 0.88 },
         ]}
       >
+        {ZWEI ? <BordeauxMuster /> : null}
         <View style={[styles.mark, ZWEI ? styles.markZwei : { borderColor: tint }]}>
           <Icon name={open ? 'streak' : 'check'} size={18} color={tint} />
         </View>
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardZwei: { borderWidth: 0, backgroundColor: color.bordeaux, ...facette(14) },
+  cardZwei: { borderWidth: 0, overflow: 'hidden', backgroundColor: color.bordeaux, ...facette(10) },
   markZwei: { borderWidth: 0, width: 40, height: 44, backgroundColor: color.bordeauxHell, ...sechseck() },
   body: { flex: 1, gap: 2 },
   kicker: { ...type.label, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2 },

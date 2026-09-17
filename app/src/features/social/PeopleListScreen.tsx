@@ -177,5 +177,5 @@ const styles = StyleSheet.create({
     borderColor: color.signal.primary,
   },
   following: { borderColor: color.ink.faint },
-  followText: { ...type.label, fontSize: 13, color: color.signal.primary },
+  followText: { ...type.label, fontSize: 13, color: color.akzent },
 });

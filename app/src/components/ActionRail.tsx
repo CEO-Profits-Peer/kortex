@@ -8,7 +8,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Icon, type IconName } from '@/components/Icon';
+import { SechseckLinse } from '@/components/Sechseck';
 import { haptics } from '@/lib/haptics';
+import { ZWEI } from '@/theme/design';
 import { color, motion, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -31,6 +33,20 @@ import { color, motion, radius, space, type } from '@/theme/tokens';
  * Vorlesen steht ganz oben, nicht unten. Es ist die einzige Aktion, die man
  * VOR dem Lesen braucht — alle anderen kommen danach.
  */
+
+/**
+ * Design 2.0: jeder Knopf ist ein Sechseck aus dunklem Glas mit warmer
+ * Linie. Gedrueckt (geliked, empfohlen, spricht) wird er zu demselben
+ * Bordeaux-Gold-Sechseck wie der aktive Tab - dieselbe Bedeutung, dieselbe
+ * Form, egal wo man hinschaut.
+ *
+ * Die Kategoriefarbe faellt hier weg: neben Bordeaux und Gold sah jede
+ * Kategorie anders aus, und die Leiste wirkte je nach Karte wie aus einer
+ * anderen App. Die Zahlen darunter bekommen einen Schatten, weil die Leiste
+ * ueber Bildern und hellen Grafiken liegen kann.
+ */
+const KNOPF_B = 46;
+const KNOPF_H = 52;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -68,11 +84,23 @@ function RailButton({
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={label}
-        style={[styles.button, active && { borderColor: tint }, animated]}
+        style={[ZWEI ? styles.buttonZwei : styles.button, !ZWEI && active && { borderColor: tint }, animated]}
       >
-        <Icon name={icon} size={21} color={active ? tint : color.ink.mid} />
+        {ZWEI ? (
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <SechseckLinse b={KNOPF_B} h={KNOPF_H} an={!!active} />
+          </View>
+        ) : null}
+        <Icon
+          name={icon}
+          size={21}
+          color={ZWEI ? (active ? color.signal.primary : color.ink.high) : active ? tint : color.ink.mid}
+        />
       </AnimatedPressable>
-      <Text style={[styles.label, active && { color: tint }]} numberOfLines={1}>
+      <Text
+        style={[styles.label, active && { color: ZWEI ? color.ink.max : tint }]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </View>
@@ -180,7 +208,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
-    gap: space.lg,
+    gap: ZWEI ? space.md : space.lg,
     alignItems: 'center',
   },
   item: { alignItems: 'center', gap: 4, maxWidth: 68 },
@@ -194,5 +222,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { ...type.meta, fontSize: 9.5, color: color.ink.low, textAlign: 'center' },
+  buttonZwei: {
+    width: KNOPF_B,
+    height: KNOPF_H,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: ZWEI
+    ? {
+        ...type.meta,
+        fontSize: 10,
+        color: color.ink.high,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
+      }
+    : { ...type.meta, fontSize: 9.5, color: color.ink.low, textAlign: 'center' },
 });

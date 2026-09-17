@@ -140,5 +140,5 @@ const styles = StyleSheet.create({
   titel: { ...type.title, fontSize: 17, lineHeight: 22, color: color.ink.max, flex: 1 },
   text: { ...type.body, fontSize: 14.5, lineHeight: 21, color: color.ink.mid },
   knopf: { alignSelf: 'flex-end', paddingTop: 2 },
-  knopfText: { ...type.label, fontSize: 14, color: color.signal.primary },
+  knopfText: { ...type.label, fontSize: 14, color: color.akzent },
 });

@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
   },
   footerLeft: { flex: 1, gap: 4 },
-  shareNote: { ...type.meta, color: color.signal.primary },
+  shareNote: { ...type.meta, color: color.akzent },
 
   rating: { flexDirection: 'row', gap: 6 },
   rateChip: {

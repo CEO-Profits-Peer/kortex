@@ -35,12 +35,15 @@ import type { Profile } from '@/lib/types.db';
 import { signOut } from '@/lib/useSession';
 import { fehlerText } from '@/lib/fehler';
 import {
+  LINSE,
   MUSTER,
   UMSCHALTBAR,
   ZWEI,
   designWechseln,
   flaeche,
+  linseWechseln,
   musterWechseln,
+  type Linse,
   type Muster,
 } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -243,6 +246,7 @@ export function SettingsScreen() {
   const [tutorialWieder, setTutorialWieder] = useState(false);
   const [designAn, setDesignAn] = useState(ZWEI);
   const [muster, setMuster] = useState<Muster>(MUSTER);
+  const [linse, setLinse] = useState<Linse>(LINSE);
   const [designLaedt, setDesignLaedt] = useState(false);
 
   useEffect(() => {
@@ -398,7 +402,7 @@ export function SettingsScreen() {
             <Zeile
               erste
               label="Design 2.0"
-              hint={designLaedt ? 'Lädt neu …' : 'Gold, Bordeaux, Facetten. Gilt für dieses Gerät.'}
+              hint={designLaedt ? 'Lädt neu …' : 'Bordeaux, Gold, Sechsecke. Gilt für dieses Gerät.'}
               rechts={
                 <Schalter
                   wert={designAn}
@@ -411,6 +415,26 @@ export function SettingsScreen() {
                 />
               }
             />
+            {ZWEI ? (
+              <Zeile
+                label="Sechseck"
+                hint="Aktiver Tab und Feed-Leiste"
+                unten={
+                  <Auswahl
+                    optionen={[
+                      { wert: 'stein' as Linse, label: 'Stein' },
+                      { wert: 'flach' as Linse, label: 'Flach' },
+                    ]}
+                    wert={linse}
+                    onChange={(l) => {
+                      setLinse(l);
+                      setDesignLaedt(true);
+                      linseWechseln(l);
+                    }}
+                  />
+                }
+              />
+            ) : null}
             {ZWEI ? (
               <Zeile
                 label="Hintergrund"
@@ -676,7 +700,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: space.xl, gap: space.xl },
 
-  note: { ...type.body, fontSize: 14, color: color.signal.primary },
+  note: { ...type.body, fontSize: 14, color: color.akzent },
 
   profil: {
     flexDirection: 'row',
@@ -721,7 +745,7 @@ const styles = StyleSheet.create({
   wert: { ...type.body, fontSize: 15, color: color.ink.mid },
 
   aktion: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  aktionText: { ...type.label, fontSize: 14, color: color.signal.primary },
+  aktionText: { ...type.label, fontSize: 14, color: color.akzent },
 
   auswahl: {
     flexDirection: 'row',

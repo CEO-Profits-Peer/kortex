@@ -9,7 +9,7 @@ import Animated, {
 
 import { haptics } from '@/lib/haptics';
 
-import { ZWEI, facette, goldVerlauf } from '@/theme/design';
+import { KANTE, ZWEI, facette, goldVerlauf } from '@/theme/design';
 import { color, motion, radius, type } from '@/theme/tokens';
 
 type Variant = 'primary' | 'ghost' | 'quiet';
@@ -78,7 +78,7 @@ export function Button({
         variant === 'primary' && !accent ? goldVerlauf() : null,
         variant === 'ghost' &&
           (ZWEI
-            ? { backgroundColor: color.bgElevated }
+            ? { backgroundColor: color.bgElevated, borderTopWidth: 1, borderTopColor: KANTE }
             : { borderWidth: StyleSheet.hairlineWidth, borderColor: color.ink.faint }),
         off && styles.off,
         animated,

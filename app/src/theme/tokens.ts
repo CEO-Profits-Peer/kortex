@@ -62,10 +62,24 @@ const farbenKlassisch = {
   bordeauxHell: '#2A2F3A',
   goldHell: '#00F0FF',
   goldDunkel: '#00F0FF',
+  /** Kleine Hinweise, Links, Markierungen. Klassisch: die Signalfarbe. */
+  akzent: '#00F0FF',
 };
 
 /**
- * Design 2.0 (entschieden 16.09.2026) - 60 / 30 / 10.
+ * Design 2.0 (entschieden 16.09.2026, ueberarbeitet am selben Tag) - 60 / 30 / 10.
+ *
+ * Die erste Fassung sah am Handy aus "wie eine Baustelle, Gelb - Grau/
+ * Schwarz". Zwei Gruende: das Gold war ein gesaettigtes Senfgelb, und es
+ * stand ueberall - Knoepfe, Links, Markierungen, Symbolkreise, Avatar-
+ * Ringe. Gold wirkt nur, wenn es selten ist und auf etwas Sattem liegt.
+ *
+ * Deshalb jetzt:
+ *   - Gold waermer (Champagner statt Senf) und nur noch fuer den einen
+ *     Hauptknopf, den aktiven Tab, XP und Fortschritt.
+ *   - `akzent` fuer alles Kleine, das vorher gold war: ein warmes Hellgrau.
+ *   - Karten in Pflaumen-Anthrazit statt neutralem Grau - aus derselben
+ *     Familie wie Bordeaux, sonst sehen die Flaechen aus wie zwei Apps.
  *
  *   60 %  Graphit: Grund und Feed. Fast schwarz mit einem Hauch Rot, damit
  *         Bordeaux und Gold darauf zu Hause sind statt aufgeklebt.
@@ -83,23 +97,23 @@ const farbenKlassisch = {
  * 5,4:1, ink.high bei ueber 11:1.
  */
 const farbenZwei: typeof farbenKlassisch = {
-  bg: '#0E0D0F',
-  bgElevated: '#1A181B',
-  bgSunken: '#0A090B',
+  bg: '#0F0D10',
+  bgElevated: '#1B1619',
+  bgSunken: '#0B0A0C',
 
-  gridLine: '#1B191C',
-  gridLineMajor: '#262228',
+  gridLine: '#1B181B',
+  gridLineMajor: '#241F23',
 
   ink: {
     max: '#F5F1EB',
     high: '#D6CFC7',
     mid: '#A1988F',
     low: '#8F877F',
-    faint: '#2F2A2E',
+    faint: '#2F282C',
   },
 
   signal: {
-    primary: '#D4AF6A',
+    primary: '#D9B872',
     success: '#6FCF97',
     warn: '#E9A45B',
     error: '#F07167',
@@ -111,8 +125,9 @@ const farbenZwei: typeof farbenKlassisch = {
 
   bordeaux: '#4E1626',
   bordeauxHell: '#6E2436',
-  goldHell: '#E6C987',
-  goldDunkel: '#B8893F',
+  goldHell: '#E8D3A2',
+  goldDunkel: '#BF9A57',
+  akzent: '#CDBFAA',
 };
 
 type Farben = {
@@ -129,6 +144,7 @@ type Farben = {
   bordeauxHell: string;
   goldHell: string;
   goldDunkel: string;
+  akzent: string;
 };
 
 export const color: Farben = ZWEI ? farbenZwei : farbenKlassisch;

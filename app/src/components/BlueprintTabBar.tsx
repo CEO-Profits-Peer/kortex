@@ -11,10 +11,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Svg, { Polygon } from 'react-native-svg';
-
+import { SechseckLinse } from '@/components/Sechseck';
 import { haptics } from '@/lib/haptics';
-import { ZWEI, facette, sechseckPunkte } from '@/theme/design';
+import { ZWEI, facette } from '@/theme/design';
 
 import { TabIcon, type TabName } from '@/components/TabIcon';
 import { color, type } from '@/theme/tokens';
@@ -49,24 +48,32 @@ const RAND = 14;
 const LINSE_INNEN = 5;
 
 /**
- * Design 2.0: dieselbe Glas-Pille, aber mit facettierten Ecken statt runder
- * Enden, einer Goldkante und einer SECHSECKIGEN Linse. Die Linse gleitet
- * beim Wechsel hinueber und dreht sich dabei um 60 Grad - nach 60 Grad sieht
- * ein Sechseck wieder genau gleich aus, also gibt es am Ende keinen Sprung.
- * Das ist der eine Moment Bewegung, der teuer wirken soll; sonst bleibt die
- * Leiste still.
+ * Design 2.0, zweite Fassung: eine eckige Glasleiste, alle vier Ecken klein
+ * abgeschraegt, OHNE Goldrahmen. Die erste Fassung hatte eine Goldlinie um
+ * die ganze Leiste und eine kleine Sechseck-Linse, durch deren Kante die
+ * Beschriftung lief - "wie ein Aufkleber", und das Glas ging unter.
+ *
+ * Jetzt traegt der aktive Tab ein Sechseck in Bordeaux und Gold, das Symbol
+ * UND Beschriftung ganz umschliesst und oben und unten ein paar Pixel ueber
+ * die Leiste hinausragt ("minimal groesser als die Leiste"). Damit es nicht
+ * mit abgeschnitten wird, liegt es NEBEN dem Glas, nicht darin: clip-path
+ * schneidet alles, was im geschnittenen Element steckt.
+ *
+ * Beim Wechsel gleitet das Sechseck hinueber, ohne Drehung - die Drehung
+ * wirkte verspielt statt edel. Flach oder Stein: Einstellungen > Design.
  */
-const FACETTE_LEISTE = 14;
-const LINSE = 46;
+const FACETTE_LEISTE = 10;
+const LINSE_B = 60;
+const LINSE_H = 70;
 
 const GLAS: ViewStyle = ZWEI
   ? Platform.OS === 'web'
     ? ({
-        backgroundColor: 'rgba(26, 24, 27, 0.6)',
+        backgroundColor: 'rgba(24, 20, 23, 0.72)',
         backdropFilter: 'blur(24px) saturate(160%)',
         ...facette(FACETTE_LEISTE),
       } as unknown as ViewStyle)
-    : { backgroundColor: 'rgba(26, 24, 27, 0.95)' }
+    : { backgroundColor: 'rgba(24, 20, 23, 0.96)' }
   : Platform.OS === 'web'
     ? ({
         backgroundColor: 'rgba(11, 12, 14, 0.58)',
@@ -111,9 +118,7 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
   const tabBreite = breite / Math.max(1, state.routes.length);
 
   const slide = useRef(new Animated.Value(0)).current;
-  const dreh = useRef(new Animated.Value(0)).current;
   const erstesMal = useRef(true);
-  const [pillenHoehe, setPillenHoehe] = useState(PILLE);
 
   useEffect(() => {
     if (!breite) return;
@@ -131,16 +136,7 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
       easing: Easing.out(Easing.cubic),
       useNativeDriver: Platform.OS !== 'web',
     }).start();
-    if (ZWEI) {
-      dreh.setValue(0);
-      Animated.timing(dreh, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: Platform.OS !== 'web',
-      }).start();
-    }
-  }, [state.index, tabBreite, breite, slide, dreh]);
+  }, [state.index, tabBreite, breite, slide]);
 
   return (
     <View
@@ -148,25 +144,14 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
       style={[styles.huelle, { paddingBottom: insets.bottom + ABSTAND_UNTEN }]}
     >
       <View
-        style={[styles.pille, ZWEI && styles.pilleZwei, GLAS]}
-        onLayout={(e) => {
-          setBreite(e.nativeEvent.layout.width);
-          setPillenHoehe(e.nativeEvent.layout.height);
-        }}
+        style={ZWEI ? styles.leisteZwei : [styles.pille, GLAS]}
+        onLayout={(e) => setBreite(e.nativeEvent.layout.width)}
       >
         {ZWEI ? (
-          // Goldkante entlang der facettierten Form - ein Rahmen per CSS
-          // wuerde vom clip-path an den Schraegen abgeschnitten.
-          breite > 0 ? (
-            <Svg width={breite} height={pillenHoehe} style={StyleSheet.absoluteFill} pointerEvents="none">
-              <Polygon
-                points={`${FACETTE_LEISTE},0.5 ${breite - 0.5},0.5 ${breite - 0.5},${pillenHoehe - FACETTE_LEISTE} ${breite - FACETTE_LEISTE},${pillenHoehe - 0.5} 0.5,${pillenHoehe - 0.5} 0.5,${FACETTE_LEISTE}`}
-                fill="none"
-                stroke="rgba(212, 175, 106, 0.28)"
-                strokeWidth={1}
-              />
-            </Svg>
-          ) : null
+          <>
+            <View pointerEvents="none" style={[StyleSheet.absoluteFill, GLAS]} />
+            <View pointerEvents="none" style={styles.lichtkanteZwei} />
+          </>
         ) : (
           /* Lichtkante: ein Hauch Helligkeit oben, wie eine Glaskante. */
           <View pointerEvents="none" style={styles.lichtkante} />
@@ -177,20 +162,7 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
             pointerEvents="none"
             style={[styles.linseZwei, { width: tabBreite, transform: [{ translateX: slide }] }]}
           >
-            <Animated.View
-              style={{
-                transform: [{ rotate: dreh.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '60deg'] }) }],
-              }}
-            >
-              <Svg width={LINSE} height={LINSE}>
-                <Polygon
-                  points={sechseckPunkte(LINSE, LINSE, 1)}
-                  fill="rgba(212, 175, 106, 0.12)"
-                  stroke="rgba(212, 175, 106, 0.6)"
-                  strokeWidth={1}
-                />
-              </Svg>
-            </Animated.View>
+            <SechseckLinse b={LINSE_B} h={LINSE_H} />
           </Animated.View>
         ) : null}
 
@@ -267,8 +239,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.10)',
   },
 
-  pilleZwei: { borderRadius: 0, borderWidth: 0, overflow: 'visible' },
-  linseZwei: { position: 'absolute', top: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
+  leisteZwei: { height: PILLE },
+  lichtkanteZwei: {
+    position: 'absolute',
+    top: 0,
+    left: FACETTE_LEISTE,
+    right: FACETTE_LEISTE,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+  },
+  linseZwei: {
+    position: 'absolute',
+    top: (PILLE - LINSE_H) / 2,
+    height: LINSE_H,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   linse: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: LINSE_INNEN },
   linseInnen: {
     flex: 1,
@@ -281,5 +268,7 @@ const styles = StyleSheet.create({
   row: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: PILLE },
   label: { ...type.meta, fontSize: 10, color: color.ink.mid },
-  labelOn: { color: color.signal.primary },
+  // Design 2.0: das Symbol ist gold, die Schrift hell - zwei Goldtoene auf
+  // dem Bordeaux-Sechseck waeren zu viel.
+  labelOn: { color: ZWEI ? color.ink.max : color.signal.primary },
 });

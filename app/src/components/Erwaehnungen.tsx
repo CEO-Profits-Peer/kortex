@@ -163,7 +163,7 @@ export function useErwaehnung(text: string, setText: (t: string) => void) {
 }
 
 const styles = StyleSheet.create({
-  link: { color: color.signal.primary, fontWeight: '600' },
+  link: { color: color.akzent, fontWeight: '600' },
   leiste: { gap: space.sm, paddingVertical: 2 },
   person: {
     flexDirection: 'row',
