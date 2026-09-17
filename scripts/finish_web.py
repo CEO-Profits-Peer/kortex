@@ -32,7 +32,7 @@ INDEX = DIST / "index.html"
 
 TITLE = "ElyCic"
 DESCRIPTION = "Kurze Grids. Echte Fragen. Und in drei Tagen fragen wir nochmal."
-BG = "#0B0C0E"
+BG = "#0F0D10"
 
 HEAD = f"""
     <meta name="description" content="{DESCRIPTION}" />
@@ -315,8 +315,8 @@ def main() -> int:
         sys.exit("FEHLER: CF_BEACON_TOKEN gesetzt, aber das Skript fehlt in index.html.")
 
     print(
-        "index.html ergaenzt · Manifest, Icons und Teilen-Vorschau geprueft"
-        + (" · Cloudflare-Zaehler an" if BEACON_TOKEN else "")
+        "index.html ergaenzt Â· Manifest, Icons und Teilen-Vorschau geprueft"
+        + (" Â· Cloudflare-Zaehler an" if BEACON_TOKEN else "")
     )
     return 0
 

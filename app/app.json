@@ -7,10 +7,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "backgroundColor": "#0B0C0E",
+    "backgroundColor": "#0F0D10",
     "splash": {
       "image": "./assets/generated/splash.png",
-      "backgroundColor": "#0B0C0E",
+      "backgroundColor": "#0F0D10",
       "resizeMode": "contain"
     },
     "ios": {
@@ -22,7 +22,7 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/generated/adaptive-icon.png",
-        "backgroundColor": "#0B0C0E"
+        "backgroundColor": "#0F0D10"
       }
     },
     "web": {
@@ -31,8 +31,8 @@
       "favicon": "./assets/generated/favicon.png",
       "name": "ElyCic",
       "shortName": "ElyCic",
-      "themeColor": "#0B0C0E",
-      "backgroundColor": "#0B0C0E",
+      "themeColor": "#0F0D10",
+      "backgroundColor": "#0F0D10",
       "display": "standalone",
       "lang": "de"
     },

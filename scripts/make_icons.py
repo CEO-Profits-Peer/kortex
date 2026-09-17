@@ -29,7 +29,7 @@ OUT = ROOT / "app" / "assets" / "generated"
 WEB = ROOT / "app" / "public" / "icons"
 
 # Muss zu color.bg aus app/src/theme/tokens.ts passen.
-BG = (11, 12, 14, 255)          # #0B0C0E Obsidian
+BG = (15, 13, 16, 255)          # #0F0D10 Graphit (Design 2.0)
 BG_LIGHT = (245, 241, 232, 255)  # Cremeweiss, fuer helle Varianten
 
 
