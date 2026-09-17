@@ -217,9 +217,51 @@ BEACON = """    <!-- Cloudflare Web Analytics: cookiefrei, ohne Wiedererkennung 
 """
 
 
+def assets_ohne_node_modules() -> None:
+    """dist/assets/node_modules -> dist/assets/nm, samt allen Verweisen.
+
+    Gefunden am 16.09.2026 beim Vergleich von Design 2.0: die App hatte im
+    Web NIE ihre eigenen Schriften. Expo legt Schriften und Bilder aus Paketen
+    unter assets/node_modules/... ab, und Cloudflare Pages laedt Ordner namens
+    node_modules gar nicht erst hoch. Statt der Schriftdatei kam die
+    Ersatzseite index.html zurueck - mit Status 200, also ohne Fehlermeldung
+    irgendwo. Der Browser verwarf sie still: am Handy stand Roboto da, am
+    Rechner eine Serifenschrift, Space Grotesk nirgends.
+
+    Ein anderer Ordnername und dieselben Verweise im Bundle reichen.
+    """
+    alt = DIST / "assets" / "node_modules"
+    if not alt.exists():
+        return
+    neu = DIST / "assets" / "nm"
+    if neu.exists():
+        import shutil
+        shutil.rmtree(neu)
+    alt.rename(neu)
+
+    geaendert = 0
+    for datei in DIST.rglob("*"):
+        if datei.suffix not in (".js", ".css", ".html", ".json", ".map") or not datei.is_file():
+            continue
+        text = datei.read_text(encoding="utf-8", errors="surrogateescape")
+        if "assets/node_modules/" in text:
+            datei.write_text(text.replace("assets/node_modules/", "assets/nm/"),
+                             encoding="utf-8", errors="surrogateescape")
+            geaendert += 1
+
+    for datei in (DIST / "_expo").rglob("*.js"):
+        if "assets/node_modules/" in datei.read_text(encoding="utf-8", errors="surrogateescape"):
+            sys.exit(f"FEHLER: {datei.name} verweist noch auf assets/node_modules/.")
+    print(f"assets/node_modules -> assets/nm ({geaendert} Dateien angepasst)")
+
+
 def main() -> int:
     if not INDEX.exists():
         sys.exit(f"{INDEX} fehlt. Erst `npm run build:web`.")
+
+    # Vor der Pruefung unten: die bricht bei einem schon ergaenzten Build
+    # frueh ab, und die Schriften sollen trotzdem mitkommen.
+    assets_ohne_node_modules()
 
     html = INDEX.read_text(encoding="utf-8")
 
