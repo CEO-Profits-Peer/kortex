@@ -13,6 +13,7 @@ import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { AnkerStand, ContentItem } from '@/lib/types.db';
+import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { LabErgebnis } from './LabErgebnis';
@@ -547,6 +548,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   regler: { gap: space.xs },
   reglerKopf: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },

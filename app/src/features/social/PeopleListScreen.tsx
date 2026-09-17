@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.signal.primary,
+    borderColor: color.akzent,
   },
   following: { borderColor: color.ink.faint },
   followText: { ...type.label, fontSize: 13, color: color.akzent },

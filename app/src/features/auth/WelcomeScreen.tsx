@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.signal.primary,
+    borderColor: color.akzent,
     backgroundColor: color.bgElevated,
   },
   einladungText: { ...type.body, fontSize: 14.5, lineHeight: 20, color: color.ink.high, flex: 1 },
@@ -194,5 +194,5 @@ const styles = StyleSheet.create({
   error: { ...type.meta, color: color.signal.error, lineHeight: 18 },
   oauthError: { ...type.body, fontSize: 14, lineHeight: 20, color: color.signal.error },
   legal: { ...type.meta, color: color.ink.low, textAlign: 'center', lineHeight: 16 },
-  switchMode: { ...type.label, color: color.signal.primary, textAlign: 'center', paddingVertical: space.sm },
+  switchMode: { ...type.label, color: color.akzent, textAlign: 'center', paddingVertical: space.sm },
 });

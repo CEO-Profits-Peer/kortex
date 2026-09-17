@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -37,8 +37,19 @@ import { useSession } from '@/lib/useSession';
 import { useAppFonts } from '@/theme/fonts';
 import { color, space, type } from '@/theme/tokens';
 
+/**
+ * Die beiden Vorschau-Seiten duerfen OHNE Konto offen sein.
+ *
+ * atelier.tsx sagt von sich "ohne Konto und ohne Netz" - tatsaechlich hat
+ * dieses Gate sie bisher hinter die Anmeldung gestellt, wie alles andere.
+ * Beide zeigen nur erfundene Inhalte und rufen keine Schnittstelle auf.
+ * Nichts sonst kommt auf diese Liste.
+ */
+const OHNE_KONTO = new Set(['/atelier', '/kinetic-demo']);
+
 function Gate() {
   const { session, ready } = useSession();
+  const pfad = usePathname();
   const whatsNew = useWhatsNew();
   // null = noch nicht geladen, true/false = Onboarding erledigt?
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
@@ -99,6 +110,10 @@ function Gate() {
         </View>
       </GridBackground>
     );
+  }
+
+  if (!session && OHNE_KONTO.has(pfad)) {
+    return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }} />;
   }
 
   if (!session) return <WelcomeScreen />;

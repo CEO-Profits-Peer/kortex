@@ -29,7 +29,7 @@ import { api } from '@/lib/supabase';
 import type { CourseSummary, Post, PostArt } from '@/lib/types.db';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 import { BordeauxMuster } from '@/components/Sechseck';
-import { ZWEI, facette, flaeche, sechseck } from '@/theme/design';
+import { ZWEI, facette, flaeche, sechseckRegel } from '@/theme/design';
 
 /**
  * Studio - mit einem Umschalter: Erstellen | Lernen (entschieden: Option B).
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.bgSunken,
-    ...(ZWEI ? { width: 34, height: 38, backgroundColor: '#2A2227', ...sechseck() } : null),
+    ...(ZWEI ? { width: 40, height: 40, backgroundColor: '#2A2227', ...sechseckRegel() } : null),
   },
   neuLabel: { ...type.label, fontSize: 14, color: color.ink.high },
 

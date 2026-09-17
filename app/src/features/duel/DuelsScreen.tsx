@@ -11,7 +11,7 @@ import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { DuelListEntry } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { color, radius, space, type } from '@/theme/tokens';
+import { color, gewaehlt, radius, space, type } from '@/theme/tokens';
 
 /**
  * Die eigenen Duelle.
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
   },
-  zeileDran: { borderColor: color.signal.primary },
+  zeileDran: gewaehlt({ borderColor: color.signal.primary }),
   text: { flex: 1, gap: 2 },
   name: { ...type.body, fontSize: 15, color: color.ink.max },
   stand: { ...type.meta, fontSize: 9.5 },

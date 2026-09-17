@@ -11,7 +11,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { BRAND } from '@/lib/brand';
 import { api } from '@/lib/supabase';
 import type { ContentItem, SubmitQuizResult } from '@/lib/types.db';
-import { color, radius, space, type } from '@/theme/tokens';
+import { color, gewaehlt, radius, space, type } from '@/theme/tokens';
 
 /**
  * Der Batch-Checkpoint.
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: space.xl, justifyContent: 'space-between' },
 
   hero: { flex: 1, justifyContent: 'center', gap: space.sm },
-  eyebrow: { ...type.meta, color: color.signal.primary, letterSpacing: 1.2, textTransform: 'uppercase' },
+  eyebrow: { ...type.meta, color: color.akzent, letterSpacing: 1.2, textTransform: 'uppercase' },
   bigNumber: { ...type.display, fontSize: 88, lineHeight: 92, color: color.ink.max, letterSpacing: -3 },
   ofTotal: { fontSize: 44, color: color.ink.low },
   bigLabel: { ...type.deck, color: color.ink.mid },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.bgElevated,
   },
   optionPressed: { borderColor: color.ink.mid },
-  optionChosen: { borderColor: color.signal.primary },
+  optionChosen: gewaehlt({ borderColor: color.signal.primary }),
   optionCorrect: { borderColor: color.signal.success, borderWidth: 1.5 },
   optionWrong: { borderColor: color.signal.error, borderWidth: 1.5 },
   optionText: { ...type.body, color: color.ink.high },

@@ -4,8 +4,17 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polygon, Rect } from 'react-native-svg';
 
 import { type AvatarDesign, PALETTE, decodeAvatar } from '@/lib/avatarDesign';
+import {
+  WABEN,
+  WABEN_FARBEN,
+  WABEN_GRUENDE,
+  type WabenDesign,
+  wabenDekodieren,
+  wabenEcken,
+  wabenMitte,
+} from '@/lib/avatarWaben';
 import { api } from '@/lib/supabase';
-import { ZWEI, sechseck, sechseckPunkte } from '@/theme/design';
+import { ZWEI, sechseckRegel, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius } from '@/theme/tokens';
 
 /**
@@ -91,9 +100,94 @@ export function AvatarArt({ design, size }: { design: AvatarDesign; size: number
   );
 }
 
+/** Wabengroesse (Mitte bis Ecke) je Pixel Bildkante - 37 Waben passen ins regelmaessige Sechseck. */
+const WABE_JE_PIXEL = 0.064;
+
+const punkteText = (e: [number, number][]) => e.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+
+/**
+ * Das Wabenbild (Format v2, siehe avatarWaben.ts). Die Waben bilden selbst
+ * ein Sechseck mit Spitze oben - im Sechseck-Rahmen wird nichts angeschnitten.
+ * Auch der Editor zeichnet damit.
+ */
+export function WabenArt({
+  design,
+  size,
+  raster = false,
+  massstab = WABE_JE_PIXEL,
+}: {
+  design: WabenDesign;
+  size: number;
+  /** Leere Waben immer andeuten - im Malfeld muss man sehen, wohin man tippt. */
+  raster?: boolean;
+  /** Wabengroesse je Pixel; das Malfeld hat keinen Rahmen und darf groesser zeichnen. */
+  massstab?: number;
+}) {
+  const s = size * massstab;
+  const mx = size / 2;
+  const my = size / 2;
+  const f1 = WABEN_FARBEN[design.farbe1] ?? WABEN_FARBEN[0];
+  const f2 = WABEN_FARBEN[design.farbe2] ?? WABEN_FARBEN[1];
+  // Leere Waben nur dort andeuten, wo man sie sieht - bei 28 px waeren sie Rauschen.
+  const leereZeigen = raster || size >= 64;
+
+  return (
+    <Svg width={size} height={size}>
+      <Rect width={size} height={size} fill={WABEN_GRUENDE[design.grund] ?? WABEN_GRUENDE[0]} />
+      {WABEN.map((w, i) => {
+        const wert = design.waben[i] ?? 0;
+        const { x: dx, y: dy } = wabenMitte(w.q, w.r, s);
+        const x = mx + dx;
+        const y = my + dy;
+        if (!wert) {
+          return leereZeigen ? (
+            <Polygon
+              key={i}
+              points={punkteText(wabenEcken(x, y, s * 0.9))}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.07)"
+              strokeWidth={Math.max(0.5, s * 0.06)}
+            />
+          ) : null;
+        }
+        const farbe = wert === 1 ? f1 : f2;
+        if (design.stil === 'punkte') {
+          return <Circle key={i} cx={x} cy={y} r={s * 0.52} fill={farbe} />;
+        }
+        if (design.stil === 'kontur') {
+          return (
+            <Polygon
+              key={i}
+              points={punkteText(wabenEcken(x, y, s * 0.72))}
+              fill="none"
+              stroke={farbe}
+              strokeWidth={s * 0.26}
+            />
+          );
+        }
+        const e = wabenEcken(x, y, s * 0.92);
+        if (design.stil === 'stein') {
+          // Licht von oben: obere Haelfte heller, unten rechts dunkler -
+          // wie das Sechseck auf dem aktiven Tab.
+          return (
+            <React.Fragment key={i}>
+              <Polygon points={punkteText(e)} fill={farbe} />
+              <Polygon points={punkteText([e[0], e[1], e[2], e[3]])} fill="#FFFFFF" opacity={0.2} />
+              <Polygon points={punkteText([[x, y], e[3], e[4], e[5]])} fill="#000000" opacity={0.22} />
+            </React.Fragment>
+          );
+        }
+        return <Polygon key={i} points={punkteText(e)} fill={farbe} />;
+      })}
+    </Svg>
+  );
+}
+
 function GeneratedAvatar({ seed, size }: { seed: string; size: number }) {
-  const design = useMemo(() => decodeAvatar(seed), [seed]);
-  return <AvatarArt design={design} size={size} />;
+  const waben = useMemo(() => wabenDekodieren(seed), [seed]);
+  const design = useMemo(() => (waben ? null : decodeAvatar(seed)), [seed, waben]);
+  if (waben) return <WabenArt design={waben} size={size} />;
+  return <AvatarArt design={design!} size={size} />;
 }
 
 function AvatarBase({
@@ -118,7 +212,7 @@ function AvatarBase({
         // Design 2.0: das Profilbild ist ein Sechseck - das eine Zeichen, an
         // dem man die App auf einen Blick wiedererkennt. Ein Rahmen wuerde
         // vom clip-path mit abgeschnitten, deshalb zeichnet den Ring ein SVG.
-        ZWEI ? sechseck() : ring ? { borderWidth: 1.5, borderColor: ring } : null,
+        ZWEI ? sechseckRegel() : ring ? { borderWidth: 1.5, borderColor: ring } : null,
       ]}
     >
       {url ? (
@@ -133,10 +227,11 @@ function AvatarBase({
           // einen eigenen Dateinamen (siehe api.uploadAvatar).
           cachePolicy="memory-disk"
         />
-      ) : ZWEI ? (
-        // Das gezeichnete Muster ist quadratisch. Randvoll ins Sechseck
-        // gelegt, schnitt die Spitze mitten durch die Kaestchen - das sah
-        // nicht gewollt aus. Verkleinert und mittig sitzt es ganz im Sechseck.
+      ) : ZWEI && !seed?.startsWith('v2-') ? (
+        // Das alte Muster (v1 und gehasht) ist quadratisch. Randvoll ins
+        // Sechseck gelegt, schnitt die Spitze mitten durch die Kaestchen.
+        // Verkleinert und mittig sitzt es ganz im Sechseck. Wabenbilder (v2)
+        // haben die Form schon und fuellen das Sechseck ganz.
         <View style={styles.mitte}>
           <GeneratedAvatar seed={seed} size={Math.round(size * 0.64)} />
         </View>
@@ -149,7 +244,7 @@ function AvatarBase({
         // Gold) wird hier bewusst nicht uebernommen.
         <Svg width={size} height={size} style={StyleSheet.absoluteFill} pointerEvents="none">
           <Polygon
-            points={sechseckPunkte(size, size, 0.75)}
+            points={sechseckRegelPunkte(size, 0.75)}
             fill="none"
             stroke="rgba(214, 207, 199, 0.35)"
             strokeWidth={1}

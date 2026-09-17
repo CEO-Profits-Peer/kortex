@@ -22,6 +22,7 @@ import { TabHint, useTabHint } from '@/components/TabHint';
 import { Icon } from '@/components/Icon';
 import { api } from '@/lib/supabase';
 import type { Category, SearchHit } from '@/lib/types.db';
+import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 import { PeopleBar } from './PeopleBar';
@@ -338,6 +339,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   searchGlyph: { fontSize: 18, color: color.ink.low },
   input: { flex: 1, ...type.body, fontSize: 16, color: color.ink.max, padding: 0 },
@@ -369,6 +371,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   rootEmoji: { fontSize: 15 },
   rootName: { ...type.meta, color: color.ink.mid, maxWidth: 130 },
@@ -396,6 +399,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   tagText: { ...type.meta },
 

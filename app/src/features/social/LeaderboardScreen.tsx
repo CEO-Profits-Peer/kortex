@@ -19,7 +19,7 @@ import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { LeaderboardRow } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { color, radius, space, type } from '@/theme/tokens';
+import { color, gewaehlt, radius, space, type } from '@/theme/tokens';
 
 /**
  * Rangliste.
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: color.bgElevated,
   },
-  rowMe: { borderWidth: 1, borderColor: color.signal.primary },
+  rowMe: gewaehlt({ borderWidth: 1, borderColor: color.signal.primary }),
   rank: { ...type.mono, width: 26, color: color.ink.low, textAlign: 'right' },
   rankTop: { color: color.ink.max },
   who: { flex: 1 },

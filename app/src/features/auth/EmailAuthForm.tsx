@@ -301,6 +301,6 @@ const styles = StyleSheet.create({
   hint: { ...type.meta, color: color.ink.low },
   error: { ...type.body, fontSize: 14, color: color.signal.error },
   success: { ...type.body, fontSize: 15, lineHeight: 22, color: color.signal.success },
-  linkAction: { ...type.label, color: color.signal.primary, paddingVertical: space.xs },
+  linkAction: { ...type.label, color: color.akzent, paddingVertical: space.xs },
   note: { ...type.meta, color: color.ink.low, lineHeight: 16 },
 });

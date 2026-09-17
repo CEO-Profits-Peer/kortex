@@ -9,6 +9,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { BRAND } from '@/lib/brand';
 import { usePrefs } from '@/lib/prefs';
+import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { CURRENT } from './changelog';
@@ -81,7 +82,7 @@ export function WhatsNew({ onDone }: { onDone: () => void }) {
           {CURRENT.entries.map((e, i) => (
             <Animated.View key={e.title} entering={step(i)} style={styles.entry}>
               <View style={styles.iconWrap}>
-                <Icon name={e.icon} size={19} color={color.signal.primary} />
+                <Icon name={e.icon} size={19} color={color.akzent} />
               </View>
               <View style={styles.entryText}>
                 <Text style={styles.entryTitle}>{e.title}</Text>
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: space.xl, justifyContent: 'space-between' },
 
   hero: { gap: space.sm, paddingTop: space.lg },
-  eyebrow: { ...type.meta, color: color.signal.primary, letterSpacing: 1, textTransform: 'uppercase' },
+  eyebrow: { ...type.meta, color: color.akzent, letterSpacing: 1, textTransform: 'uppercase' },
   headline: { ...type.display, fontSize: 30, lineHeight: 36, color: color.ink.max },
 
   list: { flex: 1, justifyContent: 'center', gap: space.lg },
@@ -120,6 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
+    ...flaeche(10),
   },
   entryText: { flex: 1, gap: 2 },
   entryTitle: { ...type.label, fontSize: 15, color: color.ink.max },

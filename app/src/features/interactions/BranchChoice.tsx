@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
   },
-  choicePressed: { borderColor: color.signal.primary },
+  choicePressed: { borderColor: color.akzent },
   choiceText: { ...type.body, fontSize: 15, color: color.ink.high, flex: 1 },
   chevron: { fontSize: 15, color: color.ink.low },
 

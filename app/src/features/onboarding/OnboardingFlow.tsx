@@ -6,7 +6,8 @@ import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { api } from '@/lib/supabase';
 import type { Category } from '@/lib/types.db';
-import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
+import { flaeche } from '@/theme/design';
+import { categoryAccent, color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 
 import { COUNTRIES, type Country } from './regions';
 
@@ -250,6 +251,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   yearChip: {
     minWidth: 76,
@@ -260,10 +262,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
-  chipOn: { borderColor: color.signal.primary, borderWidth: 1.5 },
+  chipOn: gewaehlt({ borderColor: color.signal.primary, borderWidth: 1.5 }),
   chipText: { ...type.label, color: color.ink.high },
-  chipTextOn: { color: color.signal.primary },
+  chipTextOn: gewaehltText({ color: color.signal.primary }),
 
   list: { marginTop: space.lg, gap: 2 },
   row: {
@@ -275,9 +278,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: color.bgElevated,
   },
-  rowOn: { backgroundColor: color.bgElevated, borderWidth: 1.5, borderColor: color.signal.primary },
+  rowOn: gewaehlt({ backgroundColor: color.bgElevated, borderWidth: 1.5, borderColor: color.signal.primary }),
   rowText: { ...type.body, color: color.ink.high },
-  rowTextOn: { color: color.signal.primary },
+  rowTextOn: gewaehltText({ color: color.signal.primary }),
   rowCode: { ...type.mono, color: color.ink.low },
 
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
@@ -292,6 +295,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: space.lg,
     gap: space.xs,
+    ...flaeche(10),
   },
   tileEmoji: { fontSize: 26 },
   tileLabel: { ...type.label, color: color.ink.high },

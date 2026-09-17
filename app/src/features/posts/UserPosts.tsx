@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   leerEigen: { gap: space.md },
   gesperrt: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.lg },
   gesperrtText: { ...type.body, fontSize: 14, color: color.ink.mid, flex: 1 },
-  notiz: { ...type.meta, color: color.signal.primary },
+  notiz: { ...type.meta, color: color.akzent },
   mehr: { alignItems: 'center', paddingVertical: space.md },
-  mehrText: { ...type.meta, color: color.signal.primary },
+  mehrText: { ...type.meta, color: color.akzent },
 });

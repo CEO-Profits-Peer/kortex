@@ -14,6 +14,7 @@ import {
 
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
+import { ZWEI, sechseckRegel } from '@/theme/design';
 import { color } from '@/theme/tokens';
 
 /**
@@ -164,7 +165,7 @@ export function useNeuladen(onRefresh: () => Promise<void>, oben: number): Neula
               ],
             }}
           >
-            <Icon name="refresh" size={18} color={color.signal.primary} />
+            <Icon name="refresh" size={18} color={color.akzent} />
           </Animated.View>
         )}
       </View>
@@ -214,5 +215,8 @@ const styles = StyleSheet.create({
     backgroundColor: color.bgElevated,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
+    // Design 2.0: Sechseck. Ein Rahmen wuerde vom Zuschnitt abgeschnitten,
+    // deshalb eine etwas hellere Flaeche.
+    ...(ZWEI ? { width: 42, height: 42, borderWidth: 0, backgroundColor: '#2A2227', ...sechseckRegel() } : null),
   },
 });

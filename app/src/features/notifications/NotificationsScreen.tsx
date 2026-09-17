@@ -20,6 +20,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { AppNotification } from '@/lib/types.db';
+import { ZWEI, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.lg, paddingTop: space.md, gap: 2 },
   leer: { gap: space.md, padding: space.lg },
   leerText: { ...type.body, fontSize: 15, lineHeight: 22, color: color.ink.mid },
-  link: { ...type.meta, color: color.signal.primary },
+  link: { ...type.meta, color: color.akzent },
 
   zeile: {
     flexDirection: 'row',
@@ -169,6 +170,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.bgSunken,
+    // Design 2.0: Sechseck statt Kreis, etwas heller als die Zeile.
+    ...(ZWEI ? { width: 40, height: 40, backgroundColor: '#2A2227', ...sechseckRegel() } : null),
   },
   titel: { ...type.body, fontSize: 15, color: color.ink.high },
   text: { ...type.meta, color: color.ink.mid, lineHeight: 16 },

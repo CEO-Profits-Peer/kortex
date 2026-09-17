@@ -25,6 +25,7 @@ import { takeOAuthError } from '@/lib/oauthReturn';
 import { api, supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -221,14 +222,14 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  note: { ...type.body, fontSize: 14, color: color.signal.primary },
+  note: { ...type.body, fontSize: 14, color: color.akzent },
   oauthError: { ...type.body, fontSize: 14, lineHeight: 20, color: color.signal.error },
 
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   avatarText: { gap: 4 },
   handle: { ...type.title, fontSize: 20, color: color.ink.max },
   handleSub: { ...type.mono, fontSize: 12, color: color.ink.low, marginTop: 2 },
-  link: { ...type.label, color: color.signal.primary },
+  link: { ...type.label, color: color.akzent },
 
   group: { gap: space.sm },
   label: { ...type.meta, color: color.ink.low, marginTop: space.xs },
@@ -243,6 +244,7 @@ const styles = StyleSheet.create({
     ...type.body,
     fontSize: 16,
     color: color.ink.max,
+    ...flaeche(10),
   },
   inputTall: { minHeight: 84, textAlignVertical: 'top' },
   counter: { ...type.meta, color: color.ink.low, alignSelf: 'flex-end' },

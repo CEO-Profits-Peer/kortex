@@ -321,7 +321,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
                 accessibilityRole="button"
                 accessibilityLabel="Nächste Karte"
               >
-                <Icon name="chevron" size={18} color={color.signal.primary} />
+                <Icon name="chevron" size={18} color={color.akzent} />
               </Pressable>
             ) : (
               <Pressable
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
   },
-  pfeilWeiter: { borderColor: color.signal.primary },
+  pfeilWeiter: { borderColor: color.akzent },
   pfeilAus: { opacity: 0.25 },
   // Nicht "punkte": so heisst weiter unten schon die grosse Ergebniszahl.
   // Der erste Versuch hat sie ueberschrieben, und ein Textstil landete an
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
   },
-  optionGedrueckt: { borderColor: color.signal.primary, opacity: 0.85 },
+  optionGedrueckt: { borderColor: color.akzent, opacity: 0.85 },
   optionZiffer: { ...type.mono, fontSize: 12, color: color.ink.low, width: 14 },
   optionText: { ...type.body, fontSize: 15.5, lineHeight: 21, color: color.ink.high, flex: 1 },
 

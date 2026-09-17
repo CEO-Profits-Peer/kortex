@@ -149,6 +149,25 @@ type Farben = {
 
 export const color: Farben = ZWEI ? farbenZwei : farbenKlassisch;
 
+/**
+ * "Ausgewaehlt" in Design 2.0: eine Bordeaux-Flaeche statt eines Goldrands.
+ *
+ * Ein Goldrand um jede gewaehlte Option war einer der Gruende fuer den
+ * Baustellen-Eindruck. Bordeaux ist ruhiger, liest sich trotzdem sofort als
+ * "das hier" - und Gold bleibt frei fuer das, was man druecken soll.
+ * Klassisch gilt weiter, was der Aufrufer angibt.
+ */
+export function gewaehlt<T extends object>(klassisch: T): T {
+  if (!ZWEI) return klassisch;
+  return { backgroundColor: color.bordeaux, borderColor: color.bordeauxHell } as unknown as T;
+}
+
+/** Schrift auf einer gewaehlten Flaeche: hell statt Gold. */
+export function gewaehltText<T extends object>(klassisch: T): T {
+  if (!ZWEI) return klassisch;
+  return { color: color.ink.max } as unknown as T;
+}
+
 /** 4px-Basisraster — passt visuell zum karierten Hintergrund */
 export const space = {
   xs: 4,

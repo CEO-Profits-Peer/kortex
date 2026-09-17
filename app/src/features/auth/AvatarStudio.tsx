@@ -3,29 +3,31 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Avatar, AvatarArt } from '@/components/Avatar';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import {
-  type AvatarDesign,
-  PALETTE,
-  SHAPES,
-  SHAPE_LABEL,
-  decodeAvatar,
-  encodeAvatar,
-  randomDesign,
-} from '@/lib/avatarDesign';
+import { AvatarEditor } from '@/features/auth/AvatarEditor';
+import { type WabenDesign, wabenDekodieren, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
 import { haptics } from '@/lib/haptics';
 import { pickAvatarImage } from '@/lib/pickImage';
 import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
  * Das Profilbild selbst zeichnen.
  *
+ * Seit 16.09.2026 auf Waben (Format v2, avatarWaben.ts): das Zeichnen
+ * selbst steckt in AvatarEditor, hier bleiben Laden, Speichern und das
+ * eigene Foto. Wer noch ein altes Bild (v1 oder gehasht) hat, bekommt als
+ * Startpunkt ein Wabenbild, das aus seinem alten Seed gewuerfelt ist -
+ * immer dasselbe, damit Oeffnen und Schliessen nichts veraendert. Solange
+ * nicht gespeichert wird, bleibt das alte Bild bestehen.
+ *
+ * (Frueher:)
  * Der Gedanke: nicht mehr Auswahl im Sinne von mehr Vorlagen, sondern
  * dieselbe Bildsprache in die Hand des Nutzers geben. Wer mag, tippt sein
  * Zeichen selbst zusammen; wer nicht, wuerfelt zweimal und ist fertig.
@@ -40,7 +42,7 @@ export function AvatarStudio() {
   // Vor jedem fruehen return: Hooks duerfen nicht bedingt laufen.
   const scrollY = useSharedValue(0);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [design, setDesign] = useState<AvatarDesign | null>(null);
+  const [design, setDesign] = useState<WabenDesign | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -48,7 +50,7 @@ export function AvatarStudio() {
     const p = await api.getMyProfile();
     if (!p) return;
     setProfile(p);
-    setDesign(decodeAvatar(p.avatar_seed));
+    setDesign(wabenDekodieren(p.avatar_seed) ?? wabenWuerfeln('spiegel', p.avatar_seed));
   }, []);
 
   useEffect(() => {
@@ -60,21 +62,6 @@ export function AvatarStudio() {
     setTimeout(() => setNote(null), 2400);
   };
 
-  const toggleCell = (row: number, col: number) => {
-    const mirrored = col < 2 ? col : 3 - col;
-    haptics.light();
-    setDesign((d) =>
-      d
-        ? {
-            ...d,
-            cells: d.cells.map((r, i) =>
-              i === row ? r.map((v, j) => (j === mirrored ? !v : v)) : r,
-            ),
-          }
-        : d,
-    );
-  };
-
   const saveDesign = async () => {
     if (!design || !profile) return;
     setBusy(true);
@@ -84,7 +71,7 @@ export function AvatarStudio() {
       // nur der Verweis darauf.
       const old = profile.avatar_path;
       setProfile(
-        await api.updateSettings({ avatar_seed: encodeAvatar(design), avatar_path: '' }),
+        await api.updateSettings({ avatar_seed: wabenKodieren(design), avatar_path: '' }),
       );
       await api.deleteAvatar(old);
       haptics.success();
@@ -173,126 +160,23 @@ export function AvatarStudio() {
       >
         {note ? <Text style={styles.note}>{note}</Text> : null}
 
-        {/* --- Vorschau und Raster ---------------------------------------- */}
-        <View style={styles.stage}>
-          <View style={styles.previews}>
-            <AvatarArt design={design} size={96} />
-            {/* Solange ein Foto gesetzt ist, liegt es ueber dem Muster.
-                Dann muss hier auch stehen, was andere tatsaechlich sehen -
-                sonst arbeitet man an einem Bild, das gar nicht auftaucht. */}
-            {profile.avatar_path ? (
-              <View style={styles.liveRow}>
-                <Avatar seed={profile.avatar_seed} path={profile.avatar_path} size={28} />
-                <Text style={styles.liveLabel}>zeigt dein Foto</Text>
-              </View>
-            ) : null}
+        {/* Solange ein Foto gesetzt ist, liegt es ueber dem Muster. Dann muss
+            hier auch stehen, was andere tatsaechlich sehen - sonst arbeitet
+            man an einem Bild, das gar nicht auftaucht. */}
+        {profile.avatar_path ? (
+          <View style={styles.liveRow}>
+            <Avatar seed={profile.avatar_seed} path={profile.avatar_path} size={28} />
+            <Text style={styles.liveLabel}>Andere sehen gerade dein Foto</Text>
           </View>
-          <View style={styles.grid}>
-            {/* Die Spiegelachse. Sie ersetzt die Abdunklung, die vorher auf
-                der rechten Haelfte lag: die hat die gespiegelten Felder in
-                einer anderen Farbe gezeigt, und damit sah das Raster
-                genau nicht nach zwei gleichen Haelften aus - gemeldet als
-                "sides not mirroring". Gespiegelt war es die ganze Zeit,
-                man konnte es nur nicht sehen. */}
-            <View pointerEvents="none" style={styles.axis} />
-            {[0, 1, 2, 3].map((row) => (
-              <View key={row} style={styles.gridRow}>
-                {[0, 1, 2, 3].map((col) => {
-                  const mirrored = col < 2 ? col : 3 - col;
-                  const on = design.cells[row][mirrored];
-                  return (
-                    <Pressable
-                      key={col}
-                      onPress={() => toggleCell(row, col)}
-                      style={[
-                        styles.gridCell,
-                        on ? { backgroundColor: PALETTE[design.tint] } : null,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={'Feld ' + (row + 1) + ' ' + (col + 1)}
-                    />
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-        </View>
-        <Text style={styles.hint}>
-          Tippe die Felder an. Die rechte Hälfte spiegelt die linke — deshalb
-          ergibt sich ein Zeichen und kein Flickenteppich.
-        </Text>
+        ) : null}
 
-        {/* --- Farbe ------------------------------------------------------ */}
-        <View style={styles.group}>
-          <Text style={styles.label}>Farbe</Text>
-          <View style={styles.swatchRow}>
-            {PALETTE.map((hex, i) => (
-              <Pressable
-                key={hex}
-                onPress={() => {
-                  haptics.light();
-                  setDesign({ ...design, tint: i });
-                }}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: hex },
-                  design.tint === i ? styles.swatchOn : null,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={'Farbe ' + (i + 1)}
-              />
-            ))}
-          </View>
-        </View>
+        <AvatarEditor design={design} onChange={setDesign} />
 
-        {/* --- Form ------------------------------------------------------- */}
-        <View style={styles.group}>
-          <Text style={styles.label}>Form</Text>
-          <View style={styles.chipRow}>
-            {SHAPES.map((s) => (
-              <Pressable
-                key={s}
-                onPress={() => {
-                  haptics.light();
-                  setDesign({ ...design, shape: s });
-                }}
-                style={[styles.chip, design.shape === s ? styles.chipOn : null]}
-              >
-                <Text style={[styles.chipText, design.shape === s ? styles.chipTextOn : null]}>
-                  {SHAPE_LABEL[s]}
-                </Text>
-              </Pressable>
-            ))}
-            <Pressable
-              onPress={() => {
-                haptics.light();
-                setDesign({ ...design, core: !design.core });
-              }}
-              style={[styles.chip, design.core ? styles.chipOn : null]}
-            >
-              <Text style={[styles.chipText, design.core ? styles.chipTextOn : null]}>Kern</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.actions}>
-          <Pressable
-            onPress={() => {
-              haptics.medium();
-              setDesign(randomDesign());
-            }}
-            style={styles.ghost}
-          >
-            <Text style={styles.ghostText}>Würfeln</Text>
-          </Pressable>
-          <View style={styles.grow}>
-            <Button label="Speichern" busy={busy} onPress={saveDesign} />
-          </View>
-        </View>
+        <Button label="Speichern" busy={busy} onPress={saveDesign} />
 
         {/* --- Eigenes Foto ------------------------------------------------ */}
         <View style={styles.group}>
-          <Text style={styles.sectionTitle}>Oder ein eigenes Foto</Text>
+          <Text style={styles.sectionTitle}>Foto</Text>
           <Text style={styles.hint}>
             Ein Foto liegt über dem Muster. Nimmst du es wieder weg, ist dein
             Zeichen unverändert da.
@@ -317,82 +201,34 @@ export function AvatarStudio() {
   );
 }
 
-const CELL = 44;
-
 const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  note: { ...type.body, fontSize: 14, color: color.signal.primary },
+  note: { ...type.body, fontSize: 14, color: color.akzent },
 
-  stage: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
-  previews: { gap: space.sm, alignItems: 'center' },
-  liveRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  liveLabel: { ...type.meta, fontSize: 10, color: color.ink.low },
-  grid: { borderRadius: radius.sm, overflow: 'hidden' },
-  gridRow: { flexDirection: 'row' },
-  axis: {
-    position: 'absolute',
-    left: CELL * 2 - 1,
-    top: 0,
-    bottom: 0,
-    width: 2,
-    backgroundColor: color.bg,
-    zIndex: 1,
-  },
-  gridCell: {
-    width: CELL,
-    height: CELL,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
-    backgroundColor: color.bgSunken,
-  },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  liveLabel: { ...type.meta, color: color.ink.low },
 
-  group: { gap: space.sm },
-  sectionTitle: {
-    ...type.label,
-    color: color.ink.mid,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  label: { ...type.meta, color: color.ink.low },
-  hint: { ...type.meta, color: color.ink.low, lineHeight: 17 },
-
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  // Acht Farben in EINE Zeile: bricht die Reihe um, haengt eine einzelne
-  // Kachel darunter und sieht aus wie ein Fehler.
-  swatchRow: { flexDirection: 'row', gap: space.xs },
-  swatch: {
-    flex: 1,
-    aspectRatio: 1,
-    maxWidth: 34,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  swatchOn: { borderColor: color.ink.max },
-  chip: {
-    paddingHorizontal: space.lg,
-    height: 38,
-    justifyContent: 'center',
-    borderRadius: radius.md,
+  group: {
+    gap: space.sm,
+    padding: space.lg,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
-  chipOn: { borderColor: color.signal.primary, backgroundColor: color.bgSunken },
-  chipText: { ...type.label, color: color.ink.mid },
-  chipTextOn: { color: color.signal.primary },
+  sectionTitle: { ...type.label, color: color.ink.high },
+  hint: { ...type.meta, color: color.ink.low, lineHeight: 17 },
 
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  grow: { flex: 1 },
   ghost: {
-    height: 48,
+    height: 44,
     paddingHorizontal: space.lg,
     justifyContent: 'center',
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
+    backgroundColor: color.bgSunken,
   },
   ghostText: { ...type.label, color: color.ink.high },
 });

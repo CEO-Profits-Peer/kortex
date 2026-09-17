@@ -294,6 +294,23 @@ composer without posting), Von dir, LAB (7 tools at `/lab/[id]`). Stack viewer
 official, cited tables first. Open finding (spawned as separate task): feed
 functions return `quiz_items` incl. `correct_index` to the client.
 
+## Design 2.0 und 0089 (2026-09-16)
+
+- Design 2.0 is a per-device switch (Settings > Design, localStorage, reload).
+  Tokens: `color.akzent` for small hints and links (warm grey, NOT gold), and
+  `gewaehlt()` / `gewaehltText()` for selected states (Bordeaux). Gold is only
+  for the one primary action, the active tab and XP. `flaeche()` is a plain
+  card with a light top edge; `facette()` cuts all four corners and is for
+  special cards only. There is NO serif font; the user rejected it.
+- Avatars are regular hexagons (`sechseckRegel`). `0089_avatar_waben.sql` adds
+  seed format v2 (`v2-<grund><farbe1><farbe2><stil>-<19 hex>`, 37 hex cells,
+  `lib/avatarWaben.ts`). v1 and hashed seeds still render unchanged.
+- `/atelier` and `/kinetic-demo` now open without an account (`_layout.tsx`
+  `OHNE_KONTO`). Tab "design" shows avatars, feed rail, avatar editor and tab
+  bar, so they can be checked without logging in.
+- "zu leicht / zu schwer" was removed from feed cards. The event kinds stay
+  in the DB for old admin stats.
+
 ## Backlog after that
 
 - **More courses** (multi-card structured sequences; `features/courses`).

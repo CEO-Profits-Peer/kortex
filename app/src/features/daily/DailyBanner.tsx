@@ -7,7 +7,7 @@ import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import { BordeauxMuster } from '@/components/Sechseck';
-import { ZWEI, facette, sechseck } from '@/theme/design';
+import { ZWEI, facette, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardZwei: { borderWidth: 0, overflow: 'hidden', backgroundColor: color.bordeaux, ...facette(10) },
-  markZwei: { borderWidth: 0, width: 40, height: 44, backgroundColor: color.bordeauxHell, ...sechseck() },
+  markZwei: { borderWidth: 0, width: 44, height: 44, backgroundColor: color.bordeauxHell, ...sechseckRegel() },
   body: { flex: 1, gap: 2 },
   kicker: { ...type.label, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2 },
   title: { ...type.deck, color: color.ink.max },

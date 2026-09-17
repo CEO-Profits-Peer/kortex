@@ -46,7 +46,7 @@ import {
   type Linse,
   type Muster,
 } from '@/theme/design';
-import { color, radius, space, type } from '@/theme/tokens';
+import { color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 
 /**
  * Einstellungen.
@@ -762,9 +762,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: radius.pill,
   },
-  auswahlAn: { backgroundColor: color.bg, borderWidth: StyleSheet.hairlineWidth, borderColor: color.signal.primary },
+  auswahlAn: gewaehlt({ backgroundColor: color.bg, borderWidth: StyleSheet.hairlineWidth, borderColor: color.signal.primary }),
   auswahlText: { ...type.meta, color: color.ink.mid },
-  auswahlTextAn: { color: color.signal.primary },
+  auswahlTextAn: gewaehltText({ color: color.signal.primary }),
 
   fuss: { ...type.meta, fontSize: 10, color: color.ink.low, textAlign: 'center' },
 });

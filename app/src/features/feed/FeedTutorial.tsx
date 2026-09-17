@@ -244,5 +244,5 @@ const styles = StyleSheet.create({
   punkte: { flexDirection: 'row', gap: 5 },
   punkt: { width: 16, height: 2, backgroundColor: color.ink.faint },
   punktAn: { backgroundColor: color.signal.primary },
-  weiter: { ...type.label, fontSize: 14, color: color.signal.primary },
+  weiter: { ...type.label, fontSize: 14, color: color.akzent },
 });

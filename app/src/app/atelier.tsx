@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
+import { ActionRail } from '@/components/ActionRail';
+import { Avatar } from '@/components/Avatar';
+import { BlueprintTabBar } from '@/components/BlueprintTabBar';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { Button } from '@/components/Button';
 import { CardBlock } from '@/components/CardBlock';
@@ -13,6 +16,8 @@ import { SectionTitle } from '@/components/SectionTitle';
 import { AdminCategories } from '@/features/admin/AdminCategories';
 import { AdminOverview } from '@/features/admin/AdminOverview';
 import { AdminPeople } from '@/features/admin/AdminPeople';
+import { AvatarEditor } from '@/features/auth/AvatarEditor';
+import { type WabenDesign, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
 import type {
   AdminCategory,
   AdminData,
@@ -186,17 +191,10 @@ function Karte({
         ))}
       </View>
 
-      {/* Fusszeile wie im Feed: Herkunft links, Urteil rechts, keine
-          Linien - siehe die Begruendung in ContentCard.tsx. */}
+      {/* Fusszeile wie im Feed: Herkunft, keine Linien - siehe die
+          Begruendung in ContentCard.tsx. */}
       <View style={styles.schriftfeld}>
         <Text style={styles.quelle}>atelier.example.org</Text>
-        <View style={styles.urteil}>
-          {['zu leicht', 'zu schwer'].map((t) => (
-            <View key={t} style={styles.urteilChip}>
-              <Text style={styles.urteilText}>{t}</Text>
-            </View>
-          ))}
-        </View>
       </View>
     </View>
   );
@@ -363,7 +361,11 @@ const KONTROLLE: AdminData = {
 };
 
 export default function Atelier() {
-  const [reiter, setReiter] = useState<'karten' | 'kopfzeile' | 'bausteine' | 'kontrolle'>('karten');
+  const [reiter, setReiter] = useState<'karten' | 'kopfzeile' | 'bausteine' | 'kontrolle' | 'design'>('karten');
+  // Design 2.0: Bausteine, die sonst nur hinter der Anmeldung zu sehen sind.
+  const [waben, setWaben] = useState<WabenDesign>(() => wabenWuerfeln('sechs', 'atelier'));
+  const [tab, setTab] = useState(1);
+  const [aktiv, setAktiv] = useState(true);
   const { height } = useWindowDimensions();
   const scrollY = useSharedValue(0);
   const kartenHoehe = Math.min(560, height - 160);
@@ -371,7 +373,7 @@ export default function Atelier() {
   return (
     <GridBackground>
       <View style={styles.reiter}>
-        {(['karten', 'kopfzeile', 'bausteine', 'kontrolle'] as const).map((k) => (
+        {(['karten', 'kopfzeile', 'bausteine', 'kontrolle', 'design'] as const).map((k) => (
           <Pressable
             key={k}
             onPress={() => setReiter(k)}
@@ -433,6 +435,59 @@ export default function Atelier() {
             suche={async () => LEUTE}
             laden={async () => PERSON}
           />
+        </ScrollView>
+      ) : null}
+
+      {reiter === 'design' ? (
+        <ScrollView contentContainerStyle={[styles.bahn, { paddingBottom: 140 }]}>
+          <Text style={styles.werkTitel}>Profilbilder</Text>
+          <View style={[styles.gruppe, { alignItems: 'center' }]}>
+            <Avatar seed={wabenKodieren(waben)} size={64} ring={color.signal.primary} />
+            <Avatar seed={wabenKodieren(waben)} size={40} />
+            <Avatar seed="v1-210-a7" size={64} />
+            <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
+          </View>
+
+          <Text style={styles.werkTitel}>Feed-Leiste</Text>
+          <View style={{ height: 330, alignSelf: 'flex-end', width: 80 }}>
+            <ActionRail
+              liked={aktiv}
+              likeCount={128}
+              reposted={false}
+              speaking={false}
+              tint={color.signal.primary}
+              commentCount={4}
+              onLike={() => setAktiv((a) => !a)}
+              onRepost={() => {}}
+              onShare={() => {}}
+              onComment={() => {}}
+              onListen={() => {}}
+            />
+          </View>
+
+          <Text style={styles.werkTitel}>Profilbild-Editor</Text>
+          <AvatarEditor design={waben} onChange={setWaben} />
+
+          <Text style={styles.werkTitel}>Tab-Leiste</Text>
+          <View style={{ height: 110 }}>
+            <BlueprintTabBar
+              state={{
+                index: tab,
+                routes: ['home', 'studio', 'index', 'search', 'profile'].map((n) => ({ key: n, name: n })),
+              }}
+              descriptors={{
+                home: { options: { title: 'Home' } },
+                studio: { options: { title: 'Studio' } },
+                index: { options: { title: 'Feed' } },
+                search: { options: { title: 'Suche' } },
+                profile: { options: { title: 'Profil' } },
+              }}
+              navigation={{
+                emit: () => ({ defaultPrevented: false }),
+                navigate: (n: string) => setTab(['home', 'studio', 'index', 'search', 'profile'].indexOf(n)),
+              }}
+            />
+          </View>
         </ScrollView>
       ) : null}
 

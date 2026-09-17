@@ -121,7 +121,6 @@ function ContentCardBase({
    * als geliked gilt (aelterer Like, bevor der Zaehler existierte).
    */
   const likeCount = Math.max(0, (item.like_count ?? 0) + delta);
-  const [rated, setRated] = useState<'too_easy' | 'too_hard' | null>(null);
 
   /**
    * Der Kommentarbereich und seine Zahl.
@@ -337,16 +336,6 @@ function ContentCardBase({
     if (t.ziel.art === 'kategorie') router.push(`/category/${encodeURIComponent(t.ziel.id)}`);
     else router.push(`/search?q=${encodeURIComponent(t.ziel.q)}`);
   }, []);
-
-  const rate = useCallback(
-    (kind: 'too_easy' | 'too_hard') => {
-      if (rated) return;
-      setRated(kind);
-      haptics.select();
-      track(item.id, kind);
-    },
-    [rated, item.id],
-  );
 
   // --- Scrollgekoppelte Parallaxe -------------------------------------------
   const offset = () => scrollY.value - index * height;
@@ -625,20 +614,10 @@ function ContentCardBase({
             </Animated.Text>
           ) : null}
         </View>
-        <View style={styles.rating}>
-          {(['too_easy', 'too_hard'] as const).map((kind) => (
-            <Pressable
-              key={kind}
-              onPress={() => rate(kind)}
-              hitSlop={6}
-              style={[styles.rateChip, rated === kind && { borderColor: accent }]}
-            >
-              <Text style={[styles.rateText, rated === kind && { color: accent }]}>
-                {kind === 'too_easy' ? 'zu leicht' : 'zu schwer'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {/* Hier standen "zu leicht" und "zu schwer". Entfernt am 16.09.2026
+            auf Wunsch - zwei kleine Knoepfe unter jeder Karte, die kaum
+            jemand drueckt, sind Laerm. Die Ereignisart bleibt in der
+            Datenbank, damit alte Auswertungen (Admin) weiter stimmen. */}
       </View>
     </Animated.View>
   );
@@ -743,16 +722,6 @@ const styles = StyleSheet.create({
   },
   footerLeft: { flex: 1, gap: 4 },
   shareNote: { ...type.meta, color: color.akzent },
-
-  rating: { flexDirection: 'row', gap: 6 },
-  rateChip: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
-  },
-  rateText: { ...type.meta, fontSize: 9.5, color: color.ink.low },
 });
 
 export const ContentCard = memo(ContentCardBase);

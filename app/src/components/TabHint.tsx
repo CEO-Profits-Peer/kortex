@@ -93,7 +93,7 @@ export function TabHint({
       >
         <View style={styles.kopf}>
           <View style={styles.iconBox}>
-            <Icon name={icon} size={17} color={color.signal.primary} />
+            <Icon name={icon} size={17} color={color.akzent} />
           </View>
           <Text style={styles.titel}>{titel}</Text>
         </View>

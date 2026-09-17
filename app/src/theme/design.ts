@@ -129,6 +129,38 @@ export function sechseck(): ViewStyle {
   return { clipPath: p, WebkitClipPath: p, borderRadius: 0 } as unknown as ViewStyle;
 }
 
+/**
+ * REGELMAESSIGES Sechseck mit Spitze oben in einem quadratischen Kasten.
+ *
+ * sechseck() fuellt den Kasten ganz aus - in einem Quadrat wird das
+ * gestaucht: zu breit fuer seine Hoehe. Ein regelmaessiges Sechseck mit
+ * Spitze oben ist nur sqrt(3)/2 = 86,6 % so breit wie hoch; links und
+ * rechts bleiben also je 6,7 % frei. Fuer Profilbilder, die auf Wunsch
+ * "echte regelmaessige Sechsecke" sind.
+ */
+export const SECHSECK_RAND = (1 - Math.sqrt(3) / 2) / 2;
+
+export function sechseckRegel(): ViewStyle {
+  if (!ZWEI || Platform.OS !== 'web') return {};
+  const l = `${(SECHSECK_RAND * 100).toFixed(2)}%`;
+  const r = `${(100 - SECHSECK_RAND * 100).toFixed(2)}%`;
+  const p = `polygon(50% 0, ${r} 25%, ${r} 75%, 50% 100%, ${l} 75%, ${l} 25%)`;
+  return { clipPath: p, WebkitClipPath: p, borderRadius: 0 } as unknown as ViewStyle;
+}
+
+/** Punkte des regelmaessigen Sechsecks in einem Quadrat der Kante `g`. */
+export function sechseckRegelPunkte(g: number, inset = 0): string {
+  const rand = g * SECHSECK_RAND;
+  const b = g - 2 * rand;
+  return sechseckPunkte(b, g, inset)
+    .split(' ')
+    .map((p) => {
+      const [x, y] = p.split(',').map(Number);
+      return `${(x + rand).toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(' ');
+}
+
 /** Punkte eines Sechsecks mit Spitze oben, fuer SVG (Rahmen, Ringe). */
 export function sechseckPunkte(b: number, h: number, inset = 0): string {
   const i = inset;

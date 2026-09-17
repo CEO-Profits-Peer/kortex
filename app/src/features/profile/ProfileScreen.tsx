@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   divider: { width: StyleSheet.hairlineWidth, height: 22, backgroundColor: color.ink.faint },
 
   knopfReihe: { flexDirection: 'row', gap: space.sm },
-  inviteButton: { borderColor: color.signal.primary },
+  inviteButton: { borderColor: color.akzent },
   einladeNotiz: { ...type.meta, fontSize: 10, color: color.ink.mid, marginTop: -space.sm },
   editButton: {
     flex: 1,

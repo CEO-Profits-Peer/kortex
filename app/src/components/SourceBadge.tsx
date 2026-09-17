@@ -31,7 +31,7 @@ export function SourceBadge({ contentId, sources }: Props) {
     analytics.sourceOpened(sourceId);
     await WebBrowser.openBrowserAsync(url, {
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-      controlsColor: color.signal.primary,
+      controlsColor: color.akzent,
       toolbarColor: color.bgElevated,
       enableBarCollapsing: true,
     });
@@ -67,6 +67,6 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
   },
-  badgePressed: { borderColor: color.signal.primary, opacity: 0.85 },
+  badgePressed: { borderColor: color.akzent, opacity: 0.85 },
   label: { ...type.meta, color: color.ink.mid },
 });

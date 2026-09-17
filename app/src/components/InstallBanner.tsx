@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { promptInstall, useInstallState } from '@/lib/install';
 import { BRAND } from '@/lib/brand';
+import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -37,7 +38,7 @@ export function InstallBanner() {
       <View style={styles.card}>
         <View style={styles.row}>
           <View style={styles.mark}>
-            <Icon name="plus" size={17} color={color.signal.primary} />
+            <Icon name="plus" size={17} color={color.akzent} />
           </View>
 
           <View style={styles.body}>
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   mark: {
@@ -109,7 +111,7 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.signal.primary,
+    borderColor: color.akzent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -127,6 +129,6 @@ const styles = StyleSheet.create({
 
   steps: { gap: space.sm, paddingLeft: 2 },
   step: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
-  stepN: { ...type.mono, fontSize: 11, color: color.signal.primary, width: 12 },
+  stepN: { ...type.mono, fontSize: 11, color: color.akzent, width: 12 },
   stepText: { ...type.body, fontSize: 14, color: color.ink.mid, flex: 1 },
 });

@@ -15,7 +15,8 @@ import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
 import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { color, radius, space, type } from '@/theme/tokens';
+import { ZWEI } from '@/theme/design';
+import { color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 
 /**
  * Das Profil einer anderen Person.
@@ -231,7 +232,7 @@ export function PublicProfileScreen({
           ) : null}
           {p.likes_bekommen ? (
             <View style={styles.statCol}>
-              <Text style={[styles.statValue, { color: color.signal.primary }]}>{p.likes_bekommen}</Text>
+              <Text style={[styles.statValue, { color: ZWEI ? color.ink.max : color.signal.primary }]}>{p.likes_bekommen}</Text>
               <Text style={styles.statLabel}>Likes bekommen</Text>
             </View>
           ) : null}
@@ -357,9 +358,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
   },
-  tabOn: { borderColor: color.signal.primary, backgroundColor: color.bgElevated },
+  tabOn: gewaehlt({ borderColor: color.signal.primary, backgroundColor: color.bgElevated }),
   tabText: { ...type.meta, color: color.ink.mid },
-  tabTextOn: { color: color.signal.primary },
+  tabTextOn: gewaehltText({ color: color.signal.primary }),
 
   list: { gap: 2 },
   ref: {

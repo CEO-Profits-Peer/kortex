@@ -22,6 +22,7 @@ import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CommentAnswer, CommentQuestion } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { flaeche, goldVerlauf, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -313,6 +314,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     paddingTop: space.sm,
     gap: space.md,
+    ...flaeche(10),
   },
   grabber: {
     alignSelf: 'center',
@@ -371,6 +373,8 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     backgroundColor: color.bg,
   },
+  // Design 2.0: Sechseck statt Kreis. Durch die Drehung liegt es flach -
+  // wie ein Pfeil, der nach vorn zeigt.
   send: {
     width: 42,
     height: 42,
@@ -379,6 +383,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color.signal.primary,
     transform: [{ rotate: '-90deg' }],
+    ...sechseckRegel(),
+    ...goldVerlauf(),
   },
   sendOff: { backgroundColor: color.ink.faint },
 

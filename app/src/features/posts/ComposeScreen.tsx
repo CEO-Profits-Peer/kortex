@@ -25,7 +25,7 @@ import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CollectionEntry, Post, PostArt } from '@/lib/types.db';
-import { color, radius, space, type } from '@/theme/tokens';
+import { color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
 /**
@@ -566,9 +566,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
   },
-  artAn: { borderColor: color.signal.primary, backgroundColor: color.bgElevated },
+  artAn: gewaehlt({ borderColor: color.signal.primary, backgroundColor: color.bgElevated }),
   artText: { ...type.meta, color: color.ink.mid },
-  artTextAn: { color: color.signal.primary },
+  artTextAn: gewaehltText({ color: color.signal.primary }),
 
   // Eigene, weich gerundete Flaeche statt des eckigen Browser-Fokusrahmens.
   eingabe: {
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.bgElevated,
     ...flaeche(8),
   },
-  wahlKarteAn: { borderColor: color.signal.primary },
+  wahlKarteAn: gewaehlt({ borderColor: color.signal.primary }),
   nummer: {
     width: 24,
     height: 24,

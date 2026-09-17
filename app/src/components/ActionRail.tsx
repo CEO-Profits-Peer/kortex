@@ -91,11 +91,17 @@ function RailButton({
             <SechseckLinse b={KNOPF_B} h={KNOPF_H} an={!!active} />
           </View>
         ) : null}
-        <Icon
-          name={icon}
-          size={21}
-          color={ZWEI ? (active ? color.signal.primary : color.ink.high) : active ? tint : color.ink.mid}
-        />
+        {/* Im Browser malt ein absolut positioniertes Element UEBER seine
+            nicht positionierten Geschwister - das Sechseck lag also ueber dem
+            Symbol, und auf dem gefuellten Stein war das Herz unsichtbar.
+            Eine eigene Ebene legt das Symbol wieder nach oben. */}
+        <View style={styles.symbol}>
+          <Icon
+            name={icon}
+            size={21}
+            color={ZWEI ? (active ? color.signal.primary : color.ink.high) : active ? tint : color.ink.mid}
+          />
+        </View>
       </AnimatedPressable>
       <Text
         style={[styles.label, active && { color: ZWEI ? color.ink.max : tint }]}
@@ -222,6 +228,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  symbol: { position: 'relative', zIndex: 1 },
   buttonZwei: {
     width: KNOPF_B,
     height: KNOPF_H,

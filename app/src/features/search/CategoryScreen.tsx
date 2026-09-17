@@ -15,6 +15,7 @@ import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
 import type { CategoryDetail } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -308,6 +309,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.ink.faint,
     backgroundColor: color.bgElevated,
+    ...flaeche(10),
   },
   tagText: { ...type.meta },
 
