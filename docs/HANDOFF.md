@@ -311,6 +311,21 @@ functions return `quiz_items` incl. `correct_index` to the client.
 - "zu leicht / zu schwer" was removed from feed cards. The event kinds stay
   in the DB for old admin stats.
 
+## PRO (0091–0092, 2026-09-17)
+
+- The server alone decides PRO: `public.ist_pro(uid)` = `plan in ('pro','gifted')`
+  and not expired. The client cannot write `plan` or `plan_expires_at`.
+- Limits live in `create_post`: text 500/1500, poll 4/6, quiz 3/4, stack 10/50.
+  `post_anpinnen` allows 1 pin, 3 with PRO. Messages that start with `PRO:` open
+  the PRO window in the app (`zeigeProSperre`, `lib/pro.ts` `proMeldung`).
+- Avatar style index >= 4 and background index >= 8 need PRO. A trigger on
+  `profiles` enforces this, because the client may write `avatar_seed` directly.
+- Codes: `python scripts/pro_code.py --tage 30 [--anzahl N] [--max N] [--bis DATE]`.
+  Only the SHA-256 is stored. Redeeming is limited to 10 attempts per hour, and
+  failures return `ok:false` instead of raising (raising would roll back the counter).
+- No purchase yet. RevenueCat is planned. `plan='pro'` is for purchases.
+- When PRO expires, existing pins, big stacks and avatars stay.
+
 ## Backlog after that
 
 - **More courses** (multi-card structured sequences; `features/courses`).
