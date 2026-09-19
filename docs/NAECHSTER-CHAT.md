@@ -95,7 +95,11 @@ In den neuen Chat einfügen:
   - 1 Erklär-es-nochmal und 4 „Dazu passt“ (0109)
   - 2 Prüfungsmodus `/pruefung` (0110)
   - Themenwünsche `/wuensche` (0111): Freigabe im Kontrollzentrum, Reiter „Wünsche“; Evergreen baut bis zu 4 Karten je Freigabe zuerst, danach Meldung an die Wünschenden
-- **Weiter mit:** 3 Lernpfade, dann 5, 6, 7, 9, 10, 12, 13.
+  - 3 Lernpfade (0112): 14 kuratierte Pfade, `courses.py` baut Stationen ohne Kurs zuerst (2 Kurse/Tag im Workflow)
+  - 5 Klassen-Modus (0113): „Überblick“ im eigenen Gruppen-Stapel, anonym, Quote erst ab 3 Antworten
+  - 6 Lernpartner (0114): `/lernpartner`, Wochenziel zu zweit, Anstupsen
+- **Web-Deploy darf ich selbst** (`npm run deploy:web`).
+- **Weiter mit:** 7 Community-Frage, 9 Monats-Abzeichen, 10 Jahresrückblick, 12 Lokale Karten, 13 Audio-Modus.
 - **Noch offen:**
   - 8 „Fertig für heute“ – überlegt er noch.
   - 11 Karten vorschlagen – beliebte Themen entweder ihm zur Freigabe vorlegen oder die Pipeline muss Unangemessenes erkennen. Erst besprechen.
