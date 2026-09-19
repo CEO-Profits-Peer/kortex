@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     ...flaeche(6),
   },
   sucheEingabe: {
-    flex: 1,
+    flex: 1, minWidth: 0,
     ...type.body,
     fontSize: 15,
     color: color.ink.max,

@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   abschnitt: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1 },
   eingabeZeile: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
   eingabe: {
-    flex: 1,
+    flex: 1, minWidth: 0,
     ...type.body,
     fontSize: 14,
     color: color.ink.max,

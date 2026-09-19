@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
     zIndex: 5,
   },
-  notizEingabe: { flex: 1, ...type.body, fontSize: 14, color: color.ink.max, maxHeight: 90, padding: 4 },
+  notizEingabe: { flex: 1, minWidth: 0, ...type.body, fontSize: 14, color: color.ink.max, maxHeight: 90, padding: 4 },
   notizKnopf: { paddingHorizontal: space.sm, paddingVertical: 6 },
   labLink: { paddingHorizontal: space.sm, paddingVertical: 4 },
   labLinkText: { ...type.label, fontSize: 13 },

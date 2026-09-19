@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
 
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md },
   input: {
-    flex: 1,
+    flex: 1, minWidth: 0,
     maxHeight: 110,
     minHeight: 42,
     ...type.body,

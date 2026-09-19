@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   antwortAnText: { ...type.meta, color: color.ink.mid, flex: 1 },
   eingabe: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md },
   input: {
-    flex: 1,
+    flex: 1, minWidth: 0,
     maxHeight: 110,
     minHeight: 42,
     ...type.body,

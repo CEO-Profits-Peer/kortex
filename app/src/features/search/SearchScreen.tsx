@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     ...flaeche(10),
   },
   searchGlyph: { fontSize: 18, color: color.ink.low },
-  input: { flex: 1, ...type.body, fontSize: 16, color: color.ink.max, padding: 0 },
+  input: { flex: 1, minWidth: 0, ...type.body, fontSize: 16, color: color.ink.max, padding: 0 },
 
   body: { paddingTop: space.xl, gap: space.xl },
   // Nur die waagrechten Leisten duerfen ueber den Rand: der Rest der Suche

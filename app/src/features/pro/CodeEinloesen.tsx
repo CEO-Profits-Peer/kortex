@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   label: { ...type.meta, color: color.ink.low },
   zeile: { flexDirection: 'row', gap: space.sm },
   eingabe: {
-    flex: 1,
+    flex: 1, minWidth: 0,
     ...type.mono,
     fontSize: 14,
     color: color.ink.max,
