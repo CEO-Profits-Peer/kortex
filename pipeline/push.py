@@ -91,6 +91,22 @@ def main() -> int:
     stats: Counter[str] = Counter()
 
     with httpx.Client(timeout=30.0, headers=headers) as http:
+        # 0104: Streak-Erinnerungen anlegen, bevor verschickt wird. Die
+        # Funktion waehlt selbst, wer gerade Abend hat - hier nur anstossen.
+        # Scheitert es (alte Datenbank), laeuft der Versand trotzdem.
+        if not args.dry_run:
+            try:
+                r = http.post(f"{rest}/rpc/streak_erinnerungen", json={})
+                r.raise_for_status()
+                log.info("Streak-Erinnerungen angelegt: %s", r.json())
+            except httpx.HTTPStatusError as exc:
+                # Status und Anfang der Antwort: "404" heisst Funktion fehlt,
+                # "401" Schluessel falsch - der blosse Klassenname sagt das nicht.
+                log.warning("Streak-Erinnerungen nicht angelegt: HTTP %s %s",
+                            exc.response.status_code, exc.response.text[:200])
+            except httpx.HTTPError as exc:
+                log.warning("Streak-Erinnerungen nicht angelegt: %s: %s", type(exc).__name__, exc)
+
         pending = http.get(
             f"{rest}/notifications",
             params={
