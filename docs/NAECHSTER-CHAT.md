@@ -73,6 +73,29 @@ In den neuen Chat einfügen:
    7. Offen: PDF-Export; beim Gold-Profil-Theme fehlt die Kante an den abgeschrägten Ecken.
 4. **Stimmen:** nur Tempo und Browser-Stimmen. Keine kostenpflichtigen Google-Stimmen, die Abrechnung bleibt aus.
 
+## ENTSCHIEDEN (19.09., zweite Runde)
+- **Neue Animationen: bleiben** ("Peak"), aber nur, wenn man sie sieht (umgesetzt: `lib/imBild.ts`).
+- **Nach den neuen Features:**
+  1. Karten-UI remastern – eine Karte darf nicht mit Knöpfen überladen werden (Rechnen, Notiz, …).
+  2. Volle Übersetzung ins Englische.
+- **Karten in die andere Sprache übersetzen** statt neu generieren (billiger). Dabei darf niemand dieselbe Karte in beiden Sprachen bekommen.
+- **Feature-Liste**, ja zu:
+  - 1 Erklär-es-mir-nochmal
+  - 2 Prüfungsmodus, dazu **Themenwünsche**: gewünschte Themen lesen, die meistgewünschten als Kartenserie bauen
+  - 3 Lernpfade
+  - 4 Karten-Zusammenhänge
+  - 5 Klassen-Modus
+  - 6 Lernpartner
+  - 7 Frage an die Community (wenn umsetzbar)
+  - 9 Monats-Abzeichen
+  - 10 Jahresrückblick
+  - 12 Lokale Karten
+  - 13 Audio-Modus
+- **Noch offen:**
+  - 8 „Fertig für heute“ – überlegt er noch.
+  - 11 Karten vorschlagen – beliebte Themen entweder ihm zur Freigabe vorlegen oder die Pipeline muss Unangemessenes erkennen. Erst besprechen.
+- **Später:** Quiz-Antworten auf dem Server, Namen ändern, USA, RevenueCat.
+
 ## Regeln, die weiter gelten
 - Kein Geheimnis ausgeben.
 - Der Client schreibt nie XP, Mastery, Level, Streak oder PRO.
