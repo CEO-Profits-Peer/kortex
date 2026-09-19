@@ -50,6 +50,7 @@ export function LabErgebnis({
       </View>
       <Text style={styles.gross}>{e.gross}</Text>
       <Text style={styles.satz}>{e.satz}</Text>
+      {e.einordnung ? <Text style={[styles.einordnung, { color: w.farbe }]}>{e.einordnung}</Text> : null}
 
       {eingezahlt !== null && e.balken ? (
         <View style={{ gap: 6 }}>
@@ -105,6 +106,7 @@ const styles = StyleSheet.create({
   tag: { ...type.meta, fontSize: 10, color: color.ink.low },
   gross: { ...type.display, fontSize: 34, lineHeight: 40, color: color.ink.max },
   satz: { ...type.body, fontSize: 14, lineHeight: 20, color: color.ink.high },
+  einordnung: { ...type.label, fontSize: 14, lineHeight: 20 },
   balken: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: color.ink.faint },
   details: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, paddingTop: 2 },
   detail: { gap: 1, minWidth: 90 },

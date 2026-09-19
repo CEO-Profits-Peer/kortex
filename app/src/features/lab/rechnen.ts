@@ -143,6 +143,19 @@ export function schlafzeiten(stunde: number, minute: number) {
   });
 }
 
+/** Jetzt um hh:mm ins Bett - aufwachen nach 6, 5 und 4 Zyklen (umgekehrte Rechnung). */
+export function aufwachzeiten(stunde: number, minute: number) {
+  const bett = stunde * 60 + minute;
+  return [6, 5, 4].map((zyklen) => {
+    const t = (bett + 15 + zyklen * 90) % 1440;
+    return {
+      zyklen,
+      stunden: (zyklen * 90) / 60,
+      uhrzeit: `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`,
+    };
+  });
+}
+
 export const LICHT_C = 299_792.458; // km/s, per Definition
 
 export const LICHT_ZIELE = [
@@ -205,6 +218,7 @@ export function inflation(betrag: number, von: number, bis: number) {
     proJahr: (Math.pow(faktor, 1 / jahre) - 1) * 100,
     kaufkraft: betrag / faktor,
     spitze,
+    raten: VPI_RATE_AT,
   };
 }
 
@@ -322,10 +336,24 @@ export function co2Kg(mittel: Co2MittelId, km: number): number {
   return (g * km) / 1000;
 }
 
+/**
+ * Pro Person. Beim Auto rechnet das UBA mit 1,13 Leuten im Schnitt
+ * (Auslastung PV 2024). Sitzen mehr drin, teilt sich dasselbe Fahrzeug-CO2
+ * auf mehr Koepfe: Wert x 1,13 = pro Fahrzeug, dann / Personen.
+ */
+export const PKW_BESETZUNG = 1.13;
+export function co2ProPerson(mittel: Co2MittelId, km: number, personen: number | null): number {
+  if ((mittel === 'auto' || mittel === 'eauto') && personen) {
+    return (co2Kg(mittel, km) * PKW_BESETZUNG) / personen;
+  }
+  return co2Kg(mittel, km);
+}
+
 export function kg(n: number): string {
   if (n >= 1_000) return `${zahlFmt(n / 1000, 1)} t`;
   if (n >= 10) return `${zahlFmt(n)} kg`;
-  if (n > 0) return `${zahlFmt(n, 1)} kg`;
+  if (n >= 0.1) return `${zahlFmt(n, 1)} kg`;
+  if (n > 0) return `${zahlFmt(Math.max(1, n * 1000))} g`;
   return '0 kg';
 }
 
@@ -334,10 +362,51 @@ export function kg(n: number): string {
 export type Ergebnis = {
   gross: string;
   satz: string;
+  /**
+   * Eine Zeile Einordnung - aus den EIGENEN Zahlen abgeleitet, nie
+   * Allgemeinwissen. Wechselt mit dem Ergebnis, damit nicht jedes Teilen
+   * gleich klingt; bei gleichen Eingaben immer derselbe Satz, damit ein
+   * geteilter Beitrag bei jedem Aufruf gleich aussieht.
+   */
+  einordnung?: string;
   details: { label: string; wert: string }[];
   /** Optional: Anteil 0..1 fuer einen zweiteiligen Balken. */
   balken?: { anteil: number; links: string; rechts: string };
 };
+
+/**
+ * Waehlt eine Formulierung fest aus den Eingaben - kein Zufall, sonst saehe
+ * derselbe geteilte Beitrag bei jedem Oeffnen anders aus.
+ */
+function waehle<T>(varianten: T[], e: Record<string, unknown>): T {
+  const s = JSON.stringify(e);
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return varianten[Math.abs(h) % varianten.length];
+}
+
+/** "Dein Tipp": wie weit daneben, als Zeile fuer die Details und ein Satz. */
+function tippAuswertung(tipp: number | null, echt: number, fmt: (n: number) => string) {
+  if (tipp === null) return { detail: [] as { label: string; wert: string }[], satz: null as string | null };
+  const abw = echt === 0 ? (tipp === 0 ? 0 : 1) : Math.abs(tipp - echt) / Math.abs(echt);
+  const satz =
+    abw <= 0.05
+      ? 'Getippt und fast genau getroffen.'
+      : abw <= 0.25
+        ? `Getippt: ${fmt(tipp)} – ziemlich nah dran.`
+        : tipp < echt
+          ? `Getippt: ${fmt(tipp)} – deutlich zu wenig.`
+          : `Getippt: ${fmt(tipp)} – deutlich zu viel.`;
+  return { detail: [{ label: 'dein Tipp', wert: fmt(tipp) }], satz };
+}
+
+/** Kleinste Gruppe, ab der die Wahrscheinlichkeit 50 % erreicht - gerechnet, nicht gemerkt. */
+function fuenfzigAb(p: (n: number) => number): number {
+  for (let n = 2; n < 2_000; n++) if (p(n) >= 0.5) return n;
+  return 2_000;
+}
+
+const WOCHEN_PRO_MONAT = 52 / 12;
 
 /**
  * Das Ergebnis eines geteilten LAB-Beitrags - oder null, wenn die Eingaben
@@ -354,25 +423,89 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       const jahre = zahl(e.jahre, 1, 70);
       if (start === null || monatlich === null || rendite === null || jahre === null) return null;
       const z = zinseszins(start, monatlich, rendite, jahre);
+      // Ab welchem Jahr bringen die Zinsen eines Jahres mehr als die
+      // Einzahlungen desselben Jahres? Der Moment, in dem das Geld fuer
+      // einen mitarbeitet.
+      let kipp: number | null = null;
+      if (monatlich > 0 && rendite > 0) {
+        for (let j = 1; j <= jahre; j++) {
+          const vorher = zinseszins(start, monatlich, rendite, j - 1);
+          const jetzt = zinseszins(start, monatlich, rendite, j);
+          if (jetzt.zinsen - vorher.zinsen > monatlich * 12) {
+            kipp = j;
+            break;
+          }
+        }
+      }
+      // Kaufkraft: mit der Durchschnittsteuerung 1990-2025 aus dem VPI oben.
+      const inflSchnitt = Math.pow(VPI_AT[VPI_LETZTES] / VPI_AT[VPI_ERSTES], 1 / (VPI_LETZTES - VPI_ERSTES)) - 1;
+      const real = z.endwert / Math.pow(1 + inflSchnitt, jahre);
+      const anteilZinsen = z.endwert > 0 ? z.zinsen / z.endwert : 0;
+      const einordnung =
+        rendite === 0
+          ? 'Ohne Rendite wächst nichts – und die Teuerung frisst jedes Jahr ein Stück.'
+          : kipp !== null
+            ? waehle(
+                [
+                  `Ab Jahr ${kipp} bringen die Zinsen mehr als du selbst einzahlst.`,
+                  `Im Jahr ${kipp} kippt es: ab da arbeitet das Geld mehr als du.`,
+                ],
+                e,
+              )
+            : anteilZinsen < 0.25
+              ? 'Noch kommt das meiste von dir. Zinseszins braucht vor allem Zeit.'
+              : `${zahlFmt(anteilZinsen * 100)} % am Ende sind Zinsen – nicht eingezahlt.`;
       return {
         gross: `≈ ${euro(z.endwert)}`,
         satz: `nach ${zahlFmt(jahre)} Jahren – ${euro(monatlich)} im Monat${start > 0 ? `, ${euro(start)} zum Start` : ''}, ${zahlFmt(rendite, 1)} % Rendite`,
+        einordnung,
         details: [
           { label: 'eingezahlt', wert: euro(z.eingezahlt) },
           { label: 'Zinsen', wert: euro(z.zinsen) },
+          { label: 'in heutiger Kaufkraft', wert: `≈ ${euro(real)}` },
           ...(z.verdopplung ? [{ label: 'verdoppelt nach', wert: `≈ ${zahlFmt(z.verdopplung, 1)} Jahren` }] : []),
         ],
         balken: z.endwert > 0 ? { anteil: z.eingezahlt / z.endwert, links: 'eingezahlt', rechts: 'Zinsen' } : undefined,
       };
     }
     case 'geburtstag': {
-      const n = zahl(e.leute, 2, 100);
+      const n = zahl(e.leute, 2, 400);
       if (n === null) return null;
-      const p = geburtstag(Math.round(n));
+      const leute = Math.round(n);
+      const ich = e.modus === 'ich';
+      const pIch = (k: number) => 1 - Math.pow(364 / 365, k - 1);
+      const p = ich ? pIch(leute) : geburtstag(leute);
+      const grenze = fuenfzigAb(ich ? pIch : geburtstag);
+      const tipp = zahl(e.tipp, 0, 100);
+      const t = tippAuswertung(tipp, p * 100, (x) => `${zahlFmt(x)} %`);
+      const einordnung =
+        t.satz ??
+        (ich
+          ? leute < grenze
+            ? `Damit jemand genau an DEINEM Tag feiert, braucht es ${grenze} Leute für 50 %.`
+            : `Ab ${grenze} Leuten ist es wahrscheinlicher als nicht, dass einer mit dir feiert.`
+          : leute < grenze
+            ? waehle(
+                [
+                  `Ab ${grenze} Leuten kippt es über 50 %.`,
+                  `Noch ${grenze - leute} Leute mehr, dann ist es eher ja als nein.`,
+                ],
+                e,
+              )
+            : p > 0.99
+              ? 'Praktisch sicher – und trotzdem tippen die meisten auf viel mehr Leute.'
+              : `Schon ab ${grenze} Leuten ist es eher ja als nein. Für DEINEN Tag bräuchte es ${fuenfzigAb(pIch)}.`);
       return {
         gross: `${zahlFmt(p * 100, 1)} %`,
-        satz: `dass unter ${Math.round(n)} Leuten zwei am selben Tag Geburtstag haben`,
-        details: [{ label: 'Paare im Raum', wert: zahlFmt((n * (n - 1)) / 2) }],
+        satz: ich
+          ? `dass unter ${leute} Leuten jemand am selben Tag wie du Geburtstag hat`
+          : `dass unter ${leute} Leuten zwei am selben Tag Geburtstag haben`,
+        einordnung,
+        details: [
+          ...(ich ? [] : [{ label: 'Paare im Raum', wert: zahlFmt((leute * (leute - 1)) / 2) }]),
+          { label: '50 % ab', wert: `${grenze} Leuten` },
+          ...t.detail,
+        ],
       };
     }
     case 'reaktion': {
@@ -380,11 +513,27 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       if (liste.length < 1 || liste.length > 10 || liste.some((v) => v === null)) return null;
       const ms = liste as number[];
       const schnitt = ms.reduce((a, b) => a + b, 0) / ms.length;
+      const spanne = Math.max(...ms) - Math.min(...ms);
+      const trend = ms.length >= 3 ? ms[ms.length - 1] - ms[0] : 0;
+      // Nur Vergleiche mit sich selbst: eine "normale" Reaktionszeit haengt an
+      // Geraet, Bildschirm und Browser - ein Richtwert waere hier geraten.
+      const einordnung =
+        ms.length < 3
+          ? 'Mehr Runden, dann sieht man, wie gleichmäßig du bist.'
+          : spanne < schnitt * 0.15
+            ? waehle(['Sehr gleichmäßig – kaum Ausreißer.', 'Wie ein Uhrwerk: alle Runden fast gleich.'], e)
+            : trend < -schnitt * 0.15
+              ? 'Mit jeder Runde schneller – eingespielt.'
+              : trend > schnitt * 0.15
+                ? 'Zum Ende hin langsamer – die Konzentration lässt nach.'
+                : `Zwischen bester und schlechtester Runde liegen ${zahlFmt(spanne)} ms.`;
       return {
         gross: `${zahlFmt(schnitt)} ms`,
         satz: 'Reaktionszeit im Schnitt',
+        einordnung,
         details: [
           { label: 'bester Versuch', wert: `${zahlFmt(Math.min(...ms))} ms` },
+          { label: 'Spanne', wert: `${zahlFmt(spanne)} ms` },
           { label: 'Versuche', wert: String(ms.length) },
         ],
       };
@@ -393,18 +542,38 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       const anker = zahl(e.anker, 10, 65);
       const schaetzung = zahl(e.schaetzung, 0, 100);
       if ((anker !== 10 && anker !== 65) || schaetzung === null) return null;
-      const g = (x: unknown) => {
+      const lesen = (x: unknown) => {
         const o = x as { n?: unknown; schnitt?: unknown } | undefined;
         const n = zahl(o?.n, 0, 1e6);
         const s = zahl(o?.schnitt, 0, 100);
-        return n && s !== null ? `${zahlFmt(s)} % (${zahlFmt(n)} Leute)` : '–';
+        return n && s !== null ? { n, s } : null;
       };
+      const niedrig = lesen(e.niedrig);
+      const hoch = lesen(e.hoch);
+      const g = (x: { n: number; s: number } | null) => (x ? `${zahlFmt(x.s)} % (${zahlFmt(x.n)} Leute)` : '–');
+      const abstand = niedrig && hoch ? hoch.s - niedrig.s : null;
+      const naeherAmAnker = Math.abs(schaetzung - anker) < Math.abs(schaetzung - (anker === 10 ? 65 : 10));
+      const einordnung =
+        abstand === null
+          ? 'Noch zu wenige Antworten für einen Vergleich.'
+          : abstand > 8
+            ? waehle(
+                [
+                  `Wer die 65 sah, schätzt im Schnitt ${zahlFmt(abstand)} Punkte höher – wegen einer Zufallszahl.`,
+                  `${zahlFmt(abstand)} Punkte Unterschied, nur durch das Rad.`,
+                ],
+                e,
+              )
+            : abstand > 2
+              ? `Ein kleiner Sog: ${zahlFmt(abstand)} Punkte Unterschied zwischen den Gruppen.`
+              : 'Hier hat das Rad kaum gewirkt – die Gruppen liegen fast gleich.';
       return {
         gross: `${zahlFmt(schaetzung)} %`,
-        satz: `geschätzt, nachdem das Rad auf ${anker} stand`,
+        satz: `geschätzt, nachdem das Rad auf ${anker} stand${naeherAmAnker ? ' – näher an der Zahl vom Rad als an der anderen' : ''}`,
+        einordnung,
         details: [
-          { label: 'Schnitt nach 10', wert: g(e.niedrig) },
-          { label: 'Schnitt nach 65', wert: g(e.hoch) },
+          { label: 'Schnitt nach 10', wert: g(niedrig) },
+          { label: 'Schnitt nach 65', wert: g(hoch) },
         ],
       };
     }
@@ -412,10 +581,37 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       const h = zahl(e.stunde, 0, 23);
       const m = zahl(e.minute, 0, 59);
       if (h === null || m === null) return null;
+      const uhr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      if (e.modus === 'bett') {
+        // Umgekehrt: jetzt ins Bett -> wann aufwachen, am Ende eines Zyklus.
+        const [erste, ...rest] = aufwachzeiten(h, m);
+        return {
+          gross: erste.uhrzeit,
+          satz: `aufstehen nach ${erste.zyklen} Zyklen (${zahlFmt(erste.stunden, 1)} h), ins Bett um ${uhr}`,
+          einordnung: waehle(
+            [
+              'Lieber am Ende eines Zyklus aufwachen als eine halbe Stunde später mitten drin.',
+              'Wer um diese Zeit aufsteht, erwischt eher einen leichten Schlafabschnitt.',
+            ],
+            e,
+          ),
+          details: rest.map((z) => ({ label: `${z.zyklen} Zyklen`, wert: z.uhrzeit })),
+        };
+      }
       const [erste, ...rest] = schlafzeiten(h, m);
       return {
         gross: erste.uhrzeit,
-        satz: `ins Bett für ${erste.zyklen} Zyklen (${zahlFmt(erste.stunden, 1)} h), Wecker ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
+        satz: `ins Bett für ${erste.zyklen} Zyklen (${zahlFmt(erste.stunden, 1)} h), Wecker ${uhr}`,
+        einordnung:
+          h < 6
+            ? 'Früher Wecker – dann zählt jeder Zyklus.'
+            : waehle(
+                [
+                  `Schaffst du ${erste.uhrzeit} nicht, ist ${rest[0].uhrzeit} besser als irgendwas dazwischen.`,
+                  'Fünf Zyklen sind der Notfallplan, nicht der Normalfall.',
+                ],
+                e,
+              ),
         details: rest.map((z) => ({ label: `${z.zyklen} Zyklen`, wert: z.uhrzeit })),
       };
     }
@@ -425,9 +621,23 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       if (woerter === null || sekunden === null) return null;
       const wpm = woerter / (sekunden / 60);
       if (wpm < 30 || wpm > 1_500) return null;
+      // 240 Woerter/Min = 4 Woerter/s: ab da zaehlt die App eine Karte als
+      // gelesen (0070). Eine eigene Zahl, keine Norm von aussen.
+      const einordnung =
+        e.richtig === false && wpm > 240
+          ? 'Schnell – aber die Frage ging daneben. Vielleicht einen Tick langsamer.'
+          : e.richtig === true && wpm > 240
+            ? 'Schnell UND verstanden.'
+            : wpm > 240
+              ? 'Schneller als die 4 Wörter pro Sekunde, ab denen eine Karte als gelesen zählt.'
+              : waehle(
+                  ['Gründlich gelesen – Tempo ist nicht alles.', 'Ruhiges Tempo. Was hängen bleibt, zählt mehr.'],
+                  e,
+                );
       return {
         gross: `${zahlFmt(wpm)} Wörter/Min`,
         satz: e.richtig === true ? 'und die Frage danach richtig' : e.richtig === false ? 'die Frage danach war daneben' : 'Lesetempo',
+        einordnung,
         details: [
           { label: 'Wörter', wert: zahlFmt(woerter) },
           { label: 'Zeit', wert: dauer(sekunden) },
@@ -438,10 +648,24 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       const ziel = LICHT_ZIELE.find((z) => z.id === e.ziel);
       if (!ziel) return null;
       const s = ziel.km / LICHT_C;
+      const tipp = zahl(e.tipp, 0, 100_000);
+      const t = tippAuswertung(tipp, s, dauer);
+      const einordnung =
+        t.satz ??
+        (s < 2
+          ? 'Gut eine Sekunde – und trotzdem schon ein Blick in die Vergangenheit.'
+          : waehle(
+              [
+                `Was du siehst, ist ${dauer(s)} alt.`,
+                `Wäre es dort gerade weg, würdest du es ${dauer(s)} lang nicht merken.`,
+              ],
+              e,
+            ));
       return {
         gross: dauer(s),
         satz: `braucht Licht ${ziel.satz}`,
-        details: [{ label: 'Entfernung', wert: `${zahlFmt(ziel.km)} km` }],
+        einordnung,
+        details: [{ label: 'Entfernung', wert: `${zahlFmt(ziel.km)} km` }, ...t.detail],
       };
     }
     case 'inflation': {
@@ -451,26 +675,77 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       if (betrag === null || von === null || bis === null) return null;
       if (!Number.isInteger(von) || !Number.isInteger(bis) || bis <= von) return null;
       const r = inflation(betrag, von, bis);
+      const tipp = zahl(e.tipp, 0, 1_000_000);
+      const t = tippAuswertung(tipp, r.heute, euro);
+      // Welcher Teil der Teuerung kam aus den Jahren ueber 5 %? Log-Anteile,
+      // damit sich die Jahre sauber addieren.
+      let hochLog = 0;
+      for (let j = von + 1; j <= bis; j++) if (r.raten[j] > 5) hochLog += Math.log(VPI_AT[j] / VPI_AT[j - 1]);
+      const anteilHoch = r.gesamt > 0 ? hochLog / Math.log(VPI_AT[bis] / VPI_AT[von]) : 0;
+      const einordnung =
+        t.satz ??
+        (anteilHoch > 0.3
+          ? `${zahlFmt(anteilHoch * 100)} % dieser Teuerung kamen aus den Jahren mit über 5 %.`
+          : r.proJahr < 2
+            ? 'Ruhige Jahre: im Schnitt unter 2 % pro Jahr.'
+            : waehle(
+                [
+                  `Jedes Jahr ein bisschen – über ${bis - von} Jahre wird daraus ${zahlFmt(r.gesamt)} %.`,
+                  `Für ${euro(betrag)} bekommst du heute, was ${von} ${euro(r.kaufkraft)} gekostet hat.`,
+                ],
+                e,
+              ));
       return {
         gross: `≈ ${euro(r.heute)}`,
         satz: `im Jahr ${bis} für das, was ${von} ${euro(betrag)} gekostet hat`,
+        einordnung,
         details: [
           { label: 'teurer insgesamt', wert: `${zahlFmt(r.gesamt, 1)} %` },
           { label: 'im Schnitt pro Jahr', wert: `${zahlFmt(r.proJahr, 1)} %` },
-          { label: `${euro(betrag)} (${bis}) im Jahr ${von}`, wert: euro(r.kaufkraft) },
           { label: 'teuerstes Jahr dazwischen', wert: `${r.spitze.jahr} (${zahlFmt(r.spitze.rate, 1)} %)` },
+          ...t.detail,
         ],
         balken: { anteil: 1 / (1 + r.gesamt / 100), links: 'damals', rechts: 'Teuerung' },
       };
     }
     case 'netto': {
-      const brutto = zahl(e.brutto, 100, 10_000);
+      const stunde = e.modus === 'stunde';
+      let brutto: number | null;
+      let stundenlohn: number | null = null;
+      let stunden: number | null = null;
+      if (stunde) {
+        stundenlohn = zahl(e.lohn, 5, 100);
+        stunden = zahl(e.stunden, 1, 60);
+        brutto = stundenlohn !== null && stunden !== null ? stundenlohn * stunden * WOCHEN_PRO_MONAT : null;
+        if (brutto !== null && (brutto < 50 || brutto > 10_000)) brutto = null;
+      } else {
+        brutto = zahl(e.brutto, 100, 10_000);
+      }
       if (brutto === null) return null;
       const n = netto2026(brutto);
+      // Grenzbelastung: was von 100 EUR MEHR brutto im Monat uebrig bliebe -
+      // ehrlicher als der Durchschnitt, wenn es um eine Gehaltserhoehung geht.
+      const mehr = netto2026(brutto + 100).monat - n.monat;
+      const einordnung =
+        n.lst === 0 && n.sv === 0
+          ? 'Geringfügig: keine Beiträge, keine Lohnsteuer – brutto ist hier netto.'
+          : n.lst === 0
+            ? `Noch keine Lohnsteuer. Von 100 € mehr brutto blieben ${euro(mehr)}.`
+            : waehle(
+                [
+                  `Von 100 € mehr brutto blieben dir ${euro(mehr)}.`,
+                  `Jeder zusätzliche Euro brutto bringt hier etwa ${zahlFmt(mehr)} Cent netto.`,
+                ],
+                e,
+              );
       return {
         gross: `≈ ${euro(n.monat)}`,
-        satz: `netto im Monat von ${euro(brutto)} brutto (Österreich 2026)`,
+        satz: stunde
+          ? `netto im Monat bei ${zahlFmt(stundenlohn ?? 0, 2)} € pro Stunde und ${zahlFmt(stunden ?? 0)} Stunden pro Woche (Österreich 2026)`
+          : `netto im Monat von ${euro(brutto)} brutto (Österreich 2026)`,
+        einordnung,
         details: [
+          ...(stunde ? [{ label: 'brutto im Monat', wert: euro(brutto) }] : []),
           { label: 'Sozialversicherung', wert: euro(n.sv) },
           { label: 'Lohnsteuer', wert: euro(n.lst) },
           { label: '13. und 14. netto, je', wert: euro(n.szNetto) },
@@ -483,14 +758,42 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       const km = zahl(e.km, 1, 20_000);
       const mittel = CO2_MITTEL.find((m) => m.id === e.mittel);
       if (km === null || !mittel) return null;
+      const retour = e.retour === true;
+      const personen = zahl(e.personen, 1, 9) ?? null;
+      const strecke = retour ? km * 2 : km;
+      const eigen = co2ProPerson(mittel.id, strecke, personen);
+      const bahn = co2Kg('bahn', strecke);
+      const tipp = zahl(e.tipp, 0, 100_000);
+      const t = tippAuswertung(tipp, eigen, kg);
       const vergleich = (['auto', 'bahn', 'flug'] as const).filter((id) => id !== mittel.id);
+      const faktor = bahn > 0 ? eigen / bahn : 0;
+      const einordnung =
+        t.satz ??
+        (mittel.id === 'rad'
+          ? 'Im Betrieb kein Abgas – die Tabelle zählt hier nichts.'
+          : mittel.id === 'bahn'
+            ? waehle(
+                [
+                  `Mit dem Auto wären es ${zahlFmt(co2Kg('auto', strecke) / bahn)}-mal so viel.`,
+                  'Das sauberste motorisierte Verkehrsmittel in der Tabelle.',
+                ],
+                e,
+              )
+            : faktor >= 2
+              ? `${zahlFmt(faktor)}-mal so viel wie mit der Bahn.`
+              : `Knapp über der Bahn – ${zahlFmt(faktor, 1)}-mal so viel.`);
+      const autoGeteilt = (mittel.id === 'auto' || mittel.id === 'eauto') && personen !== null;
       return {
-        gross: kg(co2Kg(mittel.id, km)),
-        satz: `CO₂ für ${zahlFmt(km)} km – ${mittel.label}, pro Person`,
-        details: vergleich.map((id) => ({
-          label: CO2_MITTEL.find((m) => m.id === id)?.label ?? id,
-          wert: kg(co2Kg(id, km)),
-        })),
+        gross: kg(eigen),
+        satz: `CO₂ für ${zahlFmt(strecke)} km${retour ? ' hin und zurück' : ''} – ${mittel.label}${autoGeteilt ? ` mit ${personen} ${personen === 1 ? 'Person' : 'Leuten'}` : ''}, pro Person`,
+        einordnung,
+        details: [
+          ...vergleich.map((id) => ({
+            label: CO2_MITTEL.find((m) => m.id === id)?.label ?? id,
+            wert: kg(co2Kg(id, strecke)),
+          })),
+          ...t.detail,
+        ],
       };
     }
     default:

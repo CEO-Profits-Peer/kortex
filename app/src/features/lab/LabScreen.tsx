@@ -135,6 +135,106 @@ function Ergebnis({ w, e, nochmal }: { w: Werkzeug; e: Eingaben | null; nochmal?
   );
 }
 
+/** Zwei bis vier Modi eines Werkzeugs als Chips - ein Wort je Chip. */
+function Umschalter<T extends string>({
+  w,
+  wert,
+  optionen,
+  onChange,
+}: {
+  w: Werkzeug;
+  wert: T;
+  optionen: { id: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={styles.chips}>
+      {optionen.map((o) => (
+        <Pressable
+          key={o.id}
+          onPress={() => {
+            haptics.select();
+            onChange(o.id);
+          }}
+          style={[styles.chip, wert === o.id && { borderColor: w.farbe, backgroundColor: color.bg }]}
+        >
+          <Text style={[styles.chipText, wert === o.id && { color: w.farbe }]}>{o.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * "Erst schätzen": das Ergebnis bleibt verdeckt, bis man getippt und
+ * aufgelöst hat. Aendert sich eine Eingabe, ist der Tipp wieder offen -
+ * sonst gaelte er fuer eine andere Frage.
+ */
+function useTipp(schluessel: string, start: number) {
+  const [an, setAn] = useState(false);
+  const [tipp, setTipp] = useState(start);
+  const [offen, setOffen] = useState(false);
+  const zuletzt = useRef(schluessel);
+  useEffect(() => {
+    if (zuletzt.current !== schluessel) {
+      zuletzt.current = schluessel;
+      setOffen(false);
+    }
+  }, [schluessel]);
+  return {
+    an,
+    tipp,
+    setTipp,
+    offen,
+    umschalten: () => {
+      haptics.select();
+      setAn((a) => !a);
+      setOffen(false);
+    },
+    aufloesen: () => {
+      haptics.medium();
+      setOffen(true);
+    },
+    /** Ergebnis sichtbar? */
+    zeigen: !an || offen,
+    /** Fuer die Eingaben: der Tipp zaehlt nur, wenn er aufgeloest wurde. */
+    extra: an && offen ? { tipp } : {},
+  };
+}
+
+function TippFeld({
+  w,
+  t,
+  min,
+  max,
+  step,
+  fmt,
+}: {
+  w: Werkzeug;
+  t: ReturnType<typeof useTipp>;
+  min: number;
+  max: number;
+  step?: number;
+  fmt: (n: number) => string;
+}) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <Pressable onPress={t.umschalten} style={styles.tippSchalter} accessibilityRole="switch" accessibilityState={{ checked: t.an }}>
+        <View style={[styles.tippPunkt, t.an && { backgroundColor: w.farbe, borderColor: w.farbe }]} />
+        <Text style={styles.chipText}>Schätzen</Text>
+      </Pressable>
+      {t.an ? (
+        <>
+          <Regler label="Dein Tipp" wert={fmt(t.tipp)}>
+            <Slider min={min} max={max} step={step} value={Math.min(max, Math.max(min, t.tipp))} onChange={t.setTipp} tint={w.farbe} />
+          </Regler>
+          {!t.offen ? <Button label="Auflösen" accent={w.farbe} onPress={t.aufloesen} /> : null}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 // --- Zinseszins --------------------------------------------------------------------
 
 function Zinseszins({ w }: { w: Werkzeug }) {
@@ -170,18 +270,31 @@ function Zinseszins({ w }: { w: Werkzeug }) {
 
 function Geburtstag({ w }: { w: Werkzeug }) {
   const [leute, setLeute] = useState(23);
+  const [modus, setModus] = useState<'paar' | 'ich'>('paar');
+  const t = useTipp(`${leute}-${modus}`, 50);
   return (
     <>
       <Flaeche>
+        <Umschalter
+          w={w}
+          wert={modus}
+          optionen={[
+            { id: 'paar', label: 'Paar' },
+            { id: 'ich', label: 'Ich' },
+          ]}
+          onChange={setModus}
+        />
         <Regler label="Leute im Raum" wert={String(leute)}>
-          <Slider min={2} max={100} value={leute} onChange={setLeute} tint={w.farbe} />
+          <Slider min={2} max={modus === 'ich' ? 400 : 100} value={leute} onChange={setLeute} tint={w.farbe} />
         </Regler>
         <Text style={styles.hinweis}>
-          Die meisten tippen auf über 180 Leute, bis zwei am selben Tag Geburtstag haben. Zieh den Regler
-          und schau, wann die 50 % fallen.
+          {modus === 'ich'
+            ? 'Wie viele Leute braucht es, bis einer genau an DEINEM Tag Geburtstag hat? Das ist eine ganz andere Frage.'
+            : 'Die meisten tippen auf viel zu viele Leute, bis zwei am selben Tag Geburtstag haben. Zieh den Regler und schau, wann die 50 % fallen.'}
         </Text>
+        <TippFeld w={w} t={t} min={0} max={100} fmt={(n) => `${n} %`} />
       </Flaeche>
-      <Ergebnis w={w} e={{ leute }} />
+      {t.zeigen ? <Ergebnis w={w} e={{ leute, modus, ...t.extra }} /> : null}
     </>
   );
 }
@@ -371,12 +484,35 @@ function Anker({ w }: { w: Werkzeug }) {
 // --- Schlaf -----------------------------------------------------------------------------------
 
 function Schlaf({ w }: { w: Werkzeug }) {
+  const [modus, setModus] = useState<'wecker' | 'bett'>('wecker');
   const [stunde, setStunde] = useState(6);
   const [minute, setMinute] = useState(30);
   return (
     <>
       <Flaeche>
-        <Regler label="Wecker" wert={`${String(stunde).padStart(2, '0')}:${String(minute).padStart(2, '0')}`}>
+        <Umschalter
+          w={w}
+          wert={modus}
+          optionen={[
+            { id: 'wecker', label: 'Wecker' },
+            { id: 'bett', label: 'Bettzeit' },
+          ]}
+          onChange={(m) => {
+            setModus(m);
+            // Sinnvolle Startzeit je Richtung: morgens aufwachen, abends ins Bett.
+            if (m === 'bett') {
+              setStunde(22);
+              setMinute(30);
+            } else {
+              setStunde(6);
+              setMinute(30);
+            }
+          }}
+        />
+        <Regler
+          label={modus === 'bett' ? 'Ins Bett um' : 'Wecker'}
+          wert={`${String(stunde).padStart(2, '0')}:${String(minute).padStart(2, '0')}`}
+        >
           <Slider min={0} max={23} value={stunde} onChange={setStunde} tint={w.farbe} format={(n) => `${n} Uhr`} />
           <Slider min={0} max={55} step={5} value={minute} onChange={setMinute} tint={w.farbe} format={(n) => `:${String(n).padStart(2, '0')}`} />
         </Regler>
@@ -385,7 +521,7 @@ function Schlaf({ w }: { w: Werkzeug }) {
           keine Messung – dein eigener Rhythmus kann abweichen.
         </Text>
       </Flaeche>
-      <Ergebnis w={w} e={{ stunde, minute }} />
+      <Ergebnis w={w} e={{ stunde, minute, ...(modus === 'bett' ? { modus } : {}) }} />
     </>
   );
 }
@@ -519,6 +655,7 @@ function Lesetempo({ w }: { w: Werkzeug }) {
 
 function Licht({ w }: { w: Werkzeug }) {
   const [ziel, setZiel] = useState<string>('sonne');
+  const t = useTipp(ziel, 60);
   return (
     <>
       <Flaeche>
@@ -540,8 +677,16 @@ function Licht({ w }: { w: Werkzeug }) {
         <Text style={styles.hinweis}>
           Nichts ist schneller als Licht. Trotzdem sieht man die Sonne immer so, wie sie vor ein paar Minuten war.
         </Text>
+        <TippFeld
+          w={w}
+          t={t}
+          min={0}
+          max={1_800}
+          step={5}
+          fmt={(n) => (n < 60 ? `${n} s` : `${Math.floor(n / 60)} min${n % 60 ? ` ${n % 60} s` : ''}`)}
+        />
       </Flaeche>
-      <Ergebnis w={w} e={{ ziel }} />
+      {t.zeigen ? <Ergebnis w={w} e={{ ziel, ...t.extra }} /> : null}
     </>
   );
 }
@@ -552,6 +697,7 @@ function Inflation({ w }: { w: Werkzeug }) {
   const [betrag, setBetrag] = useState(100);
   const [von, setVon] = useState(2000);
   const [bis, setBis] = useState(VPI_LETZTES);
+  const t = useTipp(`${betrag}-${von}-${bis}`, betrag);
   return (
     <>
       <Flaeche>
@@ -577,8 +723,9 @@ function Inflation({ w }: { w: Werkzeug }) {
           Der Preisindex misst einen Warenkorb, keinen einzelnen Preis. Mieten oder Lebensmittel können schneller
           gestiegen sein als der Schnitt.
         </Text>
+        <TippFeld w={w} t={t} min={betrag} max={betrag * 3} step={Math.max(1, betrag / 50)} fmt={(n) => `${Math.round(n).toLocaleString('de-AT')} €`} />
       </Flaeche>
-      <Ergebnis w={w} e={{ betrag, von, bis }} />
+      {t.zeigen ? <Ergebnis w={w} e={{ betrag, von, bis, ...t.extra }} /> : null}
     </>
   );
 }
@@ -586,19 +733,43 @@ function Inflation({ w }: { w: Werkzeug }) {
 // --- Brutto -> Netto -------------------------------------------------------------------------------
 
 function Netto({ w }: { w: Werkzeug }) {
+  const [modus, setModus] = useState<'monat' | 'stunde'>('monat');
   const [brutto, setBrutto] = useState(2_500);
+  const [lohn, setLohn] = useState(14);
+  const [stunden, setStunden] = useState(20);
+  const e = modus === 'stunde' ? { modus, lohn, stunden } : { brutto };
   return (
     <>
       <Flaeche>
-        <Regler label="Brutto im Monat" wert={brutto.toLocaleString('de-AT')} einheit="€">
-          <Slider min={300} max={8_000} step={50} value={brutto} onChange={setBrutto} tint={w.farbe} />
-        </Regler>
+        <Umschalter
+          w={w}
+          wert={modus}
+          optionen={[
+            { id: 'monat', label: 'Monatslohn' },
+            { id: 'stunde', label: 'Stundenlohn' },
+          ]}
+          onChange={setModus}
+        />
+        {modus === 'monat' ? (
+          <Regler label="Brutto im Monat" wert={brutto.toLocaleString('de-AT')} einheit="€">
+            <Slider min={300} max={8_000} step={50} value={brutto} onChange={setBrutto} tint={w.farbe} />
+          </Regler>
+        ) : (
+          <>
+            <Regler label="Pro Stunde" wert={lohn.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit="€">
+              <Slider min={5} max={60} step={0.5} value={lohn} onChange={setLohn} tint={w.farbe} />
+            </Regler>
+            <Regler label="Stunden pro Woche" wert={String(stunden)}>
+              <Slider min={2} max={45} value={stunden} onChange={setStunden} tint={w.farbe} />
+            </Regler>
+          </>
+        )}
         <Text style={styles.hinweis}>
-          Angestellt in Österreich, 14 Gehälter. Bei kleinen Einkommen holt die Arbeitnehmerveranlagung oft noch
-          Geld zurück – das ist hier nicht drin.
+          Angestellt in Österreich, 14 Gehälter{modus === 'stunde' ? ', ein Monat = 52 ÷ 12 Wochen' : ''}. Bei kleinen
+          Einkommen holt die Arbeitnehmerveranlagung oft noch Geld zurück – das ist hier nicht drin.
         </Text>
       </Flaeche>
-      <Ergebnis w={w} e={{ brutto }} />
+      <Ergebnis w={w} e={e} />
     </>
   );
 }
@@ -614,34 +785,40 @@ const kmAus = (pos: number) => {
 function Co2({ w }: { w: Werkzeug }) {
   const [pos, setPos] = useState(50);
   const [mittel, setMittel] = useState<Co2MittelId>('auto');
+  const [retour, setRetour] = useState(false);
+  const [personen, setPersonen] = useState(1);
   const km = kmAus(pos);
+  const auto = mittel === 'auto' || mittel === 'eauto';
+  const t = useTipp(`${km}-${mittel}-${retour}-${auto ? personen : ''}`, 10);
+  const e = { km, mittel, ...(retour ? { retour } : {}), ...(auto ? { personen } : {}), ...t.extra };
   return (
     <>
       <Flaeche>
         <Regler label="Strecke" wert={km.toLocaleString('de-AT')} einheit="km">
           <Slider min={0} max={100} value={pos} onChange={setPos} tint={w.farbe} format={(p) => `${kmAus(p).toLocaleString('de-AT')} km`} />
         </Regler>
+        <Umschalter
+          w={w}
+          wert={retour ? 'retour' : 'einfach'}
+          optionen={[
+            { id: 'einfach', label: 'Einfach' },
+            { id: 'retour', label: 'Retour' },
+          ]}
+          onChange={(v) => setRetour(v === 'retour')}
+        />
         <Text style={styles.reglerLabel}>Womit?</Text>
-        <View style={styles.chips}>
-          {CO2_MITTEL.map((m) => (
-            <Pressable
-              key={m.id}
-              onPress={() => {
-                haptics.select();
-                setMittel(m.id);
-              }}
-              style={[styles.chip, mittel === m.id && { borderColor: w.farbe, backgroundColor: color.bg }]}
-            >
-              <Text style={[styles.chipText, mittel === m.id && { color: w.farbe }]}>{m.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <Umschalter w={w} wert={mittel} optionen={CO2_MITTEL.map((m) => ({ id: m.id, label: m.label }))} onChange={setMittel} />
+        {auto ? (
+          <Regler label="Leute im Auto" wert={String(personen)}>
+            <Slider min={1} max={5} value={personen} onChange={setPersonen} tint={w.farbe} />
+          </Regler>
+        ) : null}
         <Text style={styles.hinweis}>
-          Pro Person und im Schnitt besetzt: ein Auto mit 1,13 Leuten, ein Zug teilt seinen Strom auf
-          viele Fahrgäste auf.
+          Pro Person. Züge und Busse im Schnitt besetzt; beim Auto zählt, wie viele wirklich mitfahren.
         </Text>
+        <TippFeld w={w} t={t} min={0} max={Math.max(20, Math.round(km * (retour ? 2 : 1) * 0.3))} fmt={(n) => `${n} kg`} />
       </Flaeche>
-      <Ergebnis w={w} e={{ km, mittel }} />
+      {t.zeigen ? <Ergebnis w={w} e={e} /> : null}
     </>
   );
 }
@@ -703,4 +880,6 @@ const styles = StyleSheet.create({
     borderColor: color.ink.faint,
   },
   chipText: { ...type.label, fontSize: 14, color: color.ink.mid },
+  tippSchalter: { flexDirection: 'row', alignItems: 'center', gap: space.sm, alignSelf: 'flex-start', paddingVertical: 4 },
+  tippPunkt: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: color.ink.low },
 });
