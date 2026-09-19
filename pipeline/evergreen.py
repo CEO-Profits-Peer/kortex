@@ -270,6 +270,16 @@ def main() -> int:
             if e["herkunft"] == "wunsch" and e["language"] in cfg.languages and _noch_offen(e)
         ]
 
+        # Lokale Karten (0119): Themen je Bundesland/Kanton/Provinz. Sie
+        # laufen mit den anderen durch die Bestandsreihenfolge (local.* ist
+        # duenn, also frueh dran) und bekommen unten ihren region_code.
+        regional: list[Topic] = [
+            Topic(category_id=e["category_id"], language=e["language"], title=e["title"])
+            for e in gedaechtnis.values()
+            if e["herkunft"] == "regional" and e["language"] in cfg.languages and _noch_offen(e)
+            and (not args.category or e["category_id"] == args.category)
+        ]
+
         if args.nur_entdecken:
             bilanz.stopp = "nur_entdecken"
             bilanz.extra["neu_gefunden"] = neu_gefunden
@@ -278,7 +288,7 @@ def main() -> int:
             return 0
 
         entdeckte_titel = {(t.language, t.title) for t in entdeckt}
-        topics = liste + entdeckt
+        topics = liste + entdeckt + regional
         ergebnisse: list[dict] = []
 
         def merken(t: Topic, status: str, versuch: bool) -> None:
@@ -288,7 +298,7 @@ def main() -> int:
             alt = eintrag(t) or {}
             ergebnisse.append({
                 "language": t.language, "title": t.title, "category_id": t.category_id,
-                "herkunft": alt.get("herkunft") if alt.get("herkunft") == "wunsch"
+                "herkunft": alt.get("herkunft") if alt.get("herkunft") in ("wunsch", "regional")
                             else "entdeckt" if (t.language, t.title) in entdeckte_titel else "liste",
                 "status": status,
                 "versuche": int(alt.get("versuche") or 0) + (1 if versuch else 0),
@@ -436,6 +446,10 @@ def main() -> int:
                 # eine Jahreszahl stand.
                 row["content_type"] = "knowledge"
                 row["expires_at"] = None
+                # 0119: eine Karte ueber den Tiroler Landtag nur fuer Tirol.
+                region = (eintrag(topic) or {}).get("region_code")
+                if region:
+                    row["region_code"] = region
                 rows.append(row)
                 stats["accepted"] += 1
                 merken(topic, "karte", versuch=True)

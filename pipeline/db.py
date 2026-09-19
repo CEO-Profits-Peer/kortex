@@ -299,7 +299,7 @@ class Database:
                 rows = self._get(
                     "/topic_memory",
                     {
-                        "select": "language,title,category_id,herkunft,status,versuche,score,freigabe_id",
+                        "select": "language,title,category_id,herkunft,status,versuche,score,freigabe_id,region_code",
                         "order": "language.asc,title.asc",
                         "limit": "1000",
                         "offset": str(page * 1000),
