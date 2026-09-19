@@ -22,6 +22,7 @@ import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { LabErgebnis } from './LabErgebnis';
+import { ReaktionVerlauf, reaktionMerken } from './ReaktionVerlauf';
 import {
   CO2_MITTEL,
   LICHT_ZIELE,
@@ -366,6 +367,7 @@ const RUNDEN = 5;
 function Reaktion({ w }: { w: Werkzeug }) {
   const [phase, setPhase] = useState<'bereit' | 'warten' | 'jetzt' | 'zufrueh' | 'fertig'>('bereit');
   const [versuche, setVersuche] = useState<number[]>([]);
+  const [verlauf, setVerlauf] = useState<Parameters<typeof ReaktionVerlauf>[0]['liste'] | null>(null);
   const start = useRef(0);
   const uhr = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -395,6 +397,9 @@ function Reaktion({ w }: { w: Werkzeug }) {
       setVersuche(neu);
       haptics.light();
       setPhase(neu.length >= RUNDEN ? 'fertig' : 'bereit');
+      if (neu.length >= RUNDEN) {
+        void reaktionMerken(neu.reduce((a, b) => a + b, 0) / neu.length).then(setVerlauf);
+      }
     }
   };
 
@@ -435,6 +440,11 @@ function Reaktion({ w }: { w: Werkzeug }) {
             : undefined
         }
       />
+      {phase === 'fertig' && verlauf ? (
+        <Flaeche>
+          <ReaktionVerlauf liste={verlauf} farbe={w.farbe} />
+        </Flaeche>
+      ) : null}
     </>
   );
 }
