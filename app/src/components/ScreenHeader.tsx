@@ -106,16 +106,23 @@ export function ScreenHeader({
   // Bewegung ohne Anlass.
   const grosserTitel = useAnimatedStyle(() => {
     if (!scrollY) return { opacity: titleInBarOnly ? 0 : 1, transform: [{ translateY: 0 }] };
-    const p = interpolate(scrollY.value, [0, COLLAPSE_AT], [1, 0], Extrapolation.CLAMP);
+    // Die Hoehe geht erst mit, wenn die Schrift fast weg ist.
+    const p = interpolate(scrollY.value, [COLLAPSE_AT * 0.35, COLLAPSE_AT], [1, 0], Extrapolation.CLAMP);
+    // ERST verblassen, DANN zusammengehen (19.09.). Vorher liefen beide
+    // gleich schnell - und weil der Kasten den Text beschneidet, stand auf
+    // halbem Weg eine 30px-Ueberschrift da, der die untere Haelfte fehlt.
+    // Das sah kaputt aus, nicht animiert. Jetzt ist die Schrift weg, bevor
+    // die Kante sie erreicht.
+    const sichtbar = interpolate(scrollY.value, [0, COLLAPSE_AT * 0.45], [1, 0], Extrapolation.CLAMP);
     return {
-      opacity: p,
+      opacity: sichtbar,
       // Die Hoehe geht mit. Solange nichts gemessen ist (erster
       // Bildaufbau), bleibt sie automatisch - sonst waere die Kopfzeile
       // einen Wimpernschlag lang zusammengeklappt.
       height: bigHeight > 0 ? bigHeight * p : undefined,
       // Nach OBEN, nicht nach unten: der Titel geht dorthin, wo er
       // gleich klein wieder auftaucht. Bewegung, die den Blick fuehrt.
-      transform: [{ translateY: (1 - p) * -10 }],
+      transform: [{ translateY: (1 - sichtbar) * -10 }],
     };
   });
 
@@ -188,7 +195,11 @@ export function ScreenHeader({
 }
 
 const styles = StyleSheet.create({
-  root: { paddingHorizontal: space.xl },
+  // Die Kopfzeile liegt UEBER dem Inhalt (19.09.). Sie steht im Baum vor
+  // der Scrollflaeche, und ohne zIndex gewinnt die Flaeche: waehrend die
+  // Hoehe des grossen Titels zusammengeht, schob sich der Inhalt fuer einen
+  // Moment ueber die Ueberschrift - auf dem Telefon gut sichtbar.
+  root: { paddingHorizontal: space.xl, zIndex: 2, elevation: 2 },
 
   bar: {
     height: BAR_HEIGHT,
