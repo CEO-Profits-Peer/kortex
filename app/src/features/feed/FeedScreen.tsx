@@ -24,7 +24,8 @@ import { stopSpeech } from '@/lib/speech';
 import { api, configError, supabase } from '@/lib/supabase';
 import type { Category, ContentItem, Source } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { beiWiederOnline, useOnline } from '@/lib/online';
+import { beiWiederOnline, istNetzfehler, useOnline } from '@/lib/online';
+import { vorratAuffuellen, vorratNehmen } from '@/lib/vorrat';
 import { color, space, type } from '@/theme/tokens';
 
 import { FeedTutorial, useFeedTutorial } from './FeedTutorial';
@@ -261,9 +262,18 @@ export function FeedScreen({
       // Was schon in der Liste steht, mitschicken. Sonst liefert der
       // Server irgendwann genau das, was die App gleich wegwirft - und
       // der Feed sitzt fest.
-      const batch = await (loader
-        ? loader(BATCH_SIZE)
-        : api.getFeed(BATCH_SIZE, loadedIds.current));
+      let offline = false;
+      let batch: ContentItem[];
+      try {
+        batch = await (loader ? loader(BATCH_SIZE) : api.getFeed(BATCH_SIZE, loadedIds.current));
+      } catch (e) {
+        // Offline-Vorrat (lib/vorrat.ts): nur im Hauptfeed, nur bei
+        // Netzfehlern. Ein echter Serverfehler soll als Fehler sichtbar sein.
+        if (loader || !istNetzfehler(e)) throw e;
+        batch = await vorratNehmen(BATCH_SIZE, loadedIds.current);
+        if (batch.length === 0) throw e;
+        offline = true;
+      }
       analytics.feedLoaded(batch.length, Date.now() - started);
 
       // Ein kleiner Nachschlag statt einer Schema-Aenderung: welche dieser
@@ -273,7 +283,7 @@ export function FeedScreen({
       // Anordnung muss wissen, was eine Wiederholung ist, um sie nach
       // hinten zu schieben. Deshalb erst abwarten, dann anordnen.
       const seenNow = new Set<string>();
-      if (batch.length > 0) {
+      if (batch.length > 0 && !offline) {
         const { data: seen } = await supabase
           .from('user_content_state')
           .select('content_id')
@@ -316,8 +326,10 @@ export function FeedScreen({
         // Nachholen, was ich mit diesen Karten schon gemacht habe. Ohne das
         // sind Likes und Reposts nach jedem Neuladen unsichtbar - siehe
         // lib/contentState.ts.
-        void hydrateContentState(next.map((i) => i.id));
+        if (!offline) void hydrateContentState(next.map((i) => i.id));
         loadedIds.current = next.map((i) => i.id);
+        // Vorrat nachfuellen, solange Netz da ist - im Hintergrund.
+        if (!loader && !offline) void vorratAuffuellen(loadedIds.current);
         return next;
       });
       setError(null);
