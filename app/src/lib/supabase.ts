@@ -33,6 +33,13 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+/** 0113: Klassen-Ueberblick. quote ist null, solange weniger als `min` geantwortet haben. */
+export type Klassenstand = {
+  leute: number;
+  min: number;
+  karten: { content_id: string; title: string; gelesen: number; geantwortet: number; quote: number | null }[];
+};
+
 /** 0112: Lernpfade - Kurse in einer Reihenfolge. */
 export type Lernpfad = {
   id: string;
@@ -356,6 +363,13 @@ export const api = {
   async gsVerlassen(stapel: string): Promise<void> {
     const { error } = await supabase.rpc('gs_verlassen', { p_stapel: stapel });
     if (error) throw error;
+  },
+
+  /** 0113: anonymer Klassen-Ueberblick, nur fuer den, der den Stapel angelegt hat. */
+  async gsKlassenstand(stapel: string): Promise<Klassenstand> {
+    const { data, error } = await supabase.rpc('gs_klassenstand', { p_stapel: stapel });
+    if (error) throw error;
+    return data as Klassenstand;
   },
 
   /** 0109: naechste ungelesene Karten nach Bedeutung ("Dazu passt"). */

@@ -14,7 +14,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { proMeldung } from '@/lib/pro';
-import { api, type GruppenStapel } from '@/lib/supabase';
+import { api, type GruppenStapel, type Klassenstand } from '@/lib/supabase';
 import type { SearchHit } from '@/lib/types.db';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -172,6 +172,8 @@ function StapelKarte({
 }) {
   const [suche, setSuche] = useState('');
   const [treffer, setTreffer] = useState<SearchHit[]>([]);
+  const [stand, setStand] = useState<Klassenstand | null>(null);
+  const [standZeigen, setStandZeigen] = useState(false);
   const drin = new Set(s.karten.map((k) => k.content_id));
 
   useEffect(() => {
@@ -267,6 +269,29 @@ function StapelKarte({
             </Pressable>
           ))}
 
+          {s.meiner && s.karten.length > 0 ? (
+            <Pressable
+              onPress={() => {
+                haptics.select();
+                const an = !standZeigen;
+                setStandZeigen(an);
+                if (an) api.gsKlassenstand(s.id).then(setStand).catch((e) => zeige(fehlerText(e, 'Ging nicht')));
+              }}
+              style={styles.standKnopf}
+            >
+              <Icon name="chart" size={14} color={color.akzent} />
+              <Text style={styles.standKnopfText}>Überblick</Text>
+            </Pressable>
+          ) : null}
+          {s.meiner && standZeigen ? (
+            stand ? <KlassenUeberblick stand={stand} /> : <Laden />
+          ) : null}
+          {!s.meiner ? (
+            <Text style={styles.klein}>
+              Wer den Stapel angelegt hat, sieht anonym, wie gut die Gruppe die Karten kann – nie, wer was beantwortet hat.
+            </Text>
+          ) : null}
+
           <View style={styles.knoepfe}>
             {s.meiner && s.karten.length >= 2 ? (
               <View style={{ flex: 1 }}>
@@ -287,7 +312,48 @@ function StapelKarte({
   );
 }
 
+/** 0113: je Karte gelesen und Quote; unter `min` Antworten keine Quote. */
+function KlassenUeberblick({ stand }: { stand: Klassenstand }) {
+  const leute = Math.max(1, stand.leute);
+  // Schwaechste zuerst: das ist die Frage, mit der man hier hinschaut.
+  const karten = [...stand.karten].sort((a, b) => (a.quote ?? 101) - (b.quote ?? 101));
+  return (
+    <View style={styles.stand}>
+      <Text style={styles.klein}>
+        {stand.leute} {stand.leute === 1 ? 'Person' : 'Leute'} außer dir · anonym, Quote ab {stand.min} Antworten
+      </Text>
+      {karten.map((k) => {
+        const farbe =
+          k.quote == null ? color.ink.faint : k.quote >= 75 ? color.signal.success : k.quote >= 50 ? color.signal.warn : color.signal.error;
+        return (
+          <View key={k.content_id} style={styles.standZeile}>
+            <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+              <Text style={styles.zeileText} numberOfLines={1}>
+                {k.title}
+              </Text>
+              <View style={styles.standBalken}>
+                <View style={[styles.standFuellung, { width: `${Math.round((k.gelesen / leute) * 100)}%` }]} />
+              </View>
+              <Text style={styles.klein}>
+                {k.gelesen}/{stand.leute} gelesen · {k.geantwortet} geantwortet
+              </Text>
+            </View>
+            <Text style={[styles.quote, { color: farbe }]}>{k.quote == null ? '–' : `${k.quote}%`}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  stand: { gap: space.sm, paddingTop: space.xs },
+  standKnopf: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 },
+  standKnopfText: { ...type.label, fontSize: 13, color: color.akzent },
+  standZeile: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  standBalken: { height: 3, borderRadius: 2, backgroundColor: color.ink.faint, overflow: 'hidden' },
+  standFuellung: { height: 3, backgroundColor: color.akzent },
+  quote: { ...type.mono, fontSize: 15, minWidth: 44, textAlign: 'right' },
   body: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: space.lg },
   intro: { ...type.body, fontSize: 14, lineHeight: 20, color: color.ink.mid },
   karte: {
