@@ -20,7 +20,7 @@ const ZAHL = /\d{1,3}(?:[   .]\d{3})*(?:,\d+)?|\d+(?:,\d+)?/;
 function zerlegen(text: string) {
   // Uhrzeiten ("21:15") und Dauern aus zwei Teilen ("8 min 19 s") zaehlen
   // nicht: halbe Stunden oder "4 min 19 s" als Zwischenstand saehen falsch aus.
-  if (/\d:\d/.test(text) || /min/.test(text)) return null;
+  if (/\d:\d/.test(text) || / min /.test(text)) return null;
   const m = ZAHL.exec(text);
   if (!m) return null;
   const roh = m[0];
