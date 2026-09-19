@@ -299,7 +299,7 @@ class Database:
                 rows = self._get(
                     "/topic_memory",
                     {
-                        "select": "language,title,category_id,herkunft,status,versuche,score",
+                        "select": "language,title,category_id,herkunft,status,versuche,score,freigabe_id",
                         "order": "language.asc,title.asc",
                         "limit": "1000",
                         "offset": str(page * 1000),
@@ -328,6 +328,37 @@ class Database:
                 raise RuntimeError(
                     f"topic_memory: {response.status_code} {response.text[:300]}"
                 )
+
+    # --- Themenwuensche (0111) ------------------------------------------------
+
+    def freigegebene_wuensche(self) -> list[dict[str, Any]]:
+        """Im Kontrollzentrum freigegeben, aber noch ohne Artikel-Titel.
+
+        Leer, wenn 0111 fehlt - Wuensche sind eine Zugabe, kein Grund,
+        den Lauf zu kippen.
+        """
+        try:
+            return self._get(
+                "/themen_freigabe",
+                {"select": "id,language,suchbegriff,category_id,anzeige",
+                 "status": "eq.frei", "order": "entschieden_at.asc", "limit": "20"},
+            )
+        except RuntimeError as exc:
+            if "themen_freigabe" in str(exc) or ": 404" in str(exc):
+                return []
+            raise
+
+    def wunsch_in_arbeit(self, freigabe_id: str, titel: list[str]) -> None:
+        response = self.http.patch(
+            "/themen_freigabe",
+            params={"id": f"eq.{freigabe_id}"},
+            headers={"Prefer": "return=minimal"},
+            json={"status": "in_arbeit" if titel else "nein", "titel": titel or None},
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"themen_freigabe: {response.status_code} {response.text[:300]}"
+            )
 
     # --- Kurse ----------------------------------------------------------------
 

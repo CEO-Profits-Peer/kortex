@@ -67,7 +67,7 @@ from laufbilanz import Laufbilanz, hauptprogramm  # noqa: E402
 from run import (AUTO_APPROVE_MIN_TRUST, WRITE_EVERY, buffered_twin,  # noqa: E402
                  build_row)
 from sources.wikipedia import fetch_article     # noqa: E402
-from topic_discovery import entdecke             # noqa: E402
+from topic_discovery import _wiki, entdecke      # noqa: E402
 from topics import order_by_scarcity, topics_for  # noqa: E402
 from sources.wikipedia import Topic               # noqa: E402
 from transform.generate import Generator        # noqa: E402
@@ -96,6 +96,9 @@ NEU_JE_KATEGORIE = 6
 #: Wie oft ein von der Pruefung abgelehntes Thema versucht wird. Die Pruefung
 #: haengt am Wortlaut, ein zweiter Anlauf geht oft durch; ein dritter selten.
 MAX_VERSUCHE = 2
+
+#: So viele Artikel (= Karten) je freigegebenem Themenwunsch - eine kleine Serie.
+WUNSCH_ARTIKEL = 4
 
 #: Ausgaenge, nach denen ein Thema nie wieder versucht wird.
 ENDGUELTIG = {"karte", "unbrauchbar", "kein_artikel", "dublette"}
@@ -232,6 +235,41 @@ def main() -> int:
                     neu_gefunden += len(zeilen)
                     log.info("Themensuche %s: %d offen, %d neu gefunden", sprache, offen, len(zeilen))
 
+        # --- Themenwuensche (0111) -------------------------------------------
+        #
+        # Im Kontrollzentrum freigegeben: mit dem Suchbegriff bis zu
+        # WUNSCH_ARTIKEL Wikipedia-Artikel suchen und als Themen merken. Sie
+        # kommen VOR allem anderen dran - jemand wartet auf sie.
+        if mit_gedaechtnis and not dry:
+            with httpx.Client(timeout=40.0, follow_redirects=True) as wiki:
+                for f in db.freigegebene_wuensche():
+                    try:
+                        treffer = _wiki(wiki, f["language"], {
+                            "action": "query", "list": "search", "srsearch": f["suchbegriff"],
+                            "srnamespace": "0", "srlimit": str(WUNSCH_ARTIKEL * 2),
+                        }).get("query", {}).get("search", [])
+                    except Exception as exc:  # noqa: BLE001 - naechster Lauf versucht es wieder
+                        log.warning("Wunsch '%s': Suche gescheitert: %s", f["anzeige"], exc)
+                        continue
+                    titel = [t["title"] for t in treffer
+                             if (f["language"], t["title"].casefold()) not in gedaechtnis
+                             and not t["title"].startswith(("Liste ", "List of "))][:WUNSCH_ARTIKEL]
+                    zeilen = [{"language": f["language"], "title": t, "category_id": f["category_id"],
+                               "herkunft": "wunsch", "status": "offen", "versuche": 0,
+                               "score": None, "freigabe_id": f["id"]} for t in titel]
+                    if zeilen:
+                        db.remember_topics(zeilen)
+                    db.wunsch_in_arbeit(f["id"], titel)
+                    for z in zeilen:
+                        gedaechtnis[(z["language"], z["title"].casefold())] = z
+                    log.info("Wunsch '%s': %d Artikel (%s)", f["anzeige"], len(titel), ", ".join(titel))
+
+        gewuenscht: list[Topic] = [
+            Topic(category_id=e["category_id"], language=e["language"], title=e["title"])
+            for e in gedaechtnis.values()
+            if e["herkunft"] == "wunsch" and e["language"] in cfg.languages and _noch_offen(e)
+        ]
+
         if args.nur_entdecken:
             bilanz.stopp = "nur_entdecken"
             bilanz.extra["neu_gefunden"] = neu_gefunden
@@ -250,7 +288,8 @@ def main() -> int:
             alt = eintrag(t) or {}
             ergebnisse.append({
                 "language": t.language, "title": t.title, "category_id": t.category_id,
-                "herkunft": "entdeckt" if (t.language, t.title) in entdeckte_titel else "liste",
+                "herkunft": alt.get("herkunft") if alt.get("herkunft") == "wunsch"
+                            else "entdeckt" if (t.language, t.title) in entdeckte_titel else "liste",
                 "status": status,
                 "versuche": int(alt.get("versuche") or 0) + (1 if versuch else 0),
                 "score": alt.get("score"),
@@ -260,7 +299,7 @@ def main() -> int:
         # Reihenfolge nach Bestand, nicht nach Position in der Datei.
         # Begruendung und Messung stehen in topics.order_by_scarcity.
         bestand = db.card_counts()
-        topics = order_by_scarcity(topics, bestand)
+        topics = gewuenscht + order_by_scarcity(topics, bestand)
         leer = sorted(
             {t.category_id for t in topics if not bestand.get((t.category_id, t.language))}
         )

@@ -33,6 +33,26 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+/** 0111: Themenwuensche. */
+export type WunschStatus = 'offen' | 'frei' | 'nein' | 'in_arbeit' | 'fertig';
+export type MeineWuensche = {
+  meine: { id: string; text: string; created_at: string; anzahl: number; status: WunschStatus; anzeige: string | null }[];
+  bald: { anzeige: string; status: WunschStatus; category_id: string | null }[];
+};
+export type AdminWuensche = {
+  offen: { norm: string; language: string; text: string; anzahl: number; zuletzt: string }[];
+  entschieden: {
+    id: string;
+    anzeige: string;
+    language: string;
+    status: WunschStatus;
+    category_id: string | null;
+    titel: string[] | null;
+    entschieden_at: string;
+    anzahl: number;
+  }[];
+};
+
 export type Pruefung = {
   id: string;
   titel: string;
@@ -387,6 +407,47 @@ export const api = {
     const { data, error } = await supabase.rpc('pruefung_anlegen', { p_titel: titel, p_datum: datum, p_kategorien: kategorien });
     if (error) throw error;
     return data as string;
+  },
+
+  // --- Themenwuensche (0111) ---------------------------------------------
+
+  async themaWuenschen(text: string): Promise<{ anzahl: number; status: WunschStatus }> {
+    const { data, error } = await supabase.rpc('thema_wuenschen', { p_text: text });
+    if (error) throw error;
+    return data as { anzahl: number; status: WunschStatus };
+  },
+
+  async wunschZuruecknehmen(id: string): Promise<void> {
+    const { error } = await supabase.rpc('wunsch_zuruecknehmen', { p_id: id });
+    if (error) throw error;
+  },
+
+  async meineWuensche(): Promise<MeineWuensche> {
+    const { data, error } = await supabase.rpc('meine_wuensche');
+    if (error) throw error;
+    return data as MeineWuensche;
+  },
+
+  async adminWuensche(pin: string): Promise<AdminWuensche> {
+    const { data, error } = await supabase.rpc('admin_wuensche', { p_pin: pin });
+    if (error) throw error;
+    return data as AdminWuensche;
+  },
+
+  async adminWunschEntscheiden(
+    pin: string,
+    w: { norm: string; language: string; ja: boolean; anzeige?: string; suchbegriff?: string; kategorie?: string },
+  ): Promise<void> {
+    const { error } = await supabase.rpc('admin_wunsch_entscheiden', {
+      p_pin: pin,
+      p_norm: w.norm,
+      p_language: w.language,
+      p_ja: w.ja,
+      p_anzeige: w.anzeige ?? null,
+      p_suchbegriff: w.suchbegriff ?? null,
+      p_kategorie: w.kategorie ?? null,
+    });
+    if (error) throw error;
   },
 
   async pruefungLoeschen(id: string): Promise<void> {

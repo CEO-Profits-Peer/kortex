@@ -88,6 +88,9 @@ export function PruefungScreen() {
           <Button label="Neu" variant="ghost" onPress={() => setNeu(true)} />
         )}
         {notiz ? <Text style={styles.klein}>{notiz}</Text> : null}
+        <Pressable onPress={() => router.push('/wuensche')} hitSlop={6} style={{ alignSelf: 'center' }}>
+          <Text style={styles.klein}>Thema fehlt? Wünsch es dir →</Text>
+        </Pressable>
       </ScrollView>
     </GridBackground>
   );

@@ -10,6 +10,7 @@ import { AdminCategories } from '@/features/admin/AdminCategories';
 import { AdminOverview } from '@/features/admin/AdminOverview';
 import { AdminPeople } from '@/features/admin/AdminPeople';
 import { AdminPipeline } from '@/features/admin/AdminPipeline';
+import { AdminWuensche } from '@/features/admin/AdminWuensche';
 import type { AdminCategory, AdminData, AdminRuns } from '@/features/admin/types';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
@@ -40,13 +41,14 @@ import { color, radius, space, type } from '@/theme/tokens';
  * unter der Fussmatte.
  */
 
-type Reiter = 'uebersicht' | 'pipeline' | 'kategorien' | 'personen';
+type Reiter = 'uebersicht' | 'pipeline' | 'kategorien' | 'personen' | 'wuensche';
 
 const REITER: { key: Reiter; label: string }[] = [
   { key: 'uebersicht', label: 'Übersicht' },
   { key: 'pipeline', label: 'Pipeline' },
   { key: 'kategorien', label: 'Kategorien' },
   { key: 'personen', label: 'Personen' },
+  { key: 'wuensche', label: 'Wünsche' },
 ];
 
 export default function Admin() {
@@ -135,6 +137,7 @@ export default function Admin() {
 
   const suchen = useCallback((q: string) => api.adminPeople(pin.current, q), []);
   const person = useCallback((h: string) => api.adminPerson(pin.current, h), []);
+  const holePin = useCallback(() => pin.current, []);
 
   if (!offen) {
     return (
@@ -218,6 +221,8 @@ export default function Admin() {
 
         {reiter === 'personen' ? <AdminPeople suche={suchen} laden={person} /> : null}
 
+        {reiter === 'wuensche' ? <AdminWuensche pin={holePin} /> : null}
+
         {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
       </ScrollView>
     </GridBackground>
@@ -245,7 +250,7 @@ const styles = StyleSheet.create({
 
   sperren: { ...type.meta, fontSize: 9.5, color: color.ink.low },
 
-  reiter: { flexDirection: 'row', gap: space.xl, paddingHorizontal: space.xl },
+  reiter: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.lg, rowGap: space.xs, paddingHorizontal: space.xl },
   reiterKnopf: { paddingBottom: space.sm },
   reiterText: { ...type.meta, fontSize: 10, color: color.ink.low },
   reiterTextAn: { color: color.ink.max },

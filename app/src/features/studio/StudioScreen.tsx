@@ -405,6 +405,18 @@ export function StudioScreen() {
               <Text style={styles.labKurz}>Datum und Themen eintragen – die App plant bis zum Tag X</Text>
             </Pressable>
 
+            {/* 0111: Themen wuenschen. */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                router.push('/wuensche');
+              }}
+              style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.labTitel}>Themenwünsche</Text>
+              <Text style={styles.labKurz}>Ein Thema fehlt? Wünsch es dir – oft Gewünschtes wird zur Kartenserie</Text>
+            </Pressable>
+
             {/* 0106: gemeinsam fuer die Schularbeit sammeln. */}
             <Pressable
               onPress={() => {
