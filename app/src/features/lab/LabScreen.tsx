@@ -25,6 +25,7 @@ import { LabErgebnis } from './LabErgebnis';
 import {
   CO2_MITTEL,
   LICHT_ZIELE,
+  PAL,
   VPI_ERSTES,
   VPI_LETZTES,
   ergebnis,
@@ -82,6 +83,9 @@ export function LabScreen({ id }: { id: string }) {
             {w.id === 'inflation' ? <Inflation w={w} /> : null}
             {w.id === 'netto' ? <Netto w={w} /> : null}
             {w.id === 'co2' ? <Co2 w={w} /> : null}
+            {w.id === 'kredit' ? <Kredit w={w} /> : null}
+            {w.id === 'miete' ? <Miete w={w} /> : null}
+            {w.id === 'energie' ? <Energie w={w} /> : null}
           </>
         )}
       </ScrollView>
@@ -934,6 +938,124 @@ function Co2({ w }: { w: Werkzeug }) {
         <TippFeld w={w} t={t} min={0} max={Math.max(20, Math.round(km * (retour ? 2 : 1) * 0.3))} fmt={(n) => `${n} kg`} />
       </Flaeche>
       {t.zeigen ? <Ergebnis w={w} e={e} /> : null}
+    </>
+  );
+}
+
+// --- Ratenkauf & Handyvertrag ---------------------------------------------------------------
+
+function Kredit({ w }: { w: Werkzeug }) {
+  const [modus, setModus] = useState<'rate' | 'vertrag'>('rate');
+  const [preis, setPreis] = useState(800);
+  const [anzahlung, setAnzahlung] = useState(0);
+  const [rate, setRate] = useState(38);
+  const [monate, setMonate] = useState(24);
+  const eur = (n: number) => n.toLocaleString('de-AT');
+  return (
+    <>
+      <Flaeche>
+        <Umschalter
+          w={w}
+          wert={modus}
+          optionen={[
+            { id: 'rate', label: 'Ratenkauf' },
+            { id: 'vertrag', label: 'Handyvertrag' },
+          ]}
+          onChange={setModus}
+        />
+        <Regler label={modus === 'vertrag' ? 'Handy bar' : 'Preis bar'} wert={eur(preis)} einheit="€">
+          <Slider min={50} max={3_000} step={10} value={preis} onChange={setPreis} tint={w.farbe} />
+        </Regler>
+        <Regler label={modus === 'vertrag' ? 'Aufpreis pro Monat' : 'Rate pro Monat'} wert={eur(rate)} einheit="€">
+          <Slider min={1} max={300} value={rate} onChange={setRate} tint={w.farbe} />
+        </Regler>
+        <Regler label="Monate" wert={String(monate)}>
+          <Slider min={3} max={60} value={monate} onChange={setMonate} tint={w.farbe} />
+        </Regler>
+        <Regler label={modus === 'vertrag' ? 'Einmalzahlung' : 'Anzahlung'} wert={eur(anzahlung)} einheit="€">
+          <Slider min={0} max={Math.max(0, preis - 10)} step={10} value={Math.min(anzahlung, preis - 10)} onChange={setAnzahlung} tint={w.farbe} />
+        </Regler>
+        <Text style={styles.hinweis}>
+          {modus === 'vertrag'
+            ? 'Vergleiche den Vertrag MIT Handy mit dem gleichen Tarif OHNE Handy. Der Unterschied pro Monat ist in Wahrheit die Rate für das Gerät.'
+            : 'Trag ein, was bar zu zahlen wäre und was die Raten kosten. Heraus kommt der Zins, der in den Raten steckt.'}
+        </Text>
+      </Flaeche>
+      <Ergebnis w={w} e={{ preis, anzahlung: Math.min(anzahlung, preis - 10), rate, monate, ...(modus === 'vertrag' ? { modus } : {}) }} />
+    </>
+  );
+}
+
+// --- Miete ----------------------------------------------------------------------------------
+
+function Miete({ w }: { w: Werkzeug }) {
+  const [miete, setMiete] = useState(700);
+  const [einkommen, setEinkommen] = useState(2_000);
+  const eur = (n: number) => n.toLocaleString('de-AT');
+  return (
+    <>
+      <Flaeche>
+        <Regler label="Wohnen pro Monat" wert={eur(miete)} einheit="€">
+          <Slider min={100} max={3_000} step={10} value={miete} onChange={setMiete} tint={w.farbe} />
+        </Regler>
+        <Regler label="Einkommen netto" wert={eur(einkommen)} einheit="€">
+          <Slider min={300} max={8_000} step={50} value={einkommen} onChange={setEinkommen} tint={w.farbe} />
+        </Regler>
+        <Text style={styles.hinweis}>
+          Wohnen heißt hier alles: Miete, Betriebskosten, Strom, Gas, Heizung. Beim Einkommen zählt, was wirklich aufs
+          Konto kommt – das rechnet Brutto → Netto aus.
+        </Text>
+      </Flaeche>
+      <Ergebnis w={w} e={{ miete, einkommen }} />
+    </>
+  );
+}
+
+// --- Energie ----------------------------------------------------------------------------------
+
+function Energie({ w }: { w: Werkzeug }) {
+  const [modus, setModus] = useState<'tag' | 'snack'>('tag');
+  const [alter, setAlter] = useState(16);
+  const [geschlecht, setGeschlecht] = useState<'m' | 'w'>('w');
+  const [aktivitaet, setAktivitaet] = useState<string>('mittel');
+  const [snack, setSnack] = useState(250);
+  return (
+    <>
+      <Flaeche>
+        <Umschalter
+          w={w}
+          wert={modus}
+          optionen={[
+            { id: 'tag', label: 'Tagesbedarf' },
+            { id: 'snack', label: 'Snack' },
+          ]}
+          onChange={setModus}
+        />
+        <Regler label="Alter" wert={String(alter)}>
+          <Slider min={10} max={80} value={alter} onChange={setAlter} tint={w.farbe} />
+        </Regler>
+        <Umschalter
+          w={w}
+          wert={geschlecht}
+          optionen={[
+            { id: 'w', label: 'Weiblich' },
+            { id: 'm', label: 'Männlich' },
+          ]}
+          onChange={setGeschlecht}
+        />
+        <Text style={styles.reglerLabel}>Bewegung</Text>
+        <Umschalter w={w} wert={aktivitaet} optionen={PAL.map((p) => ({ id: p.id as string, label: p.label }))} onChange={setAktivitaet} />
+        {modus === 'snack' ? (
+          <Regler label="Snack laut Packung" wert={String(snack)} einheit="kcal">
+            <Slider min={20} max={1_500} step={10} value={snack} onChange={setSnack} tint={w.farbe} />
+          </Regler>
+        ) : null}
+        <Text style={styles.hinweis}>
+          Wenig: meist sitzend. Mittel: sitzend mit etwas Gehen und Stehen. Viel: viel auf den Beinen oder regelmäßig
+          Sport. Die Richtwerte gehen von Normalgewicht aus.
+        </Text>
+      </Flaeche>
+      <Ergebnis w={w} e={{ alter, geschlecht, aktivitaet, ...(modus === 'snack' ? { modus, snack } : {}) }} />
     </>
   );
 }

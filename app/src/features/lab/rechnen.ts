@@ -20,7 +20,7 @@
 
 export type WerkzeugId =
   | 'zinseszins' | 'geburtstag' | 'reaktion' | 'anker' | 'schlaf' | 'lesetempo' | 'licht'
-  | 'inflation' | 'netto' | 'co2';
+  | 'inflation' | 'netto' | 'co2' | 'kredit' | 'miete' | 'energie';
 
 export type Werkzeug = {
   id: WerkzeugId;
@@ -84,6 +84,21 @@ export const WERKZEUGE: Werkzeug[] = [
     id: 'co2', titel: 'Wege & CO₂', kurz: 'Was ein Weg dem Klima kostet',
     kategorie: 'science.climate', hashtag: 'klima', farbe: '#B78BFF',
     quelle: 'Umweltbundesamt, Emissionskennzahlen Mai 2026 (Daten 2024) · pro Person bei üblicher Auslastung, inkl. Energie-Vorkette und Fahrzeugbau · Flug mit Faktor 2 für Nicht-CO₂-Effekte',
+  },
+  {
+    id: 'kredit', titel: 'Ratenkauf', kurz: 'Was „nur 20 € im Monat“ wirklich kostet',
+    kategorie: 'life.consumer', hashtag: 'vertraege', farbe: '#C8D94E',
+    quelle: 'Effektiver Jahreszins nach der Formel der EU-Verbraucherkreditrichtlinie 2008/48/EG, Anhang I · aus deinen Zahlen gerechnet',
+  },
+  {
+    id: 'miete', titel: 'Miete', kurz: 'Wie viel vom Einkommen das Wohnen frisst',
+    kategorie: 'life.housing', hashtag: 'wohnen', farbe: '#C8D94E',
+    quelle: 'Grenze: Eurostat, „Housing cost overburden rate“ – über 40 % des verfügbaren Einkommens für Wohnen inkl. Energie',
+  },
+  {
+    id: 'energie', titel: 'Energie', kurz: 'Wie viel Essen dein Körper braucht',
+    kategorie: 'body.nutrition', hashtag: 'ernaehrung', farbe: '#FF9F45',
+    quelle: 'D-A-CH-Referenzwerte (DGE, ÖGE, SGE), Richtwerte für die Energiezufuhr, Stand 2015 · für Normalgewicht, keine Ernährungsberatung',
   },
 ];
 
@@ -417,6 +432,8 @@ const WOCHEN_PRO_MONAT = 52 / 12;
  */
 export function ergebnis(id: string, e: Record<string, unknown> | null | undefined): Ergebnis | null {
   if (!e) return null;
+  const neu = neueErgebnisse(id, e);
+  if (neu !== undefined) return neu;
   switch (id) {
     case 'zinseszins': {
       const start = zahl(e.start, 0, 100_000);
@@ -1072,4 +1089,197 @@ function nettoCaErgebnis(e: Record<string, unknown>): Ergebnis | null {
     balken: { anteil: n.netto / jahr, links: 'netto', rechts: 'Abgaben' },
     quelle: QUELLE_NETTO_CA,
   };
+}
+
+// =====================================================================================
+// Drei weitere Werkzeuge (19.09.2026): Ratenkauf, Miete, Energie.
+// =====================================================================================
+
+// --- Ratenkauf & Handyvertrag: effektiver Jahreszins ------------------------------------
+//
+// Formel: Richtlinie 2008/48/EG (Verbraucherkredite), Anhang I - der effektive
+// Jahreszins ist der Satz, bei dem der Barwert aller Zahlungen gleich dem
+// Kreditbetrag ist, mit (1 + i)^(t) auf Jahresbasis. Hier monatlich gerechnet
+// und auf ein Jahr umgelegt: (1 + i_Monat)^12 - 1. Keine Tabelle, keine Annahme.
+//
+// Handyvertrag: Der Aufpreis gegenueber einem Tarif OHNE Handy ist in
+// Wahrheit eine Rate fuer das Geraet. Genau das rechnet der Modus "vertrag":
+// Kreditbetrag = Barpreis des Handys minus Anzahlung, Rate = Aufpreis pro Monat.
+
+/** Monatszins, bei dem n Raten r heute `betrag` wert sind (Bisektion, 0-20 % pro Monat). */
+function monatszins(betrag: number, rate: number, n: number): number | null {
+  if (betrag <= 0 || rate <= 0 || n <= 0) return null;
+  if (rate * n <= betrag) return 0;
+  const barwert = (i: number) => (i === 0 ? rate * n : (rate * (1 - Math.pow(1 + i, -n))) / i);
+  let lo = 0;
+  let hi = 0.2;
+  if (barwert(hi) > betrag) return null;
+  for (let k = 0; k < 80; k++) {
+    const mid = (lo + hi) / 2;
+    if (barwert(mid) > betrag) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+export function ratenkauf(preis: number, anzahlung: number, rate: number, monate: number) {
+  const kredit = preis - anzahlung;
+  const i = monatszins(kredit, rate, monate);
+  const gesamt = anzahlung + rate * monate;
+  return {
+    kredit,
+    gesamt,
+    mehr: gesamt - preis,
+    effektiv: i === null ? null : (Math.pow(1 + i, 12) - 1) * 100,
+  };
+}
+
+// --- Miete im Verhaeltnis zum Einkommen --------------------------------------------------
+//
+// Schwelle: Eurostat, "Housing cost overburden rate" - ueberlastet ist, wer
+// mehr als 40 % des verfuegbaren Einkommens fuer Wohnen ausgibt (Miete bzw.
+// Kreditzinsen plus Wasser, Strom, Gas, Heizung, Instandhaltung; beides
+// abzueglich Wohnbeihilfe). Die App nimmt genau diese Grenze, keine Faustregel.
+export const WOHNKOSTEN_GRENZE = 40;
+
+// --- Energie: D-A-CH-Referenzwerte -----------------------------------------------------
+//
+// Quelle: Deutsche Gesellschaft fuer Ernaehrung (DGE), Referenzwerte Energie,
+// "Richtwerte fuer die Energiezufuhr", Stand Ableitung 2015 (dge.de, gemeinsam
+// mit OeGE und SGE = D-A-CH), kcal/Tag je Alter, Geschlecht und PAL
+// (1,4 wenig, 1,6 mittel, 1,8 viel Bewegung). Richtwerte fuer Normalgewicht -
+// die DGE schreibt selbst: Kontrollgroesse ist das eigene Koerpergewicht.
+const ENERGIE: { bis: number; label: string; m: [number, number, number]; w: [number, number, number] }[] = [
+  { bis: 13, label: '10 bis unter 13', m: [1900, 2200, 2400], w: [1700, 2000, 2200] },
+  { bis: 15, label: '13 bis unter 15', m: [2300, 2600, 2900], w: [1900, 2200, 2500] },
+  { bis: 19, label: '15 bis unter 19', m: [2600, 3000, 3400], w: [2000, 2300, 2600] },
+  { bis: 25, label: '19 bis unter 25', m: [2400, 2800, 3100], w: [1900, 2200, 2500] },
+  { bis: 51, label: '25 bis unter 51', m: [2300, 2700, 3000], w: [1800, 2100, 2400] },
+  { bis: 65, label: '51 bis unter 65', m: [2200, 2500, 2800], w: [1700, 2000, 2200] },
+  { bis: 200, label: '65 und älter', m: [2100, 2500, 2800], w: [1700, 1900, 2100] },
+];
+export const PAL = [
+  { id: 'wenig', label: 'Wenig', pal: '1,4' },
+  { id: 'mittel', label: 'Mittel', pal: '1,6' },
+  { id: 'viel', label: 'Viel', pal: '1,8' },
+] as const;
+
+export function energieRichtwert(alter: number, geschlecht: 'm' | 'w', aktivitaet: string) {
+  const zeile = ENERGIE.find((z) => alter < z.bis) ?? ENERGIE[ENERGIE.length - 1];
+  const i = Math.max(0, PAL.findIndex((p) => p.id === aktivitaet));
+  return { kcal: zeile[geschlecht][i], gruppe: zeile.label, pal: PAL[i].pal, reihe: zeile[geschlecht] };
+}
+
+function neueErgebnisse(id: string, e: Record<string, unknown>): Ergebnis | null | undefined {
+  switch (id) {
+    case 'kredit': {
+      const preis = zahl(e.preis, 10, 100_000);
+      const anzahlung = zahl(e.anzahlung, 0, 100_000);
+      const rate = zahl(e.rate, 1, 10_000);
+      const monate = zahl(e.monate, 1, 120);
+      if (preis === null || anzahlung === null || rate === null || monate === null || anzahlung >= preis) return null;
+      const r = ratenkauf(preis, anzahlung, rate, Math.round(monate));
+      const vertrag = e.modus === 'vertrag';
+      const einordnung =
+        r.effektiv === null
+          ? 'So hohe Raten ergeben keinen sinnvollen Zinssatz – bitte die Zahlen prüfen.'
+          : r.effektiv === 0
+            ? 'Kein Aufpreis: Du zahlst in Raten nicht mehr als bar.'
+            : r.effektiv > 10
+              ? `Über 10 % Zinsen im Jahr – nur versteckt in der ${vertrag ? 'Grundgebühr' : 'Rate'}.`
+              : waehle(
+                  [
+                    `${euro(r.mehr)} mehr als bar – das ist der Preis für das Warten.`,
+                    `Bar gespart, wären ${euro(r.mehr)} übrig geblieben.`,
+                  ],
+                  e,
+                );
+      return {
+        gross: r.effektiv === null ? '–' : `${zahlFmt(r.effektiv, 1)} %`,
+        satz: vertrag
+          ? `effektiver Jahreszins, wenn das Handy ${euro(preis)} kostet und der Vertrag ${euro(rate)} im Monat mehr kostet – ${Math.round(monate)} Monate`
+          : `effektiver Jahreszins – ${euro(preis)} bar oder ${Math.round(monate)} × ${euro(rate)}${anzahlung > 0 ? ` plus ${euro(anzahlung)} Anzahlung` : ''}`,
+        einordnung,
+        details: [
+          { label: 'in Raten gesamt', wert: euro(r.gesamt) },
+          { label: 'mehr als bar', wert: euro(r.mehr) },
+          { label: 'geliehen', wert: euro(r.kredit) },
+        ],
+        balken: r.gesamt > 0 ? { anteil: Math.min(1, preis / r.gesamt), links: 'Preis', rechts: 'Aufpreis' } : undefined,
+      };
+    }
+    case 'miete': {
+      const miete = zahl(e.miete, 50, 10_000);
+      const einkommen = zahl(e.einkommen, 100, 50_000);
+      if (miete === null || einkommen === null) return null;
+      const anteil = (miete / einkommen) * 100;
+      const bleibt = einkommen - miete;
+      const bisGrenze = (WOHNKOSTEN_GRENZE / 100) * einkommen - miete;
+      return {
+        gross: `${zahlFmt(anteil)} %`,
+        satz: `des Einkommens gehen fürs Wohnen weg – ${euro(miete)} von ${euro(einkommen)}`,
+        einordnung:
+          anteil > WOHNKOSTEN_GRENZE
+            ? `Über der EU-Grenze von ${WOHNKOSTEN_GRENZE} %: Eurostat zählt das als Überbelastung durch Wohnkosten.`
+            : waehle(
+                [
+                  `Bis zur EU-Grenze von ${WOHNKOSTEN_GRENZE} % wären noch ${euro(bisGrenze)} im Monat Luft.`,
+                  `Unter der ${WOHNKOSTEN_GRENZE}-%-Grenze, ab der Eurostat von Überbelastung spricht.`,
+                ],
+                e,
+              ),
+        details: [
+          { label: 'bleibt im Monat', wert: euro(bleibt) },
+          { label: 'bleibt pro Tag', wert: euro(bleibt / 30) },
+          { label: `${WOHNKOSTEN_GRENZE} % wären`, wert: euro((WOHNKOSTEN_GRENZE / 100) * einkommen) },
+        ],
+        balken: { anteil: Math.min(1, miete / einkommen), links: 'Wohnen', rechts: 'Rest' },
+      };
+    }
+    case 'energie': {
+      const alter = zahl(e.alter, 10, 100);
+      const g = e.geschlecht === 'w' ? 'w' : e.geschlecht === 'm' ? 'm' : null;
+      const akt = typeof e.aktivitaet === 'string' ? e.aktivitaet : 'mittel';
+      if (alter === null || !g) return null;
+      const r = energieRichtwert(Math.round(alter), g, akt);
+      const snack = zahl(e.snack, 1, 5_000);
+      if (e.modus === 'snack' && snack !== null) {
+        const anteil = (snack / r.kcal) * 100;
+        return {
+          gross: `${zahlFmt(anteil)} %`,
+          satz: `des Tagesrichtwerts stecken in ${zahlFmt(snack)} kcal (${zahlFmt(r.kcal)} kcal, ${r.gruppe} Jahre, PAL ${r.pal})`,
+          einordnung:
+            anteil >= 33
+              ? 'Ein Drittel des Tages oder mehr – in einem Snack.'
+              : waehle(
+                  [
+                    `Bleiben ${zahlFmt(r.kcal - snack)} kcal für den Rest des Tages.`,
+                    `${zahlFmt(r.kcal / snack, 1)} davon, und der Tagesrichtwert ist erreicht.`,
+                  ],
+                  e,
+                ),
+          details: [
+            { label: 'Richtwert pro Tag', wert: `${zahlFmt(r.kcal)} kcal` },
+            { label: 'übrig', wert: `${zahlFmt(Math.max(0, r.kcal - snack))} kcal` },
+          ],
+          balken: { anteil: Math.min(1, snack / r.kcal), links: 'Snack', rechts: 'Rest' },
+        };
+      }
+      const [wenig, , viel] = r.reihe;
+      return {
+        gross: `${zahlFmt(r.kcal)} kcal`,
+        satz: `Richtwert pro Tag – ${r.gruppe} Jahre, ${g === 'w' ? 'weiblich' : 'männlich'}, Bewegung PAL ${r.pal}`,
+        einordnung: waehle(
+          [
+            `Zwischen wenig und viel Bewegung liegen ${zahlFmt(viel - wenig)} kcal am Tag.`,
+            'Ein Richtwert für Normalgewicht – das eigene Gewicht zeigt, ob er passt.',
+          ],
+          e,
+        ),
+        details: PAL.map((p, i) => ({ label: `PAL ${p.pal}`, wert: `${zahlFmt(r.reihe[i])} kcal` })),
+      };
+    }
+    default:
+      return undefined;
+  }
 }
