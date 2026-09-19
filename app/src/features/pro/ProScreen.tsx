@@ -69,7 +69,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
     punkte: [
       { icon: 'chart', titel: 'Statistik', text: 'Reichweite je Beitrag, woher Follower kommen, Lern-Heatmap' },
       { icon: 'leaderboard', titel: 'Ligen', text: 'Private Ligen und Turniere mit Freunden' },
-      { icon: 'interactive', titel: 'LAB-Szenarien', text: 'Speichern und nebeneinander vergleichen' },
+      { icon: 'interactive', titel: 'LAB-Szenarien', text: 'Bis zu sechs Varianten je Werkzeug merken und vergleichen', da: true },
       { icon: 'lesson', titel: 'Export', text: 'Stapel als Datei für Anki – PDF folgt', da: true },
       { icon: 'listen', titel: 'Stimmen', text: 'Vorlese-Stimme und Tempo wählen', da: true },
       { icon: 'streak', titel: 'Streak-Schutz', text: 'Ein verpasster Tag pro Woche kostet dich den Streak nicht', da: true },

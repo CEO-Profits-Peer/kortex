@@ -6,12 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Laden } from '@/components/Laden';
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
+import { zeigeProSperre } from '@/components/ProSperre';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Slider } from '@/components/Slider';
 import { fehlerText } from '@/lib/fehler';
 import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
+import { useSzenarien } from '@/lib/labSzenarien';
+import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import type { AnkerStand, ContentItem } from '@/lib/types.db';
 import { flaeche } from '@/theme/design';
@@ -118,6 +122,22 @@ function Flaeche({ children }: { children: React.ReactNode }) {
 
 function Ergebnis({ w, e, nochmal }: { w: Werkzeug; e: Eingaben | null; nochmal?: () => void }) {
   const gueltig = e ? ergebnis(w.id, e) !== null : false;
+  const ichPro = useIchPro();
+  const sz = useSzenarien(w.id);
+  const [notiz, setNotiz] = useState<string | null>(null);
+
+  const merken = async () => {
+    if (!e || !gueltig) return;
+    if (!ichPro.pro) {
+      zeigeProSperre('Szenarien merken und untereinander vergleichen gibt es mit PRO.');
+      return;
+    }
+    haptics.light();
+    const neu = await sz.merken(e);
+    setNotiz(neu ? 'Gemerkt – unten zum Vergleich' : 'Das hast du schon gemerkt');
+    setTimeout(() => setNotiz(null), 2000);
+  };
+
   return (
     <View style={{ gap: space.md }}>
       {e && gueltig ? <LabErgebnis werkzeugId={w.id} eingaben={e} /> : null}
@@ -128,9 +148,45 @@ function Ergebnis({ w, e, nochmal }: { w: Werkzeug; e: Eingaben | null; nochmal?
           </View>
         ) : null}
         <View style={{ flex: 1 }}>
+          <Button label="Merken" variant="ghost" disabled={!e || !gueltig} onPress={() => void merken()} />
+        </View>
+        <View style={{ flex: 1 }}>
           <Button label="Teilen" accent={w.farbe} disabled={!e || !gueltig} onPress={() => e && teilen(w, e)} />
         </View>
       </View>
+      {notiz ? <Text style={styles.hinweis}>{notiz}</Text> : null}
+      {ichPro.pro && sz.liste.length > 0 ? <Vergleich w={w} sz={sz} aktuell={e} /> : null}
+    </View>
+  );
+}
+
+/**
+ * Die gemerkten Szenarien untereinander: grosse Zahl und Satz, jeweils
+ * frisch gerechnet. Das aktuelle steht markiert dabei, wenn es gemerkt ist.
+ */
+function Vergleich({ w, sz, aktuell }: { w: Werkzeug; sz: ReturnType<typeof useSzenarien>; aktuell: Eingaben | null }) {
+  const jetzt = aktuell ? JSON.stringify(aktuell) : null;
+  return (
+    <View style={styles.flaeche}>
+      <Text style={styles.reglerLabel}>Vergleich</Text>
+      {sz.liste.map((s) => {
+        const r = ergebnis(w.id, s.eingaben);
+        if (!r) return null;
+        const istJetzt = JSON.stringify(s.eingaben) === jetzt;
+        return (
+          <View key={s.id} style={[styles.szenario, istJetzt && { borderColor: w.farbe }]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.szenarioZahl, { color: istJetzt ? w.farbe : color.ink.max }]}>{r.gross}</Text>
+              <Text style={styles.hinweis} numberOfLines={2}>
+                {r.satz}
+              </Text>
+            </View>
+            <Pressable onPress={() => void sz.entfernen(s.id)} hitSlop={8} accessibilityLabel="Entfernen">
+              <Icon name="cross" size={14} color={color.ink.low} />
+            </Pressable>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -846,6 +902,17 @@ const styles = StyleSheet.create({
   reglerWert: { ...type.mono, fontSize: 18, color: color.ink.max },
   reglerEinheit: { ...type.mono, fontSize: 13, color: color.ink.mid },
   knoepfe: { flexDirection: 'row', gap: space.sm },
+  szenario: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgSunken,
+  },
+  szenarioZahl: { ...type.mono, fontSize: 17 },
 
   reaktionsFeld: {
     height: 260,
