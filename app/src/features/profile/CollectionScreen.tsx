@@ -1,16 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -97,7 +91,7 @@ export function CollectionScreen({ kind }: { kind: 'reposts' | 'likes' }) {
       >
         {items === null ? (
           <View style={styles.center}>
-            <ActivityIndicator color={color.signal.primary} />
+            <Laden color={color.signal.primary} />
           </View>
         ) : items.length === 0 ? (
           <Text style={styles.empty}>
@@ -141,7 +135,7 @@ export function CollectionScreen({ kind }: { kind: 'reposts' | 'likes' }) {
             style={({ pressed }) => [styles.more, pressed && { opacity: 0.75 }]}
           >
             {busy ? (
-              <ActivityIndicator color={color.ink.low} />
+              <Laden color={color.ink.low} />
             ) : (
               <Text style={styles.moreText}>Weitere laden</Text>
             )}

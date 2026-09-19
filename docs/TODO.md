@@ -18,8 +18,6 @@ was sonst noch offen ist — vor allem das, was nur du tun kannst.
 | 2 | **GitHub-Token für den Pipeline-Anstoß** | Der Worker meldet am 19.09. weiterhin `{"token":"fehlt"}`. GitHubs eigener Zeitplan lässt Läufe aus. | Token anlegen (Actions read/write, nur Repo kortex), dann `npx wrangler secret put GITHUB_TOKEN --config workers/ingest-anstoss/wrangler.toml`. Danach sagst du mir Bescheid, ich prüfe und entferne dann die `schedule`-Zeile. |
 | 3 | **PostHog (Region EU)** | Der Schlüssel in `app/.env` ist leer. Ohne ihn siehst du nicht, wo Leute abspringen. | posthog.com → EU → Project API Key nach `EXPO_PUBLIC_POSTHOG_KEY` |
 | 4 | **Sentry** | Der DSN in `app/.env` ist leer. Testnutzer melden Abstürze nicht, sie hören einfach auf. | sentry.io → Projekt React Native → DSN nach `EXPO_PUBLIC_SENTRY_DSN` |
-| 5 | **SMTP prüfen** | Ist „Custom SMTP“ an, aber leer, geht KEINE Anmelde-Mail raus. | `docs/SMTP.md` ausfüllen oder den Schalter aus |
-| 6 | **Push im echten Browser bestätigen** | Automatische Browser verweigern die Erlaubnis, daher nie echt gesehen. | Glocke an, Benachrichtigung erlauben, jemand liked einen Beitrag |
 
 ## 🟡 Später anlegen, erst wenn es gebraucht wird
 
@@ -81,6 +79,8 @@ was sonst noch offen ist — vor allem das, was nur du tun kannst.
 - Studio mit Erstellen / Lernen, Umfrage, Quiz, Stapel, 7 LAB-Werkzeuge
 - Animierte Karten (kinetic) mit zehn Bildarten
 - E-Mail zum anonymen Konto sichern (Konto-Seite)
+- SMTP eingerichtet und Push im echten Browser bestätigt (vom Nutzer, 19.09.)
+- Eigene Lade-Animation im Stil des Logos statt Standard-Kreisel (19.09.)
 - Design 2.0, neues App-Icon, Waben-Profilbilder
 - PRO: Status, Codes, Grenzen, Anpinnen, Profilbild-Stile, Abzeichen,
   Quiz bis 5, Willkommens-Animation

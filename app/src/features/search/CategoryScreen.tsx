@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
+import { Laden } from '@/components/Laden';
 import { haptics } from '@/lib/haptics';
 
 import { Button } from '@/components/Button';
@@ -140,7 +141,7 @@ export function CategoryScreen({ categoryId }: { categoryId: string }) {
     return (
       <GridBackground>
         <View style={styles.center}>
-          {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={color.signal.primary} />}
+          {error ? <Text style={styles.error}>{error}</Text> : <Laden color={color.signal.primary} />}
         </View>
       </GridBackground>
     );

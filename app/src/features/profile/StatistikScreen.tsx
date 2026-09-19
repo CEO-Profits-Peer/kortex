@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { Laden } from '@/components/Laden';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
@@ -136,7 +137,7 @@ export function StatistikScreen() {
           <ScreenHeader title="Statistik" titleInBarOnly />
         </View>
         <View style={styles.center}>
-          {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <ActivityIndicator color={color.signal.primary} />}
+          {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <Laden color={color.signal.primary} />}
         </View>
       </GridBackground>
     );

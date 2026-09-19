@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 
@@ -124,7 +125,7 @@ export function WelcomeScreen() {
             accessibilityRole="button"
           >
             {busy ? (
-              <ActivityIndicator color={color.bg} />
+              <Laden color={color.bg} />
             ) : (
               <Text style={styles.ctaLabel}>Los geht's</Text>
             )}

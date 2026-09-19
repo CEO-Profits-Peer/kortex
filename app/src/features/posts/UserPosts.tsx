@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Laden } from '@/components/Laden';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { PostKarte } from '@/features/posts/PostParts';
@@ -85,7 +86,7 @@ export function UserPosts({
   };
 
   if (posts === null) {
-    return <ActivityIndicator color={color.ink.low} style={{ marginVertical: space.lg }} />;
+    return <Laden color={color.ink.low} style={{ marginVertical: space.lg }} />;
   }
 
   if (gesperrt) {
@@ -123,7 +124,7 @@ export function UserPosts({
       {mehr ? (
         <Pressable onPress={() => void weiter()} style={styles.mehr} disabled={laedt}>
           {laedt ? (
-            <ActivityIndicator size="small" color={color.ink.low} />
+            <Laden size="small" color={color.ink.low} />
           ) : (
             <Text style={styles.mehrText}>Ältere laden</Text>
           )}

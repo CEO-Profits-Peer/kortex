@@ -1,17 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 
@@ -147,7 +140,7 @@ export function SearchScreen() {
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
-          {busy ? <ActivityIndicator size="small" color={color.ink.low} /> : null}
+          {busy ? <Laden size="small" color={color.ink.low} /> : null}
         </View>
 
         <ScrollView

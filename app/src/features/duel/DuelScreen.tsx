@@ -1,18 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Button } from '@/components/Button';
 import { CardBlock } from '@/components/CardBlock';
 import { GridBackground } from '@/components/GridBackground';
@@ -230,7 +222,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
     return (
       <GridBackground>
         <View style={styles.mitte}>
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         </View>
       </GridBackground>
     );
@@ -348,7 +340,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
       return (
         <GridBackground>
           <View style={styles.mitte}>
-            <ActivityIndicator color={color.signal.primary} />
+            <Laden color={color.signal.primary} />
           </View>
         </GridBackground>
       );
@@ -439,7 +431,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
             <Button label="Zu den Duellen" onPress={() => router.replace('/duels')} />
           </Animated.View>
         ) : (
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         )}
       </View>
     </GridBackground>

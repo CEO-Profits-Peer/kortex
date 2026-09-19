@@ -1,19 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { ErwaehnungsText, useErwaehnung } from '@/components/Erwaehnungen';
@@ -211,7 +202,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
           <ScreenHeader title="Beitrag" titleInBarOnly />
         </View>
         <View style={styles.center}>
-          {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <ActivityIndicator color={color.signal.primary} />}
+          {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <Laden color={color.signal.primary} />}
         </View>
       </GridBackground>
     );
@@ -366,7 +357,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
               accessibilityLabel="Senden"
             >
               {busy ? (
-                <ActivityIndicator size="small" color={color.bg} />
+                <Laden size="small" color={color.bg} />
               ) : (
                 <Icon name="chevron" size={16} color={color.bg} />
               )}

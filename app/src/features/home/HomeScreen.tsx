@@ -1,18 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
@@ -267,7 +259,7 @@ export function HomeScreen() {
     return (
       <GridBackground>
         <View style={styles.center}>
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         </View>
       </GridBackground>
     );
@@ -423,7 +415,7 @@ export function HomeScreen() {
         ListEmptyComponent={
           ansicht === 'explore' ? (
             explore === null ? (
-              <ActivityIndicator color={color.ink.low} style={{ marginVertical: space.xl }} />
+              <Laden color={color.ink.low} style={{ marginVertical: space.xl }} />
             ) : (
               <Text style={styles.leer}>
                 In Explore ist gerade nichts – hier landen Beiträge von Leuten, denen du noch nicht folgst.
@@ -439,7 +431,7 @@ export function HomeScreen() {
         }
         ListFooterComponent={
           (ansicht === 'following' ? eintraege.length : exploreEintraege.length) === 0 ? null : nachLaedt ? (
-            <ActivityIndicator color={color.ink.low} style={{ marginVertical: space.lg }} />
+            <Laden color={color.ink.low} style={{ marginVertical: space.lg }} />
           ) : ansicht === 'following' && !mehr ? (
             <Text style={styles.ende}>Das ist alles von deinen Leuten.</Text>
           ) : ansicht === 'explore' && !exploreMehr ? (

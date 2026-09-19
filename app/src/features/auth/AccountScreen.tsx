@@ -1,17 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
@@ -102,7 +95,7 @@ export function AccountScreen() {
     return (
       <GridBackground>
         <View style={styles.center}>
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         </View>
       </GridBackground>
     );

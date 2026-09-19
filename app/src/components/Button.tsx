@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { Laden } from '@/components/Laden';
 import { haptics } from '@/lib/haptics';
 
 import { KANTE, ZWEI, facette, goldVerlauf } from '@/theme/design';
@@ -86,7 +87,7 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={variant === 'primary' ? color.bg : tint} />
+        <Laden color={variant === 'primary' ? color.bg : tint} />
       ) : (
         <Text
           style={[

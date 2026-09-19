@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -449,7 +450,7 @@ function Lesetempo({ w }: { w: Werkzeug }) {
     <>
       <Flaeche>
         {phase === 'laden' ? (
-          fehler ? <Text style={styles.fehler}>{fehler}</Text> : <ActivityIndicator color={w.farbe} />
+          fehler ? <Text style={styles.fehler}>{fehler}</Text> : <Laden color={w.farbe} />
         ) : null}
 
         {phase === 'bereit' && karte ? (

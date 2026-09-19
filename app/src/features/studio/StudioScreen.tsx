@@ -1,18 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
@@ -285,7 +276,7 @@ export function StudioScreen() {
                 rechts={meine && meine.length > 0 ? { text: 'Alle', onPress: () => router.push('/profile') } : undefined}
               />
               {meine === null ? (
-                <ActivityIndicator color={color.ink.low} />
+                <Laden color={color.ink.low} />
               ) : meine.length === 0 ? (
                 <Text style={styles.leer}>Noch nichts erstellt. Oben geht's los.</Text>
               ) : (
@@ -423,7 +414,7 @@ export function StudioScreen() {
             ) : null}
 
             {courses === null ? (
-              <ActivityIndicator color={color.ink.low} />
+              <Laden color={color.ink.low} />
             ) : courses.length === 0 ? (
               <Text style={styles.leer}>{error ?? 'Noch keine Kurse in deiner Sprache freigegeben.'}</Text>
             ) : gefiltert.length === 0 ? (

@@ -1,18 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Appear } from '@/components/Appear';
 import { Avatar } from '@/components/Avatar';
 import { ErwaehnungsText, useErwaehnung } from '@/components/Erwaehnungen';
@@ -225,7 +215,7 @@ export function CommentSheet({
             showsVerticalScrollIndicator={false}
           >
             {items === null ? (
-              <ActivityIndicator color={color.ink.low} />
+              <Laden color={color.ink.low} />
             ) : items.length === 0 ? (
               <Text style={styles.empty}>
                 Noch keine Kommentare. Wenn dir etwas auffällt oder unklar
@@ -285,7 +275,7 @@ export function CommentSheet({
               ]}
             >
               {busy ? (
-                <ActivityIndicator size="small" color={color.bg} />
+                <Laden size="small" color={color.bg} />
               ) : (
                 <Icon name="chevron" size={16} color={color.bg} />
               )}

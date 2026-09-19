@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { analytics } from '@/lib/analytics';
 import { rewards } from '@/lib/rewards';
 import { feedback } from '@/lib/feedback';
@@ -109,7 +110,7 @@ export function ReviewScreen() {
     return (
       <GridBackground>
         <View style={styles.center}>
-          <ActivityIndicator color={color.signal.mastery} />
+          <Laden color={color.signal.mastery} />
         </View>
       </GridBackground>
     );

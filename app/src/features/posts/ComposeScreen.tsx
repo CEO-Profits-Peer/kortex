@@ -1,18 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { useErwaehnung } from '@/components/Erwaehnungen';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
@@ -385,7 +376,7 @@ export function ComposeScreen() {
             style={[styles.posten, !darf && styles.postenAus]}
             accessibilityRole="button"
           >
-            {busy ? <ActivityIndicator size="small" color={color.bg} /> : <Text style={styles.postenText}>Posten</Text>}
+            {busy ? <Laden size="small" color={color.bg} /> : <Text style={styles.postenText}>Posten</Text>}
           </Pressable>
         </View>
 
@@ -521,7 +512,7 @@ export function ComposeScreen() {
                 <>
                   <Text style={styles.abschnitt}>Treffer</Text>
                   {treffer === null ? (
-                    <ActivityIndicator color={color.ink.low} />
+                    <Laden color={color.ink.low} />
                   ) : treffer.filter((k) => !karten.includes(k.content_id)).length === 0 ? (
                     <Text style={styles.leer}>Keine weitere Karte zu „{kartenSuche.trim()}".</Text>
                   ) : (
@@ -534,7 +525,7 @@ export function ComposeScreen() {
                 <>
                   <Text style={styles.abschnitt}>Aus deinen Likes und Empfehlungen</Text>
                   {auswahl === null ? (
-                    <ActivityIndicator color={color.ink.low} />
+                    <Laden color={color.ink.low} />
                   ) : auswahl.filter((k) => !karten.includes(k.content_id)).length === 0 ? (
                     <Text style={styles.leer}>
                       {auswahl.length === 0

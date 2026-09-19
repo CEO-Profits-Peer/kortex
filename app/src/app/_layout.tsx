@@ -2,9 +2,10 @@ import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { Laden } from '@/components/Laden';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ProSperreHost } from '@/components/ProSperre';
 import { ProWillkommenHost } from '@/features/pro/ProWillkommen';
@@ -108,7 +109,7 @@ function Gate() {
     return (
       <GridBackground>
         <View style={styles.center}>
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         </View>
       </GridBackground>
     );
@@ -124,7 +125,7 @@ function Gate() {
     return (
       <GridBackground>
         <View style={styles.center}>
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         </View>
       </GridBackground>
     );
@@ -177,7 +178,14 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!fontsReady) return null;
+  // Ohne Schriften kein Text - der Stein braucht keine und zeigt, dass es losgeht.
+  if (!fontsReady) {
+    return (
+      <View style={[styles.root, { backgroundColor: color.bg, alignItems: 'center', justifyContent: 'center' }]}>
+        <Laden size={56} />
+      </View>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={styles.root}>

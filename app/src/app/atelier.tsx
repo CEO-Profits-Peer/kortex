@@ -18,6 +18,7 @@ import { AdminOverview } from '@/features/admin/AdminOverview';
 import { AdminPeople } from '@/features/admin/AdminPeople';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
 import { ProBanner } from '@/features/pro/ProBanner';
+import { Laden } from '@/components/Laden';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { zeigeProWillkommen } from '@/features/pro/ProWillkommen';
 import { ProScreen } from '@/features/pro/ProScreen';
@@ -452,6 +453,13 @@ export default function Atelier() {
             <Avatar seed={wabenKodieren(waben)} size={40} />
             <Avatar seed="v1-210-a7" size={64} />
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
+          </View>
+
+          <Text style={styles.werkTitel}>Laden</Text>
+          <View style={[styles.gruppe, { alignItems: 'center', gap: 24 }]}>
+            <Laden />
+            <Laden size="large" />
+            <Laden size={96} />
           </View>
 
           <Text style={styles.werkTitel}>PRO</Text>

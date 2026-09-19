@@ -1,17 +1,8 @@
 import { useNavigation } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  Platform,
-  RefreshControl,
-  type RefreshControlProps,
-  StyleSheet,
-  View,
-  type GestureResponderEvent,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, Platform, RefreshControl, type RefreshControlProps, StyleSheet, View, type GestureResponderEvent, type ViewStyle } from 'react-native';
 
+import { Laden } from '@/components/Laden';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { ZWEI, sechseckRegel } from '@/theme/design';
@@ -156,7 +147,7 @@ export function useNeuladen(onRefresh: () => Promise<void>, oben: number): Neula
     >
       <View style={styles.kreis}>
         {laedt ? (
-          <ActivityIndicator size="small" color={color.signal.primary} />
+          <Laden size="small" color={color.signal.primary} />
         ) : (
           <Animated.View
             style={{

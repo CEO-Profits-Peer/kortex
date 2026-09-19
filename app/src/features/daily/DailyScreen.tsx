@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Appear } from '@/components/Appear';
 import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
@@ -143,7 +144,7 @@ export function DailyScreen() {
   if (!challenge) {
     return (
       <Shell insets={insets}>
-        <ActivityIndicator color={color.ink.low} />
+        <Laden color={color.ink.low} />
       </Shell>
     );
   }
@@ -261,7 +262,7 @@ export function DailyScreen() {
               </Animated.View>
             )
           ) : (
-            <ActivityIndicator color={color.ink.low} />
+            <Laden color={color.ink.low} />
           )}
 
           {/* Der eigene Platz, wenn er nicht in der Liste steht. */}
@@ -278,7 +279,7 @@ export function DailyScreen() {
   // --- Die Fragen -----------------------------------------------------------
   const q = questions[step];
   if (!q) {
-    return <Shell insets={insets}><ActivityIndicator color={color.ink.low} /></Shell>;
+    return <Shell insets={insets}><Laden color={color.ink.low} /></Shell>;
   }
   const accent = categoryAccent(null);
 
@@ -339,7 +340,7 @@ export function DailyScreen() {
           ))}
         </View>
 
-        {busy ? <ActivityIndicator color={color.ink.low} /> : null}
+        {busy ? <Laden color={color.ink.low} /> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </Appear>
     </Shell>

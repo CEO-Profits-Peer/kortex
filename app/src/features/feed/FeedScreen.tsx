@@ -1,12 +1,13 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { ContentCard } from '@/components/ContentCard';
 import { hashtagsFuer } from '@/components/HashtagLauf';
 import { BatchCheckpoint } from '@/features/quiz/BatchCheckpoint';
@@ -397,7 +398,7 @@ export function FeedScreen({
     return (
       <GridBackground>
         <View style={styles.center}>
-          <ActivityIndicator color={color.signal.primary} />
+          <Laden color={color.signal.primary} />
         </View>
       </GridBackground>
     );

@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
@@ -142,7 +136,7 @@ export function AdminPeople({
 
       <Gruppe titel={q ? `Treffer für „${q}"` : 'zuletzt aktiv'}>
         {busy && !treffer ? (
-          <ActivityIndicator color={color.signal.primary} style={{ paddingVertical: space.xl }} />
+          <Laden color={color.signal.primary} style={{ paddingVertical: space.xl }} />
         ) : treffer && treffer.length === 0 ? (
           <Text style={styles.leer}>Niemand gefunden.</Text>
         ) : (

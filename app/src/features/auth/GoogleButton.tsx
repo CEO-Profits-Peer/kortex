@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Laden } from '@/components/Laden';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -90,7 +91,7 @@ export function GoogleButton({
         style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       >
         {busy ? (
-          <ActivityIndicator size="small" color={color.ink.high} />
+          <Laden size="small" color={color.ink.high} />
         ) : (
           <>
             <GoogleMark />

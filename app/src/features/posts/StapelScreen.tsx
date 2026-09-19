@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
@@ -67,7 +68,7 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
     return (
       <GridBackground>
         <View style={styles.mitte}>
-          {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <ActivityIndicator color={color.signal.primary} />}
+          {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <Laden color={color.signal.primary} />}
         </View>
         {zurueck}
       </GridBackground>

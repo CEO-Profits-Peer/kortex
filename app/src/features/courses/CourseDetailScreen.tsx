@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { BlueprintVisual } from '@/components/BlueprintVisual';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
@@ -75,7 +76,7 @@ export function CourseDetailScreen({ slug }: { slug: string }) {
     return (
       <GridBackground>
         <View style={styles.center}>
-          {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={color.signal.primary} />}
+          {error ? <Text style={styles.error}>{error}</Text> : <Laden color={color.signal.primary} />}
         </View>
       </GridBackground>
     );

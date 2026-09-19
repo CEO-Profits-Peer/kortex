@@ -1,17 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon, type IconName } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -98,7 +91,7 @@ export function NotificationsScreen() {
         }
       >
         {liste === null ? (
-          <ActivityIndicator color={color.signal.primary} style={{ marginTop: space.xxl }} />
+          <Laden color={color.signal.primary} style={{ marginTop: space.xxl }} />
         ) : liste.length === 0 ? (
           <View style={styles.leer}>
             <Text style={styles.leerText}>

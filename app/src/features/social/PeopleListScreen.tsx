@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -101,7 +102,7 @@ export function PeopleListScreen({
         showsVerticalScrollIndicator={false}
       >
         {people === null ? (
-          <ActivityIndicator color={color.ink.low} />
+          <Laden color={color.ink.low} />
         ) : people.length === 0 ? (
           <Text style={styles.empty}>
             {error ??

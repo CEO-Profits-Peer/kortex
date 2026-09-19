@@ -1,16 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
 import { GridBackground } from '@/components/GridBackground';
@@ -215,7 +209,7 @@ export function ProfileScreen() {
           {error ? (
             <Text style={styles.error}>{error}</Text>
           ) : (
-            <ActivityIndicator color={color.signal.primary} />
+            <Laden color={color.signal.primary} />
           )}
         </View>
       </GridBackground>

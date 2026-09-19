@@ -1,15 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Laden } from '@/components/Laden';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -167,7 +160,7 @@ export default function Admin() {
           />
 
           {busy ? (
-            <ActivityIndicator color={color.signal.primary} />
+            <Laden color={color.signal.primary} />
           ) : (
             <Button label="Öffnen" onPress={() => void oeffnen()} />
           )}
@@ -212,14 +205,14 @@ export default function Admin() {
 
         {reiter === 'pipeline' && laeufe ? <AdminPipeline data={laeufe} /> : null}
         {reiter === 'pipeline' && !laeufe && busy ? (
-          <ActivityIndicator color={color.signal.primary} style={{ marginTop: space.xxl }} />
+          <Laden color={color.signal.primary} style={{ marginTop: space.xxl }} />
         ) : null}
 
         {reiter === 'kategorien' ? (
           kategorien ? (
             <AdminCategories data={kategorien} />
           ) : (
-            <ActivityIndicator color={color.signal.primary} style={{ marginTop: space.xxl }} />
+            <Laden color={color.signal.primary} style={{ marginTop: space.xxl }} />
           )
         ) : null}
 
