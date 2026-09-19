@@ -372,6 +372,8 @@ export type Ergebnis = {
   details: { label: string; wert: string }[];
   /** Optional: Anteil 0..1 fuer einen zweiteiligen Balken. */
   balken?: { anteil: number; links: string; rechts: string };
+  /** Eigene Quellzeile, wenn sie vom Werkzeug abweicht (Kanada). */
+  quelle?: string;
 };
 
 /**
@@ -669,6 +671,7 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       };
     }
     case 'inflation': {
+      if (e.land === 'ca') return inflationCaErgebnis(e);
       const betrag = zahl(e.betrag, 1, 100_000);
       const von = zahl(e.von, VPI_ERSTES, VPI_LETZTES - 1);
       const bis = zahl(e.bis, VPI_ERSTES + 1, VPI_LETZTES);
@@ -709,6 +712,7 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       };
     }
     case 'netto': {
+      if (e.land === 'ca') return nettoCaErgebnis(e);
       const stunde = e.modus === 'stunde';
       let brutto: number | null;
       let stundenlohn: number | null = null;
@@ -849,10 +853,13 @@ export function tippInfo(id: string, e: Record<string, unknown> | null | undefin
       const von = zahl(e.von, VPI_ERSTES, VPI_LETZTES - 1);
       const bis = zahl(e.bis, VPI_ERSTES + 1, VPI_LETZTES);
       if (betrag === null || von === null || bis === null || bis <= von) return null;
+      const ca = e.land === 'ca';
+      const geld = ca ? dollar : euro;
       return {
-        echt: inflation(betrag, von, bis).heute, min: betrag, max: betrag * 3, step: Math.max(1, betrag / 50),
-        fmt: (x) => euro(x),
-        frage: `Was kostete ${bis}, was ${von} ${euro(betrag)} gekostet hat?`,
+        echt: ca ? inflationCa(betrag, von, bis).heute : inflation(betrag, von, bis).heute,
+        min: betrag, max: betrag * 3, step: Math.max(1, betrag / 50),
+        fmt: (x) => geld(x),
+        frage: `Was kostete ${bis}${ca ? ' in Kanada' : ''}, was ${von} ${geld(betrag)} gekostet hat?`,
       };
     }
     case 'co2': {
@@ -883,4 +890,186 @@ export function werkzeugFuerKarte(k: { primary_category_id: string; category_ids
     if (w) return w;
   }
   return null;
+}
+
+// =====================================================================================
+// Kanada (19.09.2026) - fuer die englische Seite, Umschalter "Land" im Werkzeug.
+// =====================================================================================
+
+// --- Preisindex Kanada ------------------------------------------------------------------
+//
+// Quelle: Statistics Canada, Table 18-10-0005-01 "Consumer Price Index, annual
+// average, not seasonally adjusted", GEO Canada, All-items, 2002=100
+// (www150.statcan.gc.ca/n1/tbl/csv/18100005-eng.zip, geladen 19.09.2026).
+// StatCan rechnet die Jahresrate aus genau diesen Indexwerten (2022: 6,8 %).
+export const VPI_CA: Record<number, number> = {
+  1990: 78.4, 1991: 82.8, 1992: 84.0, 1993: 85.6, 1994: 85.7, 1995: 87.6,
+  1996: 88.9, 1997: 90.4, 1998: 91.3, 1999: 92.9, 2000: 95.4, 2001: 97.8,
+  2002: 100.0, 2003: 102.8, 2004: 104.7, 2005: 107.0, 2006: 109.1, 2007: 111.5,
+  2008: 114.1, 2009: 114.4, 2010: 116.5, 2011: 119.9, 2012: 121.7, 2013: 122.8,
+  2014: 125.2, 2015: 126.6, 2016: 128.4, 2017: 130.4, 2018: 133.4, 2019: 136.0,
+  2020: 137.0, 2021: 141.6, 2022: 151.2, 2023: 157.1, 2024: 160.9, 2025: 164.2,
+};
+
+export function dollar(n: number): string {
+  if (Math.abs(n) >= 10_000) return `$${zahlFmt(Math.round(n / 100) * 100)}`;
+  return `$${zahlFmt(Math.round(n))}`;
+}
+
+function inflationCa(betrag: number, von: number, bis: number) {
+  const faktor = VPI_CA[bis] / VPI_CA[von];
+  let spitze = { jahr: von + 1, rate: -Infinity };
+  for (let j = von + 1; j <= bis; j++) {
+    const rate = Math.round((VPI_CA[j] / VPI_CA[j - 1] - 1) * 1000) / 10;
+    if (rate > spitze.rate) spitze = { jahr: j, rate };
+  }
+  return {
+    heute: betrag * faktor,
+    gesamt: (faktor - 1) * 100,
+    proJahr: (Math.pow(faktor, 1 / (bis - von)) - 1) * 100,
+    kaufkraft: betrag / faktor,
+    spitze,
+  };
+}
+
+const QUELLE_VPI_CA = 'Consumer Price Index Kanada, Jahresschnitte 1990–2025 (Statistics Canada, Tabelle 18-10-0005-01)';
+
+function inflationCaErgebnis(e: Record<string, unknown>): Ergebnis | null {
+  const betrag = zahl(e.betrag, 1, 100_000);
+  const von = zahl(e.von, VPI_ERSTES, VPI_LETZTES - 1);
+  const bis = zahl(e.bis, VPI_ERSTES + 1, VPI_LETZTES);
+  if (betrag === null || von === null || bis === null) return null;
+  if (!Number.isInteger(von) || !Number.isInteger(bis) || bis <= von) return null;
+  const r = inflationCa(betrag, von, bis);
+  const t = tippAuswertung(zahl(e.tipp, 0, 1_000_000), r.heute, dollar);
+  return {
+    gross: `≈ ${dollar(r.heute)}`,
+    satz: `im Jahr ${bis} für das, was ${von} ${dollar(betrag)} gekostet hat (Kanada)`,
+    einordnung:
+      t.satz ??
+      (r.proJahr < 2
+        ? 'Ruhige Jahre: im Schnitt unter 2 % pro Jahr.'
+        : waehle(
+            [
+              `Über ${bis - von} Jahre wurde alles ${zahlFmt(r.gesamt)} % teurer.`,
+              `Für ${dollar(betrag)} bekommst du heute, was ${von} ${dollar(r.kaufkraft)} gekostet hat.`,
+            ],
+            e,
+          )),
+    details: [
+      { label: 'teurer insgesamt', wert: `${zahlFmt(r.gesamt, 1)} %` },
+      { label: 'im Schnitt pro Jahr', wert: `${zahlFmt(r.proJahr, 1)} %` },
+      { label: 'teuerstes Jahr dazwischen', wert: `${r.spitze.jahr} (${zahlFmt(r.spitze.rate, 1)} %)` },
+      ...t.detail,
+    ],
+    balken: { anteil: 1 / (1 + r.gesamt / 100), links: 'damals', rechts: 'Teuerung' },
+    quelle: QUELLE_VPI_CA,
+  };
+}
+
+// --- Brutto -> Netto, Kanada (Ontario) 2026 -------------------------------------------
+//
+// Quelle: CRA, T4127 "Payroll Deductions Formulas", 122. Ausgabe, gueltig ab
+// 1. Jaenner 2026 (Tabellen 8.1-8.6 und die Ontario-Formeln V1, V2, S), und
+// CRA "Current year tax rates and income brackets (2026)".
+//   Bund: 14 / 20,5 / 26 / 29 / 33 % ab 58.523 / 117.045 / 181.440 / 258.482;
+//         Grundfreibetrag 16.452 (ueber 181.440 abschmelzend bis 14.829),
+//         Canada Employment Amount 1.501; Gutschriften zum niedrigsten Satz.
+//   CPP:  5,95 % auf Lohn minus 3.500, bis YMPE 74.600 (max. 4.230,45); davon
+//         4,95 Punkte Gutschrift, 1 Punkt Abzug vom Einkommen.
+//   CPP2: 4 % zwischen 74.600 und 85.000 (max. 416), Abzug vom Einkommen.
+//   EI:   1,63 % bis 68.900 (max. 1.123,07), Gutschrift.
+//   ON:   5,05 / 9,15 / 11,16 / 12,16 / 13,16 % ab 53.891 / 107.785 / 150.000 /
+//         220.000; Grundfreibetrag 12.989; Surtax 20 % der Steuer ueber 5.818
+//         plus 36 % ueber 7.446; Ontario Tax Reduction 2 x 300 minus Steuer;
+//         Ontario Health Premium nach Stufen bis 900.
+// Weggelassen: andere Provinzen, Rueckerstattung bei der Steuererklaerung.
+const BUND_CA: [number, number][] = [
+  [58_523, 0.14], [117_045, 0.205], [181_440, 0.26], [258_482, 0.29], [Infinity, 0.33],
+];
+const ON_CA: [number, number][] = [
+  [53_891, 0.0505], [107_785, 0.0915], [150_000, 0.1116], [220_000, 0.1216], [Infinity, 0.1316],
+];
+
+function stufen(einkommen: number, tabelle: [number, number][]) {
+  let steuer = 0;
+  let unten = 0;
+  for (const [oben, satz] of tabelle) {
+    if (einkommen <= unten) break;
+    steuer += (Math.min(einkommen, oben) - unten) * satz;
+    unten = oben;
+  }
+  return steuer;
+}
+
+function ontarioHealthPremium(a: number): number {
+  if (a <= 20_000) return 0;
+  if (a <= 36_000) return Math.min(300, 0.06 * (a - 20_000));
+  if (a <= 48_000) return Math.min(450, 300 + 0.06 * (a - 36_000));
+  if (a <= 72_000) return Math.min(600, 450 + 0.25 * (a - 48_000));
+  if (a <= 200_000) return Math.min(750, 600 + 0.25 * (a - 72_000));
+  return Math.min(900, 750 + 0.25 * (a - 200_000));
+}
+
+export function netto2026Ca(jahr: number) {
+  const cpp = Math.min(4_230.45, Math.max(0, (Math.min(jahr, 74_600) - 3_500) * 0.0595));
+  const cppBasis = cpp * (0.0495 / 0.0595);
+  const cpp2 = Math.min(416, Math.max(0, (Math.min(jahr, 85_000) - 74_600) * 0.04));
+  const ei = Math.min(1_123.07, jahr * 0.0163);
+  // Erweiterter CPP-Teil und CPP2 mindern das zu versteuernde Einkommen.
+  const a = Math.max(0, jahr - (cpp - cppBasis) - cpp2);
+
+  const bpaf = a <= 181_440 ? 16_452 : a >= 258_482 ? 14_829 : 16_452 - ((a - 181_440) * 1_623) / 77_042;
+  const bund = Math.max(0, stufen(a, BUND_CA) - 0.14 * (bpaf + Math.min(1_501, jahr) + cppBasis + ei));
+
+  const t4 = Math.max(0, stufen(a, ON_CA) - 0.0505 * (12_989 + cppBasis + ei));
+  const v1 = t4 <= 5_818 ? 0 : 0.2 * (t4 - 5_818) + (t4 > 7_446 ? 0.36 * (t4 - 7_446) : 0);
+  const s = Math.max(0, Math.min(t4 + v1, 2 * 300 - (t4 + v1)));
+  const ontario = Math.max(0, t4 + v1 - s) + ontarioHealthPremium(a);
+
+  const netto = jahr - cpp - cpp2 - ei - bund - ontario;
+  return { cpp: cpp + cpp2, ei, bund, ontario, netto, monat: netto / 12 };
+}
+
+const QUELLE_NETTO_CA =
+  'Kanada 2026, Ontario, Angestellte · Bund, Ontario, CPP, CPP2, EI nach CRA T4127 (Jänner 2026) · ohne weitere Abzüge, keine Steuerberatung';
+
+function nettoCaErgebnis(e: Record<string, unknown>): Ergebnis | null {
+  const stunde = e.modus === 'stunde';
+  let jahr: number | null;
+  let lohn: number | null = null;
+  let stunden: number | null = null;
+  if (stunde) {
+    lohn = zahl(e.lohn, 5, 150);
+    stunden = zahl(e.stunden, 1, 60);
+    jahr = lohn !== null && stunden !== null ? lohn * stunden * 52 : null;
+  } else {
+    jahr = zahl(e.jahr, 1_000, 500_000);
+  }
+  if (jahr === null) return null;
+  const n = netto2026Ca(jahr);
+  const mehr = netto2026Ca(jahr + 1_000).netto - n.netto;
+  return {
+    gross: `≈ ${dollar(n.monat)}`,
+    satz: stunde
+      ? `netto im Monat bei $${zahlFmt(lohn ?? 0, 2)} pro Stunde und ${zahlFmt(stunden ?? 0)} Stunden pro Woche (Ontario 2026)`
+      : `netto im Monat von ${dollar(jahr)} brutto im Jahr (Ontario 2026)`,
+    einordnung: waehle(
+      [
+        `Von $1.000 mehr im Jahr blieben dir ${dollar(mehr)}.`,
+        `Jeder zusätzliche Dollar bringt hier etwa ${zahlFmt(mehr / 10)} Cent netto.`,
+      ],
+      e,
+    ),
+    details: [
+      ...(stunde ? [{ label: 'brutto im Jahr', wert: dollar(jahr) }] : []),
+      { label: 'CPP', wert: dollar(n.cpp) },
+      { label: 'EI', wert: dollar(n.ei) },
+      { label: 'Steuer Bund', wert: dollar(n.bund) },
+      { label: 'Steuer Ontario', wert: dollar(n.ontario) },
+      { label: 'netto im Jahr', wert: dollar(n.netto) },
+    ],
+    balken: { anteil: n.netto / jahr, links: 'netto', rechts: 'Abgaben' },
+    quelle: QUELLE_NETTO_CA,
+  };
 }

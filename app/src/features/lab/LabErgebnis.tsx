@@ -86,7 +86,7 @@ export function LabErgebnis({
         </Animated.Text>
       ) : null}
 
-      <Text style={styles.quelle}>{w.quelle}</Text>
+      <Text style={styles.quelle}>{e.quelle ?? w.quelle}</Text>
 
       {mitLink ? (
         <Pressable

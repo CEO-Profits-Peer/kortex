@@ -768,14 +768,24 @@ function Licht({ w }: { w: Werkzeug }) {
 // --- Inflation ------------------------------------------------------------------------------------
 
 function Inflation({ w }: { w: Werkzeug }) {
+  const [land, setLand] = useState<'at' | 'ca'>('at');
   const [betrag, setBetrag] = useState(100);
   const [von, setVon] = useState(2000);
   const [bis, setBis] = useState(VPI_LETZTES);
-  const t = useTipp(`${betrag}-${von}-${bis}`, betrag);
+  const t = useTipp(`${land}-${betrag}-${von}-${bis}`, betrag);
   return (
     <>
       <Flaeche>
-        <Regler label="Betrag" wert={betrag.toLocaleString('de-AT')} einheit="€">
+        <Umschalter
+          w={w}
+          wert={land}
+          optionen={[
+            { id: 'at', label: 'Österreich' },
+            { id: 'ca', label: 'Kanada' },
+          ]}
+          onChange={setLand}
+        />
+        <Regler label="Betrag" wert={betrag.toLocaleString('de-AT')} einheit={land === 'ca' ? '$' : '€'}>
           <Slider min={10} max={1_000} step={10} value={betrag} onChange={setBetrag} tint={w.farbe} />
         </Regler>
         <Regler label="Damals" wert={String(von)}>
@@ -797,9 +807,16 @@ function Inflation({ w }: { w: Werkzeug }) {
           Der Preisindex misst einen Warenkorb, keinen einzelnen Preis. Mieten oder Lebensmittel können schneller
           gestiegen sein als der Schnitt.
         </Text>
-        <TippFeld w={w} t={t} min={betrag} max={betrag * 3} step={Math.max(1, betrag / 50)} fmt={(n) => `${Math.round(n).toLocaleString('de-AT')} €`} />
+        <TippFeld
+          w={w}
+          t={t}
+          min={betrag}
+          max={betrag * 3}
+          step={Math.max(1, betrag / 50)}
+          fmt={(n) => (land === 'ca' ? `$${Math.round(n).toLocaleString('de-AT')}` : `${Math.round(n).toLocaleString('de-AT')} €`)}
+        />
       </Flaeche>
-      {t.zeigen ? <Ergebnis w={w} e={{ betrag, von, bis, ...t.extra }} /> : null}
+      {t.zeigen ? <Ergebnis w={w} e={{ betrag, von, bis, ...(land === 'ca' ? { land } : {}), ...t.extra }} /> : null}
     </>
   );
 }
@@ -807,30 +824,53 @@ function Inflation({ w }: { w: Werkzeug }) {
 // --- Brutto -> Netto -------------------------------------------------------------------------------
 
 function Netto({ w }: { w: Werkzeug }) {
+  const [land, setLand] = useState<'at' | 'ca'>('at');
   const [modus, setModus] = useState<'monat' | 'stunde'>('monat');
   const [brutto, setBrutto] = useState(2_500);
+  const [jahr, setJahr] = useState(55_000);
   const [lohn, setLohn] = useState(14);
   const [stunden, setStunden] = useState(20);
-  const e = modus === 'stunde' ? { modus, lohn, stunden } : { brutto };
+  const ca = land === 'ca';
+  // Kanada rechnet in Jahresgehalt und 52 Wochen - so steht es im Vertrag.
+  const e = ca
+    ? modus === 'stunde'
+      ? { land, modus, lohn, stunden }
+      : { land, jahr }
+    : modus === 'stunde'
+      ? { modus, lohn, stunden }
+      : { brutto };
   return (
     <>
       <Flaeche>
         <Umschalter
           w={w}
+          wert={land}
+          optionen={[
+            { id: 'at', label: 'Österreich' },
+            { id: 'ca', label: 'Kanada' },
+          ]}
+          onChange={setLand}
+        />
+        <Umschalter
+          w={w}
           wert={modus}
           optionen={[
-            { id: 'monat', label: 'Monatslohn' },
+            { id: 'monat', label: ca ? 'Jahresgehalt' : 'Monatslohn' },
             { id: 'stunde', label: 'Stundenlohn' },
           ]}
           onChange={setModus}
         />
-        {modus === 'monat' ? (
+        {modus === 'monat' && ca ? (
+          <Regler label="Brutto im Jahr" wert={jahr.toLocaleString('de-AT')} einheit="$">
+            <Slider min={10_000} max={200_000} step={1_000} value={jahr} onChange={setJahr} tint={w.farbe} />
+          </Regler>
+        ) : modus === 'monat' ? (
           <Regler label="Brutto im Monat" wert={brutto.toLocaleString('de-AT')} einheit="€">
             <Slider min={300} max={8_000} step={50} value={brutto} onChange={setBrutto} tint={w.farbe} />
           </Regler>
         ) : (
           <>
-            <Regler label="Pro Stunde" wert={lohn.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit="€">
+            <Regler label="Pro Stunde" wert={lohn.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit={ca ? '$' : '€'}>
               <Slider min={5} max={60} step={0.5} value={lohn} onChange={setLohn} tint={w.farbe} />
             </Regler>
             <Regler label="Stunden pro Woche" wert={String(stunden)}>
@@ -839,8 +879,9 @@ function Netto({ w }: { w: Werkzeug }) {
           </>
         )}
         <Text style={styles.hinweis}>
-          Angestellt in Österreich, 14 Gehälter{modus === 'stunde' ? ', ein Monat = 52 ÷ 12 Wochen' : ''}. Bei kleinen
-          Einkommen holt die Arbeitnehmerveranlagung oft noch Geld zurück – das ist hier nicht drin.
+          {ca
+            ? 'Angestellt in Ontario, Kanada. Zu viel einbehaltene Steuer kommt mit der Steuererklärung zurück – das ist hier nicht drin.'
+            : `Angestellt in Österreich, 14 Gehälter${modus === 'stunde' ? ', ein Monat = 52 ÷ 12 Wochen' : ''}. Bei kleinen Einkommen holt die Arbeitnehmerveranlagung oft noch Geld zurück – das ist hier nicht drin.`}
         </Text>
       </Flaeche>
       <Ergebnis w={w} e={e} />
