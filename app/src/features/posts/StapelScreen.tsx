@@ -8,7 +8,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
 import { zeigeProSperre } from '@/components/ProSperre';
-import { stapelAlsAnki, textSpeichern } from '@/lib/export';
+import { stapelAlsAnki, stapelAlsPdf, stapelPdfFenster, textSpeichern } from '@/lib/export';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { useIchPro } from '@/lib/pro';
@@ -35,18 +35,33 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
 
   // PRO (19.09.): den Stapel fuer Anki mitnehmen. Nur eine App-Grenze - der
   // Export liest dieselben Karten, die man hier ohnehin sieht.
-  const exportieren = async () => {
+  const [wahl, setWahl] = useState(false);
+
+  const exportieren = async (als: 'anki' | 'pdf') => {
     if (!ids) return;
+    setWahl(false);
     if (!ichPro.pro) {
-      zeigeProSperre('Stapel als Datei für Anki exportieren gibt es mit PRO.');
+      zeigeProSperre('Stapel als PDF oder für Anki exportieren gibt es mit PRO.');
       return;
     }
     haptics.medium();
+    // PDF: Fenster SOFORT oeffnen, noch im Klick - sonst blockt der Browser es.
+    const fenster = als === 'pdf' ? stapelPdfFenster() : null;
     try {
       const karten = await api.contentByIds(ids);
-      await textSpeichern(`stapel-${wer ?? 'elycic'}.txt`, stapelAlsAnki(karten));
-      setExportiert(`${karten.length} Karten exportiert – in Anki: Datei › Importieren`);
+      if (als === 'pdf') {
+        if (!fenster) {
+          setExportiert('PDF geht im Browser – in der App bitte Anki wählen.');
+        } else {
+          stapelAlsPdf(fenster, karten, wer ? `Stapel von @${wer}` : 'Stapel');
+          setExportiert('Im neuen Fenster: Drucken › Als PDF speichern');
+        }
+      } else {
+        await textSpeichern(`stapel-${wer ?? 'elycic'}.txt`, stapelAlsAnki(karten));
+        setExportiert(`${karten.length} Karten exportiert – in Anki: Datei › Importieren`);
+      }
     } catch (e) {
+      fenster?.close();
       setExportiert(fehlerText(e, 'Export ging nicht'));
     }
     setTimeout(() => setExportiert(null), 3500);
@@ -111,13 +126,23 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
       />
       {zurueck}
       <Pressable
-        onPress={() => void exportieren()}
+        onPress={() => setWahl((w) => !w)}
         hitSlop={12}
         style={[styles.zurueck, styles.export, { top: insets.top + space.md }]}
         accessibilityRole="button"
       >
         <Text style={styles.zurueckText}>Export</Text>
       </Pressable>
+      {wahl ? (
+        <View style={[styles.wahl, { top: insets.top + space.md + 40 }]}>
+          <Pressable onPress={() => void exportieren('pdf')} style={styles.zurueck} accessibilityRole="button">
+            <Text style={styles.zurueckText}>PDF</Text>
+          </Pressable>
+          <Pressable onPress={() => void exportieren('anki')} style={styles.zurueck} accessibilityRole="button">
+            <Text style={styles.zurueckText}>Anki</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {exportiert ? (
         <View style={[styles.hinweis, { top: insets.top + space.md + 44 }]}>
           <Text style={styles.zurueckText}>{exportiert}</Text>
@@ -143,6 +168,7 @@ const styles = StyleSheet.create({
   },
   zurueckText: { ...type.mono, fontSize: 12, color: color.ink.high },
   export: { left: undefined, right: space.lg },
+  wahl: { position: 'absolute', right: space.lg, gap: space.xs, alignItems: 'flex-end' },
   hinweis: {
     position: 'absolute',
     right: space.lg,

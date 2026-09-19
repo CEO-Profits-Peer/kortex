@@ -70,7 +70,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
       { icon: 'chart', titel: 'Statistik', text: 'Reichweite je Beitrag und Lern-Heatmap', da: true },
       { icon: 'leaderboard', titel: 'Ligen', text: 'Private Wochen-Ligen mit Freunden – beitreten geht auch ohne PRO', da: true },
       { icon: 'interactive', titel: 'LAB-Szenarien', text: 'Bis zu sechs Varianten je Werkzeug merken und vergleichen', da: true },
-      { icon: 'lesson', titel: 'Export', text: 'Stapel als Datei für Anki – PDF folgt', da: true },
+      { icon: 'lesson', titel: 'Export', text: 'Stapel als PDF oder für Anki', da: true },
       { icon: 'listen', titel: 'Stimmen', text: 'Vorlese-Stimme und Tempo wählen', da: true },
       { icon: 'streak', titel: 'Streak-Schutz', text: 'Ein verpasster Tag pro Woche kostet dich den Streak nicht', da: true },
     ],
