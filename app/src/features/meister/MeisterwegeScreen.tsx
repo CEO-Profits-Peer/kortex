@@ -17,6 +17,7 @@ import { haptics } from '@/lib/haptics';
 import {
   MEISTER_SCHWELLEN,
   STUFEN_NAMEN,
+  saisonRahmenTitel,
   type MeisterBelohnung,
   type Meisterweg,
   type Meisterwege,
@@ -81,6 +82,14 @@ export function MeisterwegeScreen() {
     return alle.filter((b) => b.art === art && b.frei && !gesehen.has(b.wert) && gesehen.add(b.wert));
   };
   const rahmenFrei = eindeutig('rahmen');
+  // 0108: Saison-Rahmen stehen nicht in den Wegen - verdient ist er, wenn
+  // genug gelesen wurde; Gold zusaetzlich nur mit PRO (prueft der Server).
+  const saison = m?.saison ?? null;
+  if (saison && saison.gelesen >= saison.ziel) {
+    for (const code of [`saison-${saison.id}`, ...(pro.pro ? [`saison-${saison.id}-gold`] : [])]) {
+      rahmenFrei.push({ id: code, stufe: 0, art: 'rahmen', wert: code, titel: saisonRahmenTitel(code) ?? code, pro: code.endsWith('-gold'), frei: true, weg: m!.wege[0] });
+    }
+  }
   const namenFrei = eindeutig('name');
 
   return (
@@ -144,6 +153,30 @@ export function MeisterwegeScreen() {
               </Pressable>
               {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
             </View>
+
+            {/* --- Saison (0108) ----------------------------------------------- */}
+            {saison ? (
+              <View style={styles.karte}>
+                <View style={styles.wegKopf}>
+                  <Avatar seed="v2-1000-0000000000000000000" size={40} rahmen={`saison-${saison.id}`} />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={styles.wegName}>Saison: {saison.name}</Text>
+                    <View style={styles.balken}>
+                      <View style={{ flex: Math.min(1, saison.gelesen / saison.ziel), backgroundColor: '#D9803A' }} />
+                      <View style={{ flex: 1 - Math.min(1, saison.gelesen / saison.ziel) }} />
+                    </View>
+                    <Text style={styles.klein}>
+                      {saison.gelesen >= saison.ziel
+                        ? 'Verdient – der Rahmen bleibt dir auch nach der Saison.'
+                        : saison.laeuft
+                          ? `${saison.gelesen} / ${saison.ziel} Karten gelesen · bis ${new Date(saison.bis).toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`
+                          : 'Diese Saison ist vorbei.'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.klein}>Mit PRO gibt es denselben Rahmen zusätzlich in Gold – verdienen musst du ihn trotzdem selbst.</Text>
+              </View>
+            ) : null}
 
             {/* --- Wege ------------------------------------------------------- */}
             {m.wege.map((w) => (

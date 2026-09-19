@@ -471,6 +471,24 @@ export function SettingsScreen() {
                 }
               />
             ) : null}
+            {ZWEI && linse !== 'flach' ? (
+              <Zeile
+                label="Stein bewegt sich"
+                hint={ichPro.pro ? 'Ein Lichtschein wandert über den aktiven Tab' : 'Mit PRO'}
+                rechts={
+                  <Schalter
+                    wert={ichPro.pro && prefs.steinAnimiert}
+                    onChange={(v) => {
+                      if (v && !ichPro.pro) {
+                        zeigeProSperre('Der animierte Stein ist eine PRO-Option.');
+                        return;
+                      }
+                      void setPref('steinAnimiert', v);
+                    }}
+                  />
+                }
+              />
+            ) : null}
             {ZWEI ? (
               <Zeile
                 label="Hintergrund"

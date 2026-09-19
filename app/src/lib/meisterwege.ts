@@ -29,7 +29,19 @@ export type Meisterweg = {
   belohnungen: MeisterBelohnung[];
 };
 
+export type Saison = {
+  id: string;
+  name: string;
+  von: string;
+  bis: string;
+  ziel: number;
+  laeuft: boolean;
+  gelesen: number;
+};
+
 export type Meisterwege = {
+  /** 0108: laufende oder zuletzt gelaufene Saison. */
+  saison?: Saison | null;
   rahmen: string | null;
   namensfarbe: string | null;
   wege: Meisterweg[];
@@ -61,9 +73,24 @@ const RAHMEN: Record<string, { farbe: string; stil: RahmenStil }> = {
   language: { farbe: '#5AD1C4', stil: 'voll' },
 };
 
+/** Saison-Rahmen (0108): eigene Farbe, sonst wie die Meister-Rahmen gezeichnet. */
+const SAISON_RAHMEN: Record<string, { farbe: string; stil: RahmenStil; titel: string }> = {
+  herbst26: { farbe: '#D9803A', stil: 'lang', titel: 'Herbstlaub' },
+};
+
+export function saisonRahmenTitel(code: string): string | null {
+  const id = code.replace(/^saison-/, '').replace(/-gold$/, '');
+  const r = SAISON_RAHMEN[id];
+  return r ? `${r.titel}${code.endsWith('-gold') ? ' Gold' : ''}` : null;
+}
+
 export function rahmenAussehen(code: string | null | undefined) {
   if (!code) return null;
   const gold = code.endsWith('-gold');
+  if (code.startsWith('saison-')) {
+    const r = SAISON_RAHMEN[code.slice(7).replace(/-gold$/, '')];
+    return r ? { farbe: r.farbe, stil: r.stil, gold } : null;
+  }
   const basis = RAHMEN[gold ? code.slice(0, -5) : code];
   if (!basis) return null;
   return { ...basis, gold };

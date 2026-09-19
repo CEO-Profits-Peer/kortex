@@ -1,6 +1,18 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedProps,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import Svg, { Defs, Path, Pattern, Polygon, Rect } from 'react-native-svg';
+
+import { getPrefs } from '@/lib/prefs';
+import { proAktiv } from '@/lib/pro';
 
 import { LINSE, sechseckPunkte } from '@/theme/design';
 import { color } from '@/theme/tokens';
@@ -78,6 +90,7 @@ function SechseckLinseBase({
         const [x2, y2] = e[(i + 1) % 6];
         return <Polygon key={i} points={`${x},${y} ${x2},${y2} ${mx},${my}`} fill={(gold ? GOLD_TOENE : STEIN_TOENE)[i]} />;
       })}
+      {steinAnimiert() ? <SteinSchein e={e} mx={mx} my={my} /> : null}
       <Polygon
         points={sechseckPunkte(b, h, 0.75)}
         fill="none"
@@ -86,6 +99,44 @@ function SechseckLinseBase({
       />
     </Svg>
   );
+}
+
+/**
+ * Animierter Stein (PRO, 19.09.): ein weicher Lichtschein wandert langsam um
+ * die Facetten - wie beim Laden, nur ruhiger (6 s statt 1,5 s), damit es auf
+ * dem aktiven Tab nicht nervt. Nur mit Schalter, PRO und ohne "Bewegung
+ * reduzieren".
+ */
+function steinAnimiert(): boolean {
+  const p = getPrefs();
+  return p.steinAnimiert && !p.reduceMotion && proAktiv();
+}
+
+const AnimPolygon = Animated.createAnimatedComponent(Polygon);
+
+function SteinSchein({ e, mx, my }: { e: [number, number][]; mx: number; my: number }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withRepeat(withTiming(1, { duration: 6000, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(t);
+  }, [t]);
+  return (
+    <>
+      {e.map(([x, y], i) => {
+        const [x2, y2] = e[(i + 1) % 6];
+        return <ScheinFacette key={i} punkte={`${x},${y} ${x2},${y2} ${mx},${my}`} i={i} t={t} />;
+      })}
+    </>
+  );
+}
+
+function ScheinFacette({ punkte, i, t }: { punkte: string; i: number; t: SharedValue<number> }) {
+  const props = useAnimatedProps(() => {
+    let d = Math.abs(t.value * 6 - i - 0.5);
+    d = Math.min(d, 6 - d);
+    return { fillOpacity: Math.max(0, 1 - d / 1.5) * 0.18 };
+  });
+  return <AnimPolygon points={punkte} fill="#FFFFFF" animatedProps={props} />;
 }
 
 export const SechseckLinse = memo(SechseckLinseBase);

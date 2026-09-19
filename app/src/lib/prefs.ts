@@ -35,6 +35,8 @@ export type Prefs = {
    * Uebergaenge. Standard AUS, bis entschieden ist, ob sie bleiben.
    */
   testAnimationen: boolean;
+  /** PRO (19.09.): Lichtschein auf dem Stein des aktiven Tabs. */
+  steinAnimiert: boolean;
 };
 
 const DEFAULTS: Prefs = {
@@ -45,6 +47,7 @@ const DEFAULTS: Prefs = {
   sprechTempo: 1,
   stimmen: {},
   testAnimationen: false,
+  steinAnimiert: false,
 };
 
 const KEY = 'prefs_v1';
