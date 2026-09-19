@@ -33,6 +33,23 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+/** 0118: Jahresrueckblick. */
+export type Jahresrueckblick = {
+  jahr: number;
+  laufend: boolean;
+  gelesen: number;
+  richtig: number;
+  xp: number;
+  lerntage: number;
+  erster_tag: string | null;
+  serie: number;
+  bester_monat: { monat: number; tage: number } | null;
+  themen: { name: string; emoji: string | null; accent: string | null; karten: number }[];
+  tageszeit: 'morgen' | 'tag' | 'abend' | 'nacht' | null;
+  abzeichen: { gold: number; silber: number; bronze: number };
+  beste_antworten: number;
+};
+
 /** 0117: Monats-Abzeichen; monate[0] ist der laufende Monat. stufe 0-3. */
 export type MonatsAbzeichen = {
   heute: string;
@@ -468,6 +485,14 @@ export const api = {
     const { data, error } = await supabase.rpc('pruefung_anlegen', { p_titel: titel, p_datum: datum, p_kategorien: kategorien });
     if (error) throw error;
     return data as string;
+  },
+
+  // --- Jahresrueckblick (0118) -------------------------------------------
+
+  async jahresrueckblick(jahr?: number): Promise<Jahresrueckblick> {
+    const { data, error } = await supabase.rpc('jahresrueckblick', { p_jahr: jahr ?? null });
+    if (error) throw error;
+    return data as Jahresrueckblick;
   },
 
   // --- Monats-Abzeichen (0117) -------------------------------------------

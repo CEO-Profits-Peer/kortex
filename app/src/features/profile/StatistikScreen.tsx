@@ -222,6 +222,18 @@ export function StatistikScreen() {
           <Icon name="chevron" size={14} color={color.ink.low} />
         </Pressable>
 
+        {/* 0118: Jahresrueckblick. */}
+        <Pressable
+          onPress={() => router.push('/jahr')}
+          style={({ pressed }) => [styles.beitrag, { flexDirection: 'row', alignItems: 'center' }, pressed && { opacity: 0.8 }]}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.beitragText}>Dein Jahr</Text>
+            <Text style={styles.beitragZahlen}>Lerntage, Serien, Lieblingsthemen – der Jahresrückblick</Text>
+          </View>
+          <Icon name="chevron" size={14} color={color.ink.low} />
+        </Pressable>
+
         <View style={styles.reihe}>
           <Zahl wert={s.sozial.follower} label="Follower" />
           <Zahl wert={s.sozial.likes + s.sozial.kommentar_likes} label="Likes bekommen" farbe={color.signal.primary} />
