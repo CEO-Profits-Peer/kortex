@@ -36,7 +36,8 @@ was sonst noch offen ist — vor allem das, was nur du tun kannst.
 1. **Meisterwege**: Stufen je Hauptthema aus der Mastery, Rahmen, Namensfarben, dunkle Profilbild-Farben
 2. **PRO-Optik wählbar**: Gold-Dreiecke-Muster, Gold-Stein
 3. **PRO-Features**: Streak-Schutz, Export (CSV/Anki), LAB-Szenarien, Profil-Themes, Planen, Statistik, Ligen
-4. **LAB**: die drei Daten-Werkzeuge Inflation, Brutto → Netto, Wege & CO₂. Nur mit amtlichen, zitierten Tabellen.
+4. ✅ **LAB**: Inflation, Brutto → Netto, Wege & CO₂ gebaut (19.09.), mit amtlichen Tabellen, die Quellen stehen in `features/lab/rechnen.ts`. Zum Teilen muss `0094_lab_daten.sql` eingespielt sein.
+   - **Jährlich erneuern:** VPI (jeden Jänner), Steuertarif und SV-Werte (jeden Jänner), UBA-Kennzahlen (etwa jährlich). Dabei nur die Tabellen ändern.
 
 ## ⚪ Offen, aber ohne Termin
 

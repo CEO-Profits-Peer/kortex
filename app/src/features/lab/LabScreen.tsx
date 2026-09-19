@@ -17,7 +17,16 @@ import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { LabErgebnis } from './LabErgebnis';
-import { LICHT_ZIELE, ergebnis, werkzeug, type Werkzeug } from './rechnen';
+import {
+  CO2_MITTEL,
+  LICHT_ZIELE,
+  VPI_ERSTES,
+  VPI_LETZTES,
+  ergebnis,
+  werkzeug,
+  type Co2MittelId,
+  type Werkzeug,
+} from './rechnen';
 
 /**
  * Ein LAB-Werkzeug: einstellen, sofort sehen, teilen.
@@ -65,6 +74,9 @@ export function LabScreen({ id }: { id: string }) {
             {w.id === 'schlaf' ? <Schlaf w={w} /> : null}
             {w.id === 'lesetempo' ? <Lesetempo w={w} /> : null}
             {w.id === 'licht' ? <Licht w={w} /> : null}
+            {w.id === 'inflation' ? <Inflation w={w} /> : null}
+            {w.id === 'netto' ? <Netto w={w} /> : null}
+            {w.id === 'co2' ? <Co2 w={w} /> : null}
           </>
         )}
       </ScrollView>
@@ -529,6 +541,106 @@ function Licht({ w }: { w: Werkzeug }) {
         </Text>
       </Flaeche>
       <Ergebnis w={w} e={{ ziel }} />
+    </>
+  );
+}
+
+// --- Inflation ------------------------------------------------------------------------------------
+
+function Inflation({ w }: { w: Werkzeug }) {
+  const [betrag, setBetrag] = useState(100);
+  const [von, setVon] = useState(2000);
+  const [bis, setBis] = useState(VPI_LETZTES);
+  return (
+    <>
+      <Flaeche>
+        <Regler label="Betrag" wert={betrag.toLocaleString('de-AT')} einheit="€">
+          <Slider min={10} max={1_000} step={10} value={betrag} onChange={setBetrag} tint={w.farbe} />
+        </Regler>
+        <Regler label="Damals" wert={String(von)}>
+          <Slider
+            min={VPI_ERSTES}
+            max={VPI_LETZTES - 1}
+            value={von}
+            onChange={(v) => {
+              setVon(v);
+              if (bis <= v) setBis(v + 1);
+            }}
+            tint={w.farbe}
+          />
+        </Regler>
+        <Regler label="Heute" wert={String(bis)}>
+          <Slider min={VPI_ERSTES + 1} max={VPI_LETZTES} value={bis} onChange={(v) => setBis(Math.max(v, von + 1))} tint={w.farbe} />
+        </Regler>
+        <Text style={styles.hinweis}>
+          Der Preisindex misst einen Warenkorb, keinen einzelnen Preis. Mieten oder Lebensmittel können schneller
+          gestiegen sein als der Schnitt.
+        </Text>
+      </Flaeche>
+      <Ergebnis w={w} e={{ betrag, von, bis }} />
+    </>
+  );
+}
+
+// --- Brutto -> Netto -------------------------------------------------------------------------------
+
+function Netto({ w }: { w: Werkzeug }) {
+  const [brutto, setBrutto] = useState(2_500);
+  return (
+    <>
+      <Flaeche>
+        <Regler label="Brutto im Monat" wert={brutto.toLocaleString('de-AT')} einheit="€">
+          <Slider min={300} max={8_000} step={50} value={brutto} onChange={setBrutto} tint={w.farbe} />
+        </Regler>
+        <Text style={styles.hinweis}>
+          Angestellt in Österreich, 14 Gehälter. Bei kleinen Einkommen holt die Arbeitnehmerveranlagung oft noch
+          Geld zurück – das ist hier nicht drin.
+        </Text>
+      </Flaeche>
+      <Ergebnis w={w} e={{ brutto }} />
+    </>
+  );
+}
+
+// --- Wege & CO2 ------------------------------------------------------------------------------------
+
+/** Reglerstellung 0..100 -> 1..10.000 km, logarithmisch: Schulweg und Fernflug auf einem Regler. */
+const kmAus = (pos: number) => {
+  const km = Math.pow(10, (pos / 100) * 4);
+  return km < 20 ? Math.round(km) : km < 200 ? Math.round(km / 5) * 5 : Math.round(km / 50) * 50;
+};
+
+function Co2({ w }: { w: Werkzeug }) {
+  const [pos, setPos] = useState(50);
+  const [mittel, setMittel] = useState<Co2MittelId>('auto');
+  const km = kmAus(pos);
+  return (
+    <>
+      <Flaeche>
+        <Regler label="Strecke" wert={km.toLocaleString('de-AT')} einheit="km">
+          <Slider min={0} max={100} value={pos} onChange={setPos} tint={w.farbe} format={(p) => `${kmAus(p).toLocaleString('de-AT')} km`} />
+        </Regler>
+        <Text style={styles.reglerLabel}>Womit?</Text>
+        <View style={styles.chips}>
+          {CO2_MITTEL.map((m) => (
+            <Pressable
+              key={m.id}
+              onPress={() => {
+                haptics.select();
+                setMittel(m.id);
+              }}
+              style={[styles.chip, mittel === m.id && { borderColor: w.farbe, backgroundColor: color.bg }]}
+            >
+              <Text style={[styles.chipText, mittel === m.id && { color: w.farbe }]}>{m.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.hinweis}>
+          Pro Person und im Schnitt besetzt: ein Auto mit 1,13 Leuten, ein Zug teilt seinen Strom auf
+          viele Fahrgäste auf.
+        </Text>
+      </Flaeche>
+      <Ergebnis w={w} e={{ km, mittel }} />
     </>
   );
 }
