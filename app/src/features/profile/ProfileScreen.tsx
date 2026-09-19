@@ -22,6 +22,7 @@ import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { ProBanner } from '@/features/pro/ProBanner';
 import { ProAbzeichen } from '@/components/ProSperre';
+import { type Meisterwege, namensfarbe } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { beiWiederOnline } from '@/lib/online';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -133,6 +134,15 @@ export function ProfileScreen() {
   const scroll = useRef<ScrollView>(null);
   const geladenAm = useRef(0);
   const [einladeNotiz, setEinladeNotiz] = useState<string | null>(null);
+  // 0095: eigener Rahmen und Namensfarbe - kommen aus der Meisterwege-Uebersicht,
+  // die auch die Stufen fuer die Kachel liefert. Fehlt sie (Migration noch
+  // nicht da, kein Netz), bleibt das Profil wie bisher.
+  const [meister, setMeister] = useState<Meisterwege | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      api.meisterwege().then(setMeister).catch(() => setMeister(null));
+    }, []),
+  );
 
   /**
    * Freunde einladen.
@@ -239,12 +249,15 @@ export function ProfileScreen() {
         {/* --- Kopf: Bild, Name, Zahlen ---------------------------------- */}
         <View style={styles.head}>
           <Pressable onPress={() => router.push('/account')} hitSlop={6}>
-            <Avatar seed={social.avatar_seed} path={social.avatar_path} size={64} />
+            <Avatar seed={social.avatar_seed} path={social.avatar_path} size={64} rahmen={meister?.rahmen} />
           </Pressable>
 
           <View style={styles.identity}>
             <View style={styles.nameZeile}>
-              <Text style={[styles.handle, { flexShrink: 1 }]} numberOfLines={1}>
+              <Text
+                style={[styles.handle, { flexShrink: 1 }, namensfarbe(meister?.namensfarbe) ? { color: namensfarbe(meister?.namensfarbe) } : null]}
+                numberOfLines={1}
+              >
                 {personName(social)}
               </Text>
               {ichPro.pro ? <ProAbzeichen /> : null}
@@ -329,6 +342,7 @@ export function ProfileScreen() {
             onPress={() => router.push('/leaderboard')}
           />
           <Shortcut icon="chart" label="Statistik" onPress={() => router.push('/statistik')} />
+          <Shortcut icon="mastery" label="Meisterwege" onPress={() => router.push('/meisterwege')} />
         </View>
 
         {/* Mit PRO nichts an seiner Stelle: den Stand zeigen die Einstellungen

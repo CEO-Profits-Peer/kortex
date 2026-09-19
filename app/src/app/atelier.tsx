@@ -455,6 +455,16 @@ export default function Atelier() {
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
           </View>
 
+          <Text style={styles.werkTitel}>Meister-Rahmen</Text>
+          <View style={[styles.gruppe, { alignItems: 'center' }]}>
+            {['science', 'tech', 'finance', 'body', 'mind', 'world', 'local', 'life', 'history', 'culture', 'language'].map((r) => (
+              <View key={r} style={{ gap: 4, alignItems: 'center' }}>
+                <Avatar seed="v2-ce00-0a5a5a5a5a5a5a5a5a5" size={48} rahmen={r} />
+                <Avatar seed="v2-1000-0000000000000000000" size={32} rahmen={`${r}-gold`} />
+              </View>
+            ))}
+          </View>
+
           <Text style={styles.werkTitel}>Laden</Text>
           <View style={[styles.gruppe, { alignItems: 'center', gap: 24 }]}>
             <Laden />

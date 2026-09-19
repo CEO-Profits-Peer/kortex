@@ -13,6 +13,7 @@ import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { ProAbzeichen } from '@/components/ProSperre';
+import { namensfarbe } from '@/lib/meisterwege';
 import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
 import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
@@ -185,15 +186,27 @@ export function PublicProfileScreen({
             path={p.avatar_path}
             size={72}
             ring={p.is_me ? color.signal.primary : undefined}
+            rahmen={p.rahmen}
           />
           <View style={styles.headText}>
             {/* Name gross, Handle klein: das Handle braucht man nur, um die
                 Person weiterzuempfehlen, nicht um sie zu erkennen. */}
             <View style={styles.nameZeile}>
-              <Text style={[styles.handle, { flexShrink: 1 }]} numberOfLines={1}>{personName(p)}</Text>
+              <Text
+                style={[styles.handle, { flexShrink: 1 }, namensfarbe(p.namensfarbe) ? { color: namensfarbe(p.namensfarbe) } : null]}
+                numberOfLines={1}
+              >
+                {personName(p)}
+              </Text>
               {p.pro ? <ProAbzeichen /> : null}
             </View>
             <Text style={styles.name}>@{p.handle}</Text>
+            {/* 0095: erreichte Meisterwege - Thema und Stufe, keine Mastery-Zahl. */}
+            {p.meister && p.meister.length > 0 ? (
+              <Text style={styles.name} numberOfLines={1}>
+                {p.meister.slice(0, 5).map((m) => `${m.emoji ?? ''} ${m.stufe}`).join('  ·  ')}
+              </Text>
+            ) : null}
           </View>
         </View>
 

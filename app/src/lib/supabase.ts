@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 import { beobachteterFetch } from './online';
+import type { Meisterwege } from './meisterwege';
 
 import type {
   AdminCategory,
@@ -189,6 +190,19 @@ export const api = {
     const { data, error } = await supabase.rpc('get_my_profile');
     if (error) throw error;
     return (data ?? null) as Profile | null;
+  },
+
+  /** Meisterwege (0095): Stufen, Belohnungen, aktuelle Auswahl. */
+  async meisterwege(): Promise<Meisterwege> {
+    const { data, error } = await supabase.rpc('meisterwege');
+    if (error) throw error;
+    return data as Meisterwege;
+  },
+
+  /** Rahmen und Namensfarbe setzen - der Server prueft, ob sie frei sind. */
+  async meisterWaehlen(rahmen: string | null, namensfarbe: string | null): Promise<void> {
+    const { error } = await supabase.rpc('meister_waehlen', { p_rahmen: rahmen, p_namensfarbe: namensfarbe });
+    if (error) throw error;
   },
 
   async getMyStats(): Promise<Stats> {

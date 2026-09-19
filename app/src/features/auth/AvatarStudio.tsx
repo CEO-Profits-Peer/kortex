@@ -9,7 +9,8 @@ import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
-import { type WabenDesign, wabenBrauchtPro, wabenDekodieren, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
+import { type WabenDesign, wabenBrauchtMeister, wabenBrauchtPro, wabenDekodieren, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
+import { type Meisterwege, freieIndizes } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { haptics } from '@/lib/haptics';
@@ -49,6 +50,12 @@ export function AvatarStudio() {
   const ichPro = useIchPro();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // 0095: was in den Meisterwegen frei ist - fuer die Schloesser im Editor.
+  // Ohne Antwort (alte Datenbank, kein Netz) bleibt alles ab Index 12 zu.
+  const [meister, setMeister] = useState<Meisterwege | null>(null);
+  useEffect(() => {
+    api.meisterwege().then(setMeister).catch(() => setMeister(null));
+  }, []);
 
   const load = useCallback(async () => {
     const p = await api.getMyProfile();
@@ -72,6 +79,12 @@ export function AvatarStudio() {
     // fragen, statt "gespeichert" zu melden und nichts zu aendern.
     if (wabenBrauchtPro(design) && !ichPro.pro) {
       zeigeProSperre('Metall, Glas und die besonderen Gründe gibt es mit PRO. Anprobieren geht auch so.');
+      return;
+    }
+    // 0095: Meister-Farben und -Gruende behaelt der Server sonst still beim
+    // alten Bild. Lieber vorher sagen, wo man sie freispielt.
+    if (wabenBrauchtMeister(design, freieIndizes(meister))) {
+      flash('Diese Farbe spielst du in den Meisterwegen frei – anprobieren geht schon.');
       return;
     }
     setBusy(true);
@@ -180,7 +193,7 @@ export function AvatarStudio() {
           </View>
         ) : null}
 
-        <AvatarEditor design={design} onChange={setDesign} pro={ichPro.pro} />
+        <AvatarEditor design={design} onChange={setDesign} pro={ichPro.pro} meisterFrei={freieIndizes(meister)} />
 
         <Button label="Speichern" busy={busy} onPress={saveDesign} />
 

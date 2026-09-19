@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { namensfarbe } from '@/lib/meisterwege';
 import { ErwaehnungsText } from '@/components/Erwaehnungen';
 import { PostInhalt, VERB } from '@/features/posts/PostArten';
 import { Icon, type IconName } from '@/components/Icon';
@@ -63,9 +64,9 @@ export function Kopf({
 }) {
   return (
     <Pressable onPress={() => zuProfil(wer.handle, wer.ich ? undefined : postId)} style={styles.kopf}>
-      <Avatar seed={wer.avatar_seed} path={wer.avatar_path} size={klein ? 24 : 34} />
+      <Avatar seed={wer.avatar_seed} path={wer.avatar_path} size={klein ? 24 : 34} rahmen={wer.rahmen} />
       <Text style={[styles.kopfText, klein && { fontSize: 13 }]} numberOfLines={2}>
-        <Text style={styles.kopfName}>{name(wer)}</Text>
+        <Text style={[styles.kopfName, namensfarbe(wer.namensfarbe) ? { color: namensfarbe(wer.namensfarbe) } : null]}>{name(wer)}</Text>
         {verb ? ` ${verb}` : ''}
       </Text>
       {wer.pro ? <ProAbzeichen /> : null}

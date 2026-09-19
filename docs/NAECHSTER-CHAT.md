@@ -58,7 +58,7 @@ In den neuen Chat einfügen:
       - Danach 3–4 Wischkarten (Profilbild-Stile, Stapel 50, Anpinnen, Abzeichen), jede mit Knopf „Ausprobieren".
       - Ruhige Version bei „Bewegung reduzieren".
    3. ✅ Das „PRO werden"-Banner verschwindet bei PRO ersatzlos.
-   4. Meisterwege.
+   4. ✅ Meisterwege (19.09.): `0095_meisterwege.sql` (muss eingespielt werden), Seite `/meisterwege`, Rahmen am Profilbild, Namensfarbe, Meister-Farben im Editor. Stufen 50/150/400/800/1500 Mastery je Hauptthema.
    5. PRO-Features: Streak-Schutz → Export (CSV/Anki, später PDF) → LAB-Szenarien → Profil-Themes → Planen → Statistik (braucht Aufruf-Zählung, nicht rückwirkend) → Ligen.
 4. **Stimmen:** nur Tempo und Browser-Stimmen. Keine kostenpflichtigen Google-Stimmen, die Abrechnung bleibt aus.
 

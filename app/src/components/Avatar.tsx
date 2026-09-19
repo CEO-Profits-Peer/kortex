@@ -13,6 +13,7 @@ import {
   wabenEcken,
   wabenMitte,
 } from '@/lib/avatarWaben';
+import { rahmenAussehen } from '@/lib/meisterwege';
 import { api } from '@/lib/supabase';
 import { ZWEI, sechseckRegel, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius } from '@/theme/tokens';
@@ -219,13 +220,17 @@ function AvatarBase({
   path,
   size = 40,
   ring,
+  rahmen,
 }: {
   seed: string;
   path?: string | null;
   size?: number;
   /** Farbiger Rand, z.B. für „das bist du" */
   ring?: string;
+  /** Meisterweg-Rahmen (0095), z.B. 'science' oder 'science-gold'. */
+  rahmen?: string | null;
 }) {
+  const r = rahmenAussehen(rahmen);
   const url = api.avatarUrl(path);
 
   return (
@@ -262,7 +267,8 @@ function AvatarBase({
       ) : (
         <GeneratedAvatar seed={seed} size={size} />
       )}
-      {ZWEI && ring ? (
+      {r ? <MeisterRahmen r={r} size={size} /> : null}
+      {ZWEI && ring && !r ? (
         // Design 2.0: ein duenner warmgrauer Ring statt eines dicken goldenen.
         // Gold um jeden Menschen war zu laut - die Farbe des Aufrufers (meist
         // Gold) wird hier bewusst nicht uebernommen.
@@ -276,6 +282,44 @@ function AvatarBase({
         </Svg>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * Der Meisterweg-Rahmen: eine Linie in der Farbe des Themas, das Strichbild
+ * unterscheidet Themen mit aehnlicher Farbe. Gold (PRO) legt eine feine
+ * Goldkante aussen herum. Liegt innerhalb des Bildes, damit Listen ihre
+ * Abstaende behalten.
+ */
+function MeisterRahmen({ r, size }: { r: NonNullable<ReturnType<typeof rahmenAussehen>>; size: number }) {
+  const w = Math.max(1.5, size * 0.055);
+  const innen = r.gold ? w * 1.4 : w / 2;
+  const punkte = (inset: number) =>
+    ZWEI ? sechseckRegelPunkte(size, inset) : `${inset},${inset} ${size - inset},${inset} ${size - inset},${size - inset} ${inset},${size - inset}`;
+  const strich =
+    r.stil === 'strich'
+      ? `${size * 0.1} ${size * 0.05}`
+      : r.stil === 'punkt'
+        ? `0.1 ${w * 2.2}`
+        : r.stil === 'lang'
+          ? `${size * 0.28} ${size * 0.07}`
+          : undefined;
+  return (
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill} pointerEvents="none">
+      {r.gold ? <Polygon points={punkte(0.6)} fill="none" stroke="#D9B872" strokeWidth={Math.max(1, w * 0.5)} /> : null}
+      <Polygon
+        points={punkte(innen)}
+        fill="none"
+        stroke={r.farbe}
+        strokeWidth={w}
+        strokeDasharray={strich}
+        strokeLinecap={r.stil === 'punkt' ? 'round' : 'butt'}
+        strokeLinejoin="round"
+      />
+      {r.stil === 'doppelt' ? (
+        <Polygon points={punkte(innen + w * 1.8)} fill="none" stroke={r.farbe} strokeOpacity={0.6} strokeWidth={Math.max(1, w * 0.5)} />
+      ) : null}
+    </Svg>
   );
 }
 

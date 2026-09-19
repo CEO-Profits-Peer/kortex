@@ -17,9 +17,11 @@ import {
   wabenLeer,
   wabenMitte,
   wabenWuerfeln,
-  PRO_AB_GRUND,
+  MEISTER_AB,
+  grundBrauchtPro,
   PRO_AB_STIL,
 } from '@/lib/avatarWaben';
+import { Icon } from '@/components/Icon';
 import { ProMarke } from '@/components/ProSperre';
 import { haptics } from '@/lib/haptics';
 import { KANTE, ZWEI, flaeche, sechseckRegel, sechseckRegelPunkte } from '@/theme/design';
@@ -52,6 +54,7 @@ function Swatch({
   onPress,
   label,
   pro,
+  meister,
 }: {
   farbe: string;
   an: boolean;
@@ -59,12 +62,18 @@ function Swatch({
   label: string;
   /** Braucht PRO - zum Anprobieren waehlbar, gespeichert wird es nur mit PRO. */
   pro?: boolean;
+  /** Braucht einen Meisterweg (0095) - Anprobieren geht, speichern erst freigespielt. */
+  meister?: boolean;
 }) {
   return (
     <Pressable onPress={onPress} hitSlop={3} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: an }}>
       {pro ? (
         <View style={styles.swatchMarke} pointerEvents="none">
           <ProMarke klein />
+        </View>
+      ) : meister ? (
+        <View style={[styles.swatchMarke, styles.meisterMarke]} pointerEvents="none">
+          <Icon name="lock" size={9} color={color.ink.max} />
         </View>
       ) : null}
       <Svg width={SWATCH} height={SWATCH}>
@@ -115,11 +124,14 @@ export function AvatarEditor({
   design,
   onChange,
   pro = false,
+  meisterFrei,
 }: {
   design: WabenDesign;
   onChange: (d: WabenDesign) => void;
   /** Ohne PRO tragen PRO-Stile und -Gruende ein Schloss. Anprobieren geht trotzdem. */
   pro?: boolean;
+  /** Freigespielte Meister-Indizes (0095); ab MEISTER_AB ohne Eintrag: Schloss. */
+  meisterFrei?: { grund: Set<number>; farbe: Set<number> };
 }) {
   const { width } = useWindowDimensions();
   const [pinsel, setPinsel] = useState<Pinsel>(1);
@@ -240,9 +252,9 @@ export function AvatarEditor({
       <View style={styles.karte}>
         {(
           [
-            { label: 'Farbe', liste: WABEN_FARBEN, wert: design.farbe1, setzen: (i: number) => onChange({ ...design, farbe1: i }), proAb: 99 },
-            { label: 'Akzent', liste: WABEN_FARBEN, wert: design.farbe2, setzen: (i: number) => onChange({ ...design, farbe2: i }), proAb: 99 },
-            { label: 'Grund', liste: WABEN_GRUENDE, wert: design.grund, setzen: (i: number) => onChange({ ...design, grund: i }), proAb: PRO_AB_GRUND },
+            { label: 'Farbe', art: 'farbe', liste: WABEN_FARBEN, wert: design.farbe1, setzen: (i: number) => onChange({ ...design, farbe1: i }) },
+            { label: 'Akzent', art: 'farbe', liste: WABEN_FARBEN, wert: design.farbe2, setzen: (i: number) => onChange({ ...design, farbe2: i }) },
+            { label: 'Grund', art: 'grund', liste: WABEN_GRUENDE, wert: design.grund, setzen: (i: number) => onChange({ ...design, grund: i }) },
           ] as const
         ).map((gruppe) => (
           <View key={gruppe.label} style={styles.gruppe}>
@@ -254,7 +266,8 @@ export function AvatarEditor({
                   farbe={hex}
                   an={gruppe.wert === i}
                   label={`${gruppe.label} ${i + 1}`}
-                  pro={!pro && i >= gruppe.proAb}
+                  pro={!pro && gruppe.art === 'grund' && grundBrauchtPro(i)}
+                  meister={i >= MEISTER_AB && !(gruppe.art === 'grund' ? meisterFrei?.grund : meisterFrei?.farbe)?.has(i)}
                   onPress={() => {
                     haptics.light();
                     gruppe.setzen(i);
@@ -360,6 +373,7 @@ const styles = StyleSheet.create({
   stile: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   stilUnten: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   swatchMarke: { position: 'absolute', right: -4, bottom: -4, zIndex: 2 },
+  meisterMarke: { width: 16, height: 16, borderRadius: 8, backgroundColor: color.bordeaux, alignItems: 'center', justifyContent: 'center' },
   stil: {
     width: '31%',
     flexGrow: 1,

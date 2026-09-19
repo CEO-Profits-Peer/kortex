@@ -152,6 +152,9 @@ export type Profile = {
   reposts_nur_profil?: boolean;
   /** 0084: im eigenen Home keine Reposts. */
   home_ohne_reposts?: boolean;
+  /** Meisterwege (0095) */
+  rahmen?: string | null;
+  namensfarbe?: string | null;
 };
 
 // --- Events, die der Client sendet ------------------------------------------
@@ -400,6 +403,10 @@ export type PublicProfile = {
   likes_bekommen?: number;
   /** 0091: Abzeichen */
   pro?: boolean;
+  /** Meisterwege (0095) */
+  rahmen?: string | null;
+  namensfarbe?: string | null;
+  meister?: { id: string; emoji: string | null; stufe: number }[];
 };
 
 /** LAB Ankereffekt: Schnitt je Gruppe (lab_anker_eintragen, 0088). */
@@ -477,6 +484,9 @@ export type HomePerson = {
   ich?: boolean;
   /** PRO-Abzeichen (0091, nur in Beitraegen). */
   pro?: boolean;
+  /** Meisterwege (0095): Rahmen-Code und Namensfarbe, nur in Beitraegen. */
+  rahmen?: string | null;
+  namensfarbe?: string | null;
 };
 
 /** Eine Karte als Verweis in einem Beitrag. */

@@ -36,6 +36,13 @@ export const WABEN_FARBEN = [
   '#6F8FE0', // Saphir
   '#BFA2EE', // Lavendel
   '#F5F1EB', // Elfenbein
+  // Ab 12: Meisterwege Stufe 5 (0095, avatar_erlaubt). Dunkel - am besten auf
+  // den hellen Meister-Gruenden. Reihenfolge nie aendern.
+  '#16151A', // Obsidian
+  '#34373D', // Anthrazit
+  '#0F3B2E', // Tiefgruen
+  '#13244A', // Nachtblau
+  '#2B2415', // Schwarzgold
 ] as const;
 
 export const WABEN_GRUENDE = [
@@ -53,14 +60,33 @@ export const WABEN_GRUENDE = [
   '#15193F', // Koenigsblau
   '#3B1E28', // Rose-Samt
   '#221C12', // Onyx
+  // Ab 12: Meisterwege Stufe 4 (0095). Hell - auf ihnen wirken dunkle Waben.
+  '#F2ECE2', // Elfenbein
+  '#E6D7B8', // Champagner
+  '#D8C4A0', // Sand
 ] as const;
 
-/** Ab diesem Index sind Stile und Gruende PRO. Muss zu avatar_braucht_pro (0091) passen. */
+/** Ab diesem Index sind Stile und Gruende PRO. Muss zu avatar_braucht_pro (0095) passen. */
 export const PRO_AB_STIL = 4;
 export const PRO_AB_GRUND = 8;
+/** Ab hier Meisterwege statt PRO - bei Gruenden UND Farben (0095). */
+export const MEISTER_AB = 12;
+
+export function grundBrauchtPro(i: number): boolean {
+  return i >= PRO_AB_GRUND && i < MEISTER_AB;
+}
 
 export function wabenBrauchtPro(d: WabenDesign): boolean {
-  return WABEN_STILE.indexOf(d.stil) >= PRO_AB_STIL || d.grund >= PRO_AB_GRUND;
+  return WABEN_STILE.indexOf(d.stil) >= PRO_AB_STIL || grundBrauchtPro(d.grund);
+}
+
+/** Braucht das Bild eine Meisterweg-Freischaltung, die noch fehlt? */
+export function wabenBrauchtMeister(d: WabenDesign, frei: { grund: Set<number>; farbe: Set<number> }): boolean {
+  return (
+    (d.grund >= MEISTER_AB && !frei.grund.has(d.grund)) ||
+    (d.farbe1 >= MEISTER_AB && !frei.farbe.has(d.farbe1)) ||
+    (d.farbe2 >= MEISTER_AB && !frei.farbe.has(d.farbe2))
+  );
 }
 
 export const WABEN_STILE = ['waben', 'stein', 'kontur', 'punkte', 'metall', 'glas'] as const;
