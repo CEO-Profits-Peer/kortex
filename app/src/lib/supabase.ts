@@ -33,6 +33,13 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+/** 0117: Monats-Abzeichen; monate[0] ist der laufende Monat. stufe 0-3. */
+export type MonatsAbzeichen = {
+  heute: string;
+  uebrig: number;
+  monate: { monat: string; lerntage: number; stufe: number }[];
+};
+
 /** 0114: Lernpartner. ich/er/serie nur bei aktiven. */
 export type Lernpartner = {
   id: string;
@@ -461,6 +468,20 @@ export const api = {
     const { data, error } = await supabase.rpc('pruefung_anlegen', { p_titel: titel, p_datum: datum, p_kategorien: kategorien });
     if (error) throw error;
     return data as string;
+  },
+
+  // --- Monats-Abzeichen (0117) -------------------------------------------
+
+  async meineMonatsAbzeichen(): Promise<MonatsAbzeichen> {
+    const { data, error } = await supabase.rpc('meine_monats_abzeichen');
+    if (error) throw error;
+    return data as MonatsAbzeichen;
+  },
+
+  async monatsAbzeichenVon(handle: string): Promise<{ monat: string; stufe: number }[]> {
+    const { data, error } = await supabase.rpc('monats_abzeichen_von', { p_handle: handle });
+    if (error) throw error;
+    return (data ?? []) as { monat: string; stufe: number }[];
   },
 
   // --- Lernpartner (0114) ------------------------------------------------

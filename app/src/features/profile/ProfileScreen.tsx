@@ -25,6 +25,7 @@ import { ProAbzeichen } from '@/components/ProSperre';
 import { ZahlText } from '@/components/Hochzaehlen';
 import { ProfilKopf } from '@/features/pro/ProfilKopf';
 import { WabenKacheln } from '@/features/profile/WabenKacheln';
+import { AbzeichenLeiste } from '@/features/abzeichen/MonatsAbzeichen';
 import { type Meisterwege, namensfarbe } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { beiWiederOnline } from '@/lib/online';
@@ -314,6 +315,9 @@ export function ProfileScreen() {
             { icon: 'chart', label: 'Statistik', onPress: () => router.push('/statistik') },
           ]}
         />
+
+        {/* 0117: Monats-Abzeichen. */}
+        <AbzeichenLeiste />
 
         {/* Mit PRO nichts an seiner Stelle: den Stand zeigen die Einstellungen
             und das Abzeichen. Ein "Du bist PRO"-Banner waere nur Werbung fuer

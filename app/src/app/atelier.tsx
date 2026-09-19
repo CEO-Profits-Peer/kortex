@@ -24,6 +24,7 @@ import { PROFIL_THEMES, ProfilKopf } from '@/features/pro/ProfilKopf';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { zeigeProWillkommen } from '@/features/pro/ProWillkommen';
 import { ProScreen } from '@/features/pro/ProScreen';
+import { Monatsmedaille } from '@/features/abzeichen/MonatsAbzeichen';
 import { type WabenDesign, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
 import type {
   AdminCategory,
@@ -455,6 +456,13 @@ export default function Atelier() {
             <Avatar seed={wabenKodieren(waben)} size={40} />
             <Avatar seed="v1-210-a7" size={64} />
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
+          </View>
+
+          <Text style={styles.werkTitel}>Monats-Abzeichen</Text>
+          <View style={[styles.gruppe, { alignItems: 'center', flexWrap: 'wrap' }]}>
+            {['2026-01-01', '2026-03-01', '2026-06-01', '2026-08-01', '2026-09-01', '2026-12-01'].map((m, i) => (
+              <Monatsmedaille key={m} monat={m} stufe={i % 4} groesse={56} />
+            ))}
           </View>
 
           <Text style={styles.werkTitel}>Profil-Waben</Text>

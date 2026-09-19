@@ -17,6 +17,7 @@ import { ProfilKopf } from '@/features/pro/ProfilKopf';
 import { namensfarbe } from '@/lib/meisterwege';
 import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
+import { FremdeAbzeichen } from '@/features/abzeichen/MonatsAbzeichen';
 import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { ZWEI } from '@/theme/design';
@@ -212,6 +213,8 @@ export function PublicProfileScreen({
           </View>
         </View>
         </ProfilKopf>
+        {/* 0117: verdiente Monats-Abzeichen, ohne Zahlen. */}
+        <FremdeAbzeichen handle={p.handle} />
 
         {p.bio ? <Text style={styles.bio}>{p.bio}</Text> : null}
 
