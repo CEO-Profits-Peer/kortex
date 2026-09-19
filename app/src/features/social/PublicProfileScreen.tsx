@@ -13,6 +13,7 @@ import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
 import { ProAbzeichen } from '@/components/ProSperre';
+import { ProfilKopf } from '@/features/pro/ProfilKopf';
 import { namensfarbe } from '@/lib/meisterwege';
 import { api } from '@/lib/supabase';
 import { UserPosts } from '@/features/posts/UserPosts';
@@ -180,6 +181,7 @@ export function PublicProfileScreen({
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        <ProfilKopf theme={p.profil_theme}>
         <View style={styles.head}>
           <Avatar
             seed={p.avatar_seed}
@@ -209,6 +211,7 @@ export function PublicProfileScreen({
             ) : null}
           </View>
         </View>
+        </ProfilKopf>
 
         {p.bio ? <Text style={styles.bio}>{p.bio}</Text> : null}
 

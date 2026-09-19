@@ -25,9 +25,11 @@ export type ProStand = {
   geladen: boolean;
   /** 0096: wann der Streak-Schutz zuletzt gegriffen hat. */
   schutzAm: string | null;
+  /** 0098: Profil-Theme der Kopfkarte. */
+  profilTheme: string | null;
 };
 
-const FREI: ProStand = { pro: false, plan: 'free', bis: null, geladen: false, schutzAm: null };
+const FREI: ProStand = { pro: false, plan: 'free', bis: null, geladen: false, schutzAm: null, profilTheme: null };
 
 let stand: ProStand = FREI;
 let geladen: Promise<void> | null = null;
@@ -45,7 +47,7 @@ export async function proNeuLaden(): Promise<void> {
     if (!p) return setzen({ ...FREI, geladen: true });
     const bis = p.plan_expires_at ?? null;
     const aktiv = (p.plan === 'pro' || p.plan === 'gifted') && (!bis || new Date(bis).getTime() > Date.now());
-    setzen({ pro: aktiv, plan: p.plan, bis, geladen: true, schutzAm: p.streak_schutz_am ?? null });
+    setzen({ pro: aktiv, plan: p.plan, bis, geladen: true, schutzAm: p.streak_schutz_am ?? null, profilTheme: p.profil_theme ?? null });
   } catch {
     // Kein Netz: beim alten Stand bleiben. Der Server prueft ohnehin.
   }

@@ -157,6 +157,8 @@ export type Profile = {
   namensfarbe?: string | null;
   /** 0096: wann der PRO-Streak-Schutz zuletzt gegriffen hat (YYYY-MM-DD). */
   streak_schutz_am?: string | null;
+  /** 0098: Profil-Theme (PRO). */
+  profil_theme?: string | null;
 };
 
 // --- Events, die der Client sendet ------------------------------------------
@@ -409,6 +411,8 @@ export type PublicProfile = {
   rahmen?: string | null;
   namensfarbe?: string | null;
   meister?: { id: string; emoji: string | null; stufe: number }[];
+  /** 0098: Profil-Theme (PRO). */
+  profil_theme?: string | null;
 };
 
 /** LAB Ankereffekt: Schnitt je Gruppe (lab_anker_eintragen, 0088). */

@@ -19,6 +19,7 @@ import { AdminPeople } from '@/features/admin/AdminPeople';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
 import { ProBanner } from '@/features/pro/ProBanner';
 import { Laden } from '@/components/Laden';
+import { PROFIL_THEMES, ProfilKopf } from '@/features/pro/ProfilKopf';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { zeigeProWillkommen } from '@/features/pro/ProWillkommen';
 import { ProScreen } from '@/features/pro/ProScreen';
@@ -454,6 +455,19 @@ export default function Atelier() {
             <Avatar seed="v1-210-a7" size={64} />
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
           </View>
+
+          <Text style={styles.werkTitel}>Profil-Themes</Text>
+          {PROFIL_THEMES.map((t) => (
+            <ProfilKopf key={t.id} theme={t.id}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Avatar seed="v2-ce00-0a5a5a5a5a5a5a5a5a5" size={56} rahmen="science" />
+                <View>
+                  <Text style={{ color: color.ink.max, fontSize: 18 }}>{t.label}</Text>
+                  <Text style={{ color: color.ink.mid }}>@beispiel</Text>
+                </View>
+              </View>
+            </ProfilKopf>
+          ))}
 
           <Text style={styles.werkTitel}>Meister-Rahmen</Text>
           <View style={[styles.gruppe, { alignItems: 'center' }]}>

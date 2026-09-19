@@ -22,6 +22,7 @@ import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { ProBanner } from '@/features/pro/ProBanner';
 import { ProAbzeichen } from '@/components/ProSperre';
+import { ProfilKopf } from '@/features/pro/ProfilKopf';
 import { type Meisterwege, namensfarbe } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { beiWiederOnline } from '@/lib/online';
@@ -247,6 +248,7 @@ export function ProfileScreen() {
         {...neuladen.listenProps}
       >
         {/* --- Kopf: Bild, Name, Zahlen ---------------------------------- */}
+        <ProfilKopf theme={ichPro.profilTheme}>
         <View style={styles.head}>
           <Pressable onPress={() => router.push('/account')} hitSlop={6}>
             <Avatar seed={social.avatar_seed} path={social.avatar_path} size={64} rahmen={meister?.rahmen} />
@@ -275,6 +277,7 @@ export function ProfileScreen() {
             <Icon name="settings" size={20} color={color.ink.low} />
           </Pressable>
         </View>
+        </ProfilKopf>
 
         {social.bio ? <Text style={styles.bio}>{social.bio}</Text> : null}
 

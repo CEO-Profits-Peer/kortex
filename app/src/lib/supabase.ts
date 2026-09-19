@@ -205,6 +205,12 @@ export const api = {
     if (error) throw error;
   },
 
+  /** 0098 (PRO): Theme der Profil-Kopfkarte, null = ohne. */
+  async profilThemeSetzen(theme: string | null): Promise<void> {
+    const { error } = await supabase.rpc('profil_theme_setzen', { p_theme: theme });
+    if (error) throw error;
+  },
+
   async getMyStats(): Promise<Stats> {
     const { data, error } = await supabase.rpc('get_my_stats');
     if (error) throw error;

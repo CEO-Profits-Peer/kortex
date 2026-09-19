@@ -29,7 +29,8 @@ import { signOut } from '@/lib/useSession';
 import { fehlerText } from '@/lib/fehler';
 import { CodeEinloesen } from '@/features/pro/CodeEinloesen';
 import { zeigeProSperre } from '@/components/ProSperre';
-import { useIchPro } from '@/lib/pro';
+import { proNeuLaden, useIchPro } from '@/lib/pro';
+import { PROFIL_THEMES } from '@/features/pro/ProfilKopf';
 import {
   LINSE,
   MUSTER,
@@ -442,6 +443,29 @@ export function SettingsScreen() {
                       setLinse(l);
                       setDesignLaedt(true);
                       linseWechseln(l);
+                    }}
+                  />
+                }
+              />
+            ) : null}
+            {ZWEI ? (
+              <Zeile
+                label="Profilkopf"
+                hint="Sehen alle, die dein Profil öffnen"
+                unten={
+                  <Auswahl
+                    optionen={[{ wert: 'ohne', label: 'Ohne' }, ...PROFIL_THEMES.map((t) => ({ wert: t.id as string, label: t.label }))]}
+                    wert={ichPro.profilTheme ?? 'ohne'}
+                    onChange={(t) => {
+                      if (t !== 'ohne' && !ichPro.pro) {
+                        zeigeProSperre('Profil-Themes für deine Kopfkarte gibt es mit PRO.');
+                        return;
+                      }
+                      haptics.select();
+                      void api
+                        .profilThemeSetzen(t === 'ohne' ? null : t)
+                        .then(() => proNeuLaden())
+                        .catch((e) => setNote(fehlerText(e, 'Speichern ging nicht')));
                     }}
                   />
                 }

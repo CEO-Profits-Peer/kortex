@@ -49,7 +49,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
     punkte: [
       { icon: 'mastery', titel: 'Profilbild-Stile', text: 'Metall, Glas und besondere Gründe', da: true },
       { icon: 'sliders', titel: 'Gold-Optik', text: 'Gold-Stein für Tab und Feed, Gold-Dreiecke im Hintergrund – wählbar', da: true },
-      { icon: 'sliders', titel: 'Profil-Themes', text: 'Bordeaux-Kopfkarte, eigene Muster' },
+      { icon: 'sliders', titel: 'Profil-Themes', text: 'Kopfkarte in Bordeaux, Nacht, Smaragd oder Gold', da: true },
       { icon: 'streak', titel: 'Saison-Rahmen', text: 'Nur eine Saison lang – ohne Zufallsboxen' },
       { icon: 'check', titel: 'Abzeichen', text: 'PRO neben deinem Namen', da: true },
     ],
