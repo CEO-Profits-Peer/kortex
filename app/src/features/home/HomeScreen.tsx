@@ -96,6 +96,9 @@ export function HomeScreen() {
   const laden = useCallback(async () => {
     geladenAm.current = Date.now();
     try {
+      // 0097: faellige geplante Beitraege zuerst freigeben, damit sie gleich
+      // hier stehen. Fehlt die Funktion (alte Datenbank), einfach weiter.
+      await api.geplanteFreigeben().catch(() => undefined);
       const d = await api.home(SEITE);
       setDaten(d);
       setEintraege(d.eintraege);
@@ -119,6 +122,9 @@ export function HomeScreen() {
   const stillLaden = useRef(async () => {
     geladenAm.current = Date.now();
     try {
+      // 0097: faellige geplante Beitraege zuerst freigeben, damit sie gleich
+      // hier stehen. Fehlt die Funktion (alte Datenbank), einfach weiter.
+      await api.geplanteFreigeben().catch(() => undefined);
       const d = await api.home(SEITE);
       setDaten(d);
       if (scrollOben.current < 400) {

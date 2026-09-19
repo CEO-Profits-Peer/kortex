@@ -124,6 +124,9 @@ export function StudioScreen() {
     }
   }, [ladenMeine]);
 
+  // 0097 (PRO): Beitraege, die zu einer Uhrzeit erscheinen.
+  const [geplante, setGeplante] = useState<{ id: string; art: string; body: string; at: string }[]>([]);
+
   useEffect(() => {
     void load();
   }, [load]);
@@ -132,6 +135,7 @@ export function StudioScreen() {
   useFocusEffect(
     useCallback(() => {
       void ladenMeine();
+      api.meineGeplanten().then(setGeplante).catch(() => setGeplante([]));
     }, [ladenMeine]),
   );
 
@@ -265,6 +269,39 @@ export function StudioScreen() {
                       </Pressable>
                     );
                   })}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {/* --- Geplant (0097) ------------------------------------------------ */}
+            {geplante.length > 0 ? (
+              <View style={styles.abschnittBlock}>
+                <Abschnitt titel="Geplant" zahl={geplante.length} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reihe} style={styles.bleed}>
+                  {geplante.map((g) => (
+                    <View key={g.id} style={styles.entwurf}>
+                      <View style={styles.entwurfKopf}>
+                        <Text style={styles.entwurfArt}>{ART_LABEL[g.art as keyof typeof ART_LABEL] ?? 'Beitrag'}</Text>
+                        <Pressable
+                          onPress={() => {
+                            haptics.light();
+                            setGeplante((alt) => alt.filter((x) => x.id !== g.id));
+                            void api.geplantLoeschen(g.id).catch(() => undefined);
+                          }}
+                          hitSlop={10}
+                          accessibilityLabel="Geplanten Beitrag zurückziehen"
+                        >
+                          <Icon name="close" size={13} color={color.ink.low} />
+                        </Pressable>
+                      </View>
+                      <Text style={styles.entwurfText} numberOfLines={3}>
+                        {g.body.trim() || 'Ohne Text'}
+                      </Text>
+                      <Text style={styles.entwurfWann}>
+                        {new Date(g.at).toLocaleString('de-AT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  ))}
                 </ScrollView>
               </View>
             ) : null}

@@ -124,6 +124,8 @@ export function ComposeScreen() {
   const [bekannt, setBekannt] = useState<Record<string, Wahl>>({});
   const [busy, setBusy] = useState(false);
   const [notiz, setNotiz] = useState<string | null>(null);
+  // 0097 (PRO): null = sofort, sonst der Zeitpunkt.
+  const [geplant, setGeplant] = useState<Date | null>(null);
   const [original, setOriginal] = useState<Post | null>(null);
   const erwaehnung = useErwaehnung(text, setText);
 
@@ -292,6 +294,7 @@ export function ComposeScreen() {
         contentId: params.card,
         repostOf: params.repost,
         daten,
+        geplant: geplant ? geplant.toISOString() : null,
       });
       if (r.status === 'blocked') {
         feedback.wrong();
@@ -302,7 +305,9 @@ export function ComposeScreen() {
       void entwurfLoeschen(entwurfId.current);
       feedback.correct();
       haptics.success();
-      router.replace('/home');
+      // Geplant: ins Studio, dort steht er unter "Geplant" - im Home waere er
+      // noch nicht zu sehen und saehe verloren aus.
+      router.replace(geplant ? '/studio' : '/home');
     } catch (e) {
       const angebot = proMeldung(e);
       if (angebot) {
@@ -376,7 +381,7 @@ export function ComposeScreen() {
             style={[styles.posten, !darf && styles.postenAus]}
             accessibilityRole="button"
           >
-            {busy ? <Laden size="small" color={color.bg} /> : <Text style={styles.postenText}>Posten</Text>}
+            {busy ? <Laden size="small" color={color.bg} /> : <Text style={styles.postenText}>{geplant ? 'Planen' : 'Posten'}</Text>}
           </Pressable>
         </View>
 
@@ -559,6 +564,20 @@ export function ComposeScreen() {
             </View>
           ) : null}
 
+          {!params.repost ? (
+            <Zeitpunkt
+              wert={geplant}
+              onChange={(d) => {
+                if (d && !pro) {
+                  zeigeProSperre('Beiträge zu einer Uhrzeit veröffentlichen geht mit PRO.');
+                  return;
+                }
+                haptics.select();
+                setGeplant(d);
+              }}
+            />
+          ) : null}
+
           {notiz ? <Text style={styles.notiz}>{notiz}</Text> : null}
 
           <Text style={styles.regeln}>
@@ -575,7 +594,68 @@ export function ComposeScreen() {
   );
 }
 
+/**
+ * Wann erscheinen? Feste Vorschlaege statt Datumswahl: die vier decken fast
+ * alles ab, und ein Kalender auf dem Handy ist fuer "morgen frueh" zu viel.
+ * Vorschlaege, die weniger als fuenf Minuten entfernt waeren, fallen weg -
+ * so frueh nimmt der Server sie nicht (0097).
+ */
+function vorschlaege(): { label: string; d: Date }[] {
+  const jetzt = new Date();
+  const um = (tage: number, h: number) => {
+    const d = new Date(jetzt);
+    d.setDate(d.getDate() + tage);
+    d.setHours(h, 0, 0, 0);
+    return d;
+  };
+  const inEinerStunde = new Date(jetzt.getTime() + 60 * 60 * 1000);
+  inEinerStunde.setMinutes(inEinerStunde.getMinutes() < 30 ? 30 : 60, 0, 0);
+  return [
+    { label: 'In 1 h', d: inEinerStunde },
+    { label: 'Heute 18:00', d: um(0, 18) },
+    { label: 'Morgen 8:00', d: um(1, 8) },
+    { label: 'Morgen 18:00', d: um(1, 18) },
+  ].filter((v) => v.d.getTime() > jetzt.getTime() + 5 * 60 * 1000);
+}
+
+function Zeitpunkt({ wert, onChange }: { wert: Date | null; onChange: (d: Date | null) => void }) {
+  const liste = vorschlaege();
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text style={styles.zeitLabel}>Erscheint</Text>
+      <View style={styles.zeitReihe}>
+        {[{ label: 'Jetzt', d: null as Date | null }, ...liste].map((v) => {
+          const an = v.d === null ? wert === null : wert?.getTime() === v.d.getTime();
+          return (
+            <Pressable
+              key={v.label}
+              onPress={() => onChange(v.d)}
+              style={[styles.zeitChip, an && styles.zeitChipAn]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: an }}
+            >
+              <Text style={[styles.zeitText, an && styles.zeitTextAn]}>{v.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  zeitLabel: { ...type.meta, color: color.ink.low },
+  zeitReihe: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  zeitChip: {
+    paddingHorizontal: space.md,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.ink.faint,
+  },
+  zeitChipAn: { borderColor: color.signal.primary, backgroundColor: color.bgSunken },
+  zeitText: { ...type.label, fontSize: 13, color: color.ink.mid },
+  zeitTextAn: { color: color.signal.primary },
   leiste: {
     flexDirection: 'row',
     alignItems: 'center',

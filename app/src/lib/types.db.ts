@@ -567,7 +567,8 @@ export type PostDetail =
 
 export type CreatePostResult = {
   id: string;
-  status: 'visible' | 'blocked';
+  /** 'geplant' (0097): erscheint zum gewaehlten Zeitpunkt. */
+  status: 'visible' | 'blocked' | 'geplant';
   reason: string | null;
 };
 

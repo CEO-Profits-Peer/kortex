@@ -458,6 +458,8 @@ export const api = {
     repostOf?: string;
     /** Antworten, Karten oder LAB-Eingaben - je nach Art (0088). */
     daten?: Record<string, unknown> | null;
+    /** 0097 (PRO): ISO-Zeitpunkt, zu dem der Beitrag erscheint. */
+    geplant?: string | null;
   }): Promise<CreatePostResult> {
     const { data, error } = await supabase.rpc('create_post', {
       p_body: input.body,
@@ -465,9 +467,28 @@ export const api = {
       p_content_id: input.contentId ?? null,
       p_repost_of: input.repostOf ?? null,
       p_daten: input.daten ?? null,
+      // 0097: nur mitschicken, wenn geplant wird - so trifft ein Aufruf
+      // ohne Planung auch eine Datenbank, in der 0097 noch fehlt.
+      ...(input.geplant ? { p_geplant: input.geplant } : {}),
     });
     if (error) throw error;
     return data as CreatePostResult;
+  },
+
+  /** 0097: faellige geplante Beitraege freigeben - ALLE, nicht nur eigene. Billig, idempotent. */
+  async geplanteFreigeben(): Promise<void> {
+    await supabase.rpc('geplante_freigeben');
+  },
+
+  async meineGeplanten(): Promise<{ id: string; art: string; body: string; at: string }[]> {
+    const { data, error } = await supabase.rpc('meine_geplanten');
+    if (error) throw error;
+    return (data ?? []) as { id: string; art: string; body: string; at: string }[];
+  },
+
+  async geplantLoeschen(id: string): Promise<void> {
+    const { error } = await supabase.rpc('geplant_loeschen', { p_post: id });
+    if (error) throw error;
   },
 
   /** Umfrage abstimmen oder Quiz beantworten. Eine Stimme, kein Umentscheiden (0088). */

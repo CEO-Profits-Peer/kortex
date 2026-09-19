@@ -60,7 +60,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
       { icon: 'courses', titel: 'Größere Stapel', text: 'Bis zu 50 Karten statt 10', da: true },
       { icon: 'knowledge', titel: 'Längere Beiträge', text: 'Bis zu 1500 Zeichen statt 500', da: true },
       { icon: 'comment', titel: 'Mehr Antworten', text: 'Umfragen mit 6, Quiz mit 5 Antworten', da: true },
-      { icon: 'clock', titel: 'Planen', text: 'Beiträge zu einer Uhrzeit veröffentlichen' },
+      { icon: 'clock', titel: 'Planen', text: 'Beiträge zu einer Uhrzeit veröffentlichen', da: true },
       { icon: 'plus', titel: 'Anpinnen', text: 'Drei Beiträge oben im Profil statt einem', da: true },
     ],
   },
