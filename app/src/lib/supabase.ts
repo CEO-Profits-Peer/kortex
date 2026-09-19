@@ -155,6 +155,7 @@ import type {
   FollowingItem,
   MySocial,
   PersonHit,
+  OffeneFrage,
   PostCommentResult,
   PublicProfile,
   CourseDetail,
@@ -1139,6 +1140,26 @@ export const api = {
     });
     if (error) throw error;
     return data as PostCommentResult;
+  },
+
+  /** 0115: wie postComment, aber als Frage an die Community. */
+  async frageStellen(contentId: string, body: string): Promise<PostCommentResult> {
+    const { data, error } = await supabase.rpc('frage_stellen', { p_content_id: contentId, p_body: body });
+    if (error) throw error;
+    return data as PostCommentResult;
+  },
+
+  /** 0115: umschalten; true = jetzt die beste Antwort. */
+  async besteAntwort(id: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('beste_antwort', { p_antwort: id });
+    if (error) throw error;
+    return !!data;
+  },
+
+  async offeneFragen(limit = 10): Promise<OffeneFrage[]> {
+    const { data, error } = await supabase.rpc('offene_fragen', { p_limit: limit });
+    if (error) throw error;
+    return (data ?? []) as OffeneFrage[];
   },
 
   async reportComment(id: string): Promise<void> {

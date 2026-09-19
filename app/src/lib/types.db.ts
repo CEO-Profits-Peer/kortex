@@ -772,10 +772,24 @@ export type CommentAnswer = CommentAuthor & {
   id: string;
   body: string;
   at: string;
+  /** 0115: von der fragenden Person als beste Antwort markiert. */
+  beste?: boolean;
 };
 
 export type CommentQuestion = CommentAnswer & {
+  /** 0115: als Frage an die Community gestellt. */
+  frage?: boolean;
   answers: CommentAnswer[];
+};
+
+/** 0115: offene Frage zu einer gelesenen Karte ("Kannst du helfen?"). */
+export type OffeneFrage = {
+  id: string;
+  content_id: string;
+  title: string;
+  body: string;
+  at: string;
+  antworten: number;
 };
 
 export type PostCommentResult = {

@@ -45,18 +45,23 @@ function Entry({
   onReport,
   onDelete,
   onReply,
+  onBeste,
   indented,
+  frage,
 }: {
   item: CommentAnswer;
   onReport: (id: string) => void;
   onDelete: (id: string) => void;
   onReply?: () => void;
+  /** 0115: nur bei Antworten auf die EIGENE Frage. */
+  onBeste?: () => void;
   indented?: boolean;
+  frage?: boolean;
 }) {
   const [menu, setMenu] = useState(false);
 
   return (
-    <View style={[styles.entry, indented && styles.indented]}>
+    <View style={[styles.entry, indented && styles.indented, item.beste && styles.besteBox]}>
       <Avatar seed={item.avatar_seed} path={item.avatar_path} size={indented ? 26 : 32} />
       <View style={styles.entryBody}>
         <View style={styles.entryHead}>
@@ -64,6 +69,8 @@ function Entry({
             {item.display_name}
           </Text>
           <Text style={styles.when}>{timeAgo(item.at)}</Text>
+          {frage ? <Text style={styles.marke}>Frage</Text> : null}
+          {item.beste ? <Text style={[styles.marke, styles.markeBeste]}>Beste Antwort</Text> : null}
         </View>
         <ErwaehnungsText text={item.body} style={styles.body} />
 
@@ -71,6 +78,13 @@ function Entry({
           {onReply ? (
             <Pressable onPress={onReply} hitSlop={8}>
               <Text style={styles.action}>Antworten</Text>
+            </Pressable>
+          ) : null}
+          {onBeste ? (
+            <Pressable onPress={onBeste} hitSlop={8}>
+              <Text style={[styles.action, item.beste && { color: color.signal.success }]}>
+                {item.beste ? 'Beste ✓' : 'Beste'}
+              </Text>
             </Pressable>
           ) : null}
 
@@ -116,6 +130,8 @@ export function CommentSheet({
   const [items, setItems] = useState<CommentQuestion[] | null>(null);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<CommentQuestion | null>(null);
+  // 0115: als Frage an die Community stellen (nur fuer neue Kommentare).
+  const [alsFrage, setAlsFrage] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const erwaehnung = useErwaehnung(text, setText);
@@ -144,7 +160,8 @@ export function CommentSheet({
     setBusy(true);
     setNote(null);
     try {
-      const r = await api.postComment(contentId, body, replyTo?.id);
+      const r =
+        alsFrage && !replyTo ? await api.frageStellen(contentId, body) : await api.postComment(contentId, body, replyTo?.id);
       if (r.status === 'blocked') {
         // Der Beitrag ist gespeichert, aber unsichtbar. Das ehrlich sagen:
         // ein "gesendet", nach dem nichts erscheint, ist schlimmer als
@@ -155,6 +172,7 @@ export function CommentSheet({
         feedback.correct();
         setText('');
         setReplyTo(null);
+        setAlsFrage(false);
         await load();
       }
     } catch (e) {
@@ -172,6 +190,16 @@ export function CommentSheet({
       await load();
     } catch {
       setNote('Melden hat nicht geklappt.');
+    }
+  };
+
+  const beste = async (id: string) => {
+    haptics.select();
+    try {
+      await api.besteAntwort(id);
+      await load();
+    } catch (e) {
+      setNote(fehlerText(e, 'Hat nicht geklappt.'));
     }
   };
 
@@ -229,9 +257,17 @@ export function CommentSheet({
                     onReport={report}
                     onDelete={remove}
                     onReply={() => setReplyTo(q)}
+                    frage={q.frage}
                   />
                   {q.answers.map((a) => (
-                    <Entry key={a.id} item={a} onReport={report} onDelete={remove} indented />
+                    <Entry
+                      key={a.id}
+                      item={a}
+                      onReport={report}
+                      onDelete={remove}
+                      onBeste={q.frage && q.is_mine && !a.is_mine ? () => void beste(a.id) : undefined}
+                      indented
+                    />
                   ))}
                 </Appear>
               ))
@@ -251,13 +287,28 @@ export function CommentSheet({
             </View>
           ) : null}
 
+          {!replyTo ? (
+            <Pressable
+              onPress={() => {
+                haptics.select();
+                setAlsFrage((f) => !f);
+              }}
+              style={[styles.frageSchalter, alsFrage && styles.frageSchalterAn]}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: alsFrage }}
+            >
+              <Text style={[styles.frageSchalterText, alsFrage && { color: color.akzent }]}>
+                {alsFrage ? '✓ Frage an die Community' : 'Als Frage stellen'}
+              </Text>
+            </Pressable>
+          ) : null}
           {erwaehnung.leiste}
           <View style={styles.composer}>
             <TextInput
               value={text}
               onChangeText={setText}
               onSelectionChange={erwaehnung.onSelectionChange}
-              placeholder={replyTo ? 'Deine Antwort' : 'Schreib etwas dazu'}
+              placeholder={replyTo ? 'Deine Antwort' : alsFrage ? 'Was ist dir unklar?' : 'Schreib etwas dazu'}
               placeholderTextColor={color.ink.low}
               style={styles.input}
               multiline
@@ -335,6 +386,36 @@ const styles = StyleSheet.create({
   action: { ...type.meta, color: color.ink.mid },
 
   note: { ...type.meta, color: color.signal.warn },
+
+  besteBox: {
+    padding: space.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.signal.success,
+    marginLeft: space.xl,
+    paddingLeft: space.sm,
+  },
+  marke: {
+    ...type.meta,
+    fontSize: 10,
+    color: color.akzent,
+    borderWidth: 1,
+    borderColor: color.akzent,
+    borderRadius: radius.pill,
+    paddingHorizontal: 6,
+    overflow: 'hidden',
+  },
+  markeBeste: { color: color.signal.success, borderColor: color.signal.success },
+  frageSchalter: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: space.md,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  frageSchalterAn: { borderColor: color.akzent },
+  frageSchalterText: { ...type.meta, fontSize: 11, color: color.ink.mid },
 
   replyTo: {
     flexDirection: 'row',

@@ -13,6 +13,7 @@ import { DailyBanner } from '@/features/daily/DailyBanner';
 import { BALD, WERKZEUGE } from '@/features/lab/rechnen';
 import { wann } from '@/features/posts/PostParts';
 import { LernpfadLeiste } from '@/features/lernpfade/Lernpfade';
+import { OffeneFragen } from '@/features/comments/OffeneFragen';
 import { entwurfLoeschen, useEntwuerfe } from '@/lib/entwuerfe';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
@@ -393,6 +394,9 @@ export function StudioScreen() {
                 onPress={() => router.push('/pruefung')}
               />
             </View>
+
+            {/* 0115: offene Fragen zu gelesenen Karten. */}
+            <OffeneFragen />
 
             {/* 0114: zu zweit ein Wochenziel. */}
             <Pressable
