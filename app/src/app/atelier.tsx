@@ -19,6 +19,7 @@ import { AdminPeople } from '@/features/admin/AdminPeople';
 import { AvatarEditor } from '@/features/auth/AvatarEditor';
 import { ProBanner } from '@/features/pro/ProBanner';
 import { Laden } from '@/components/Laden';
+import { WabenKacheln } from '@/features/profile/WabenKacheln';
 import { PROFIL_THEMES, ProfilKopf } from '@/features/pro/ProfilKopf';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { zeigeProWillkommen } from '@/features/pro/ProWillkommen';
@@ -455,6 +456,17 @@ export default function Atelier() {
             <Avatar seed="v1-210-a7" size={64} />
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
           </View>
+
+          <Text style={styles.werkTitel}>Profil-Waben</Text>
+          <WabenKacheln
+            waben={[
+              { icon: 'refresh', label: 'Wiederholen', badge: 3, tint: color.signal.mastery, onPress: () => undefined },
+              { icon: 'mastery', label: 'Meisterwege', onPress: () => undefined },
+              { icon: 'profile', label: 'Leute', onPress: () => undefined },
+              { icon: 'leaderboard', label: 'Ranglisten', onPress: () => undefined },
+              { icon: 'chart', label: 'Statistik', onPress: () => undefined },
+            ]}
+          />
 
           <Text style={styles.werkTitel}>Profil-Themes</Text>
           {PROFIL_THEMES.map((t) => (

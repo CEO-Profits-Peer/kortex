@@ -24,6 +24,7 @@ import { ProBanner } from '@/features/pro/ProBanner';
 import { ProAbzeichen } from '@/components/ProSperre';
 import { ZahlText } from '@/components/Hochzaehlen';
 import { ProfilKopf } from '@/features/pro/ProfilKopf';
+import { WabenKacheln } from '@/features/profile/WabenKacheln';
 import { type Meisterwege, namensfarbe } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { beiWiederOnline } from '@/lib/online';
@@ -80,45 +81,6 @@ function Count({
       style={({ pressed }) => [styles.count, pressed && { opacity: 0.7 }]}
     >
       {inner}
-    </Pressable>
-  );
-}
-
-/** Kompakte Kachel statt breiter Verweiskarte — drei nebeneinander. */
-function Shortcut({
-  icon,
-  label,
-  badge,
-  tint,
-  onPress,
-}: {
-  icon: IconName;
-  label: string;
-  badge?: number;
-  tint?: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        haptics.light();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.shortcut, pressed && { opacity: 0.75 }]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <View style={styles.shortcutIcon}>
-        <Icon name={icon} size={19} color={tint ?? color.ink.mid} />
-        {badge ? (
-          <View style={[styles.badge, { backgroundColor: tint ?? color.signal.primary }]}>
-            <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
-          </View>
-        ) : null}
-      </View>
-      <Text style={[styles.shortcutLabel, tint ? { color: tint } : null]} numberOfLines={1}>
-        {label}
-      </Text>
     </Pressable>
   );
 }
@@ -329,27 +291,24 @@ export function ProfileScreen() {
         </View>
         {einladeNotiz ? <Text style={styles.einladeNotiz}>{einladeNotiz}</Text> : null}
 
-        {/* --- Drei Wege, kompakt ----------------------------------------- */}
-        <View style={styles.shortcuts}>
-          <Shortcut
-            icon="refresh"
-            label="Wiederholen"
-            badge={due}
-            tint={due > 0 ? color.signal.mastery : undefined}
-            onPress={() => router.push('/review')}
-          />
-          <Shortcut icon="profile" label="Deine Leute" onPress={() => router.push('/following')} />
-          <Shortcut icon="xp" label="Duelle" onPress={() => router.push('/duels')} />
-          <Shortcut
-            icon="leaderboard"
-            label="Rangliste"
-            onPress={() => router.push('/leaderboard')}
-          />
-          <Shortcut icon="chart" label="Statistik" onPress={() => router.push('/statistik')} />
-          <Shortcut icon="mastery" label="Meisterwege" onPress={() => router.push('/meisterwege')} />
-          <Shortcut icon="leaderboard" label="Ligen" onPress={() => router.push('/ligen')} />
-          <Shortcut icon="chart" label="Rückblick" onPress={() => router.push('/rueckblick')} />
-        </View>
+        {/* --- Wege als Waben (19.09.) ------------------------------------------
+            Fuenf statt acht: Duelle stehen im Studio, Ligen hinter der
+            Rangliste, der Rueckblick in der Statistik. */}
+        <WabenKacheln
+          waben={[
+            {
+              icon: 'refresh',
+              label: 'Wiederholen',
+              badge: due,
+              tint: due > 0 ? color.signal.mastery : undefined,
+              onPress: () => router.push('/review'),
+            },
+            { icon: 'mastery', label: 'Meisterwege', onPress: () => router.push('/meisterwege') },
+            { icon: 'profile', label: 'Leute', onPress: () => router.push('/following') },
+            { icon: 'leaderboard', label: 'Ranglisten', onPress: () => router.push('/leaderboard') },
+            { icon: 'chart', label: 'Statistik', onPress: () => router.push('/statistik') },
+          ]}
+        />
 
         {/* Mit PRO nichts an seiner Stelle: den Stand zeigen die Einstellungen
             und das Abzeichen. Ein "Du bist PRO"-Banner waere nur Werbung fuer
@@ -508,21 +467,7 @@ const styles = StyleSheet.create({
   },
   editText: { ...type.label, fontSize: 13, color: color.ink.high },
 
-  shortcuts: { flexDirection: 'row', gap: space.sm },
   nameZeile: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  shortcut: {
-    flex: 1,
-    alignItems: 'center',
-    gap: space.xs,
-    paddingVertical: space.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.ink.faint,
-    backgroundColor: color.bgElevated,
-    ...flaeche(8),
-  },
-  shortcutIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  shortcutLabel: { ...type.meta, fontSize: 9.5, color: color.ink.mid },
   badge: {
     position: 'absolute',
     top: -4,

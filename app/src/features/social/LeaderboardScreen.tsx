@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Laden } from '@/components/Laden';
 import { Avatar } from '@/components/Avatar';
 import { GridBackground } from '@/components/GridBackground';
+import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { personName } from '@/lib/name';
@@ -79,6 +80,20 @@ export function LeaderboardScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        {/* 19.09.: Ligen hierher, statt als eigene Kachel im Profil. */}
+        <Pressable
+          onPress={() => {
+            haptics.light();
+            router.push('/ligen');
+          }}
+          style={({ pressed }) => [styles.ligen, pressed && { opacity: 0.85 }]}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.ligenTitel}>Private Ligen</Text>
+            <Text style={styles.ligenUnter}>Wochen-Rangliste nur mit deinen Leuten</Text>
+          </View>
+          <Icon name="chevron" size={14} color={color.ink.low} />
+        </Pressable>
 
         <View style={styles.scopes}>
           {SCOPES.map((s) => (
@@ -166,6 +181,19 @@ export function LeaderboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  ligen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    marginBottom: space.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  ligenTitel: { ...type.label, fontSize: 15, color: color.ink.max },
+  ligenUnter: { ...type.meta, color: color.ink.low },
   body: { paddingHorizontal: space.xl, gap: space.lg },
   center: { paddingVertical: space.xxxl, alignItems: 'center' },
 

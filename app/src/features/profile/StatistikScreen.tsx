@@ -8,6 +8,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Laden } from '@/components/Laden';
 import { ZahlText } from '@/components/Hochzaehlen';
 import { GridBackground } from '@/components/GridBackground';
+import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
 import { api } from '@/lib/supabase';
@@ -208,6 +209,18 @@ export function StatistikScreen() {
       >
         <Text style={styles.titel}>Deine Statistik</Text>
         <Text style={styles.unter}>Dabei seit {datum(s.dabei_seit, true)}</Text>
+
+        {/* 19.09.: der Wochenrueckblick hierher, statt als eigene Kachel. */}
+        <Pressable
+          onPress={() => router.push('/rueckblick')}
+          style={({ pressed }) => [styles.beitrag, { flexDirection: 'row', alignItems: 'center' }, pressed && { opacity: 0.8 }]}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.beitragText}>Deine Woche</Text>
+            <Text style={styles.beitragZahlen}>Karten, Meisterwege und Ligen – der Wochenrückblick</Text>
+          </View>
+          <Icon name="chevron" size={14} color={color.ink.low} />
+        </Pressable>
 
         <View style={styles.reihe}>
           <Zahl wert={s.sozial.follower} label="Follower" />
