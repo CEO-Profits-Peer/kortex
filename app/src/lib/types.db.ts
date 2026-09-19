@@ -145,6 +145,8 @@ export type Profile = {
   notify_reviews: boolean;
   notify_streak: boolean;
   notify_social: boolean;
+  /** 0105 */
+  notify_rueckblick?: boolean;
   onboarding_completed_at: string | null;
   /** 0084: Beitraege in Explore und fuer Nicht-Follower sichtbar. */
   beitraege_oeffentlich?: boolean;

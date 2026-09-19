@@ -13,6 +13,17 @@ import { beobachteterFetch } from './online';
 import type { Meisterwege } from './meisterwege';
 import type { Liga } from './ligen';
 
+export type Wochenrueckblick = {
+  ab: string;
+  gelesen: number;
+  xp: number;
+  richtig: number;
+  tage: number;
+  streak: number;
+  meister: { id: string; name: string; emoji: string | null; plus: number; stufe: number }[];
+  ligen: { name: string; platz: number; von: number }[];
+};
+
 export type LabTipps = {
   getippt: boolean;
   anzahl: number;
@@ -240,6 +251,13 @@ export const api = {
   async ligaVerlassen(id: string): Promise<void> {
     const { error } = await supabase.rpc('liga_verlassen', { p_liga: id });
     if (error) throw error;
+  },
+
+  /** 0105: die laufende Woche auf einen Blick. */
+  async wochenrueckblick(): Promise<Wochenrueckblick> {
+    const { data, error } = await supabase.rpc('wochenrueckblick');
+    if (error) throw error;
+    return data as Wochenrueckblick;
   },
 
   async getMyStats(): Promise<Stats> {

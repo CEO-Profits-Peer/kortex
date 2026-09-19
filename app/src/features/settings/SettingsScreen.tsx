@@ -634,6 +634,11 @@ export function SettingsScreen() {
             />
           ) : null}
           <Zeile
+            label="Wochenrückblick"
+            hint="Sonntagabend, wenn du gelernt hast"
+            rechts={<Schalter wert={profile.notify_rueckblick !== false} onChange={(v) => void patch({ notify_rueckblick: v })} />}
+          />
+          <Zeile
             label="Wiederholungen"
             hint="Erinnerung, wenn Fragen fällig sind"
             rechts={

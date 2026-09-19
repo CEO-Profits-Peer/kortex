@@ -95,6 +95,16 @@ def main() -> int:
         # Funktion waehlt selbst, wer gerade Abend hat - hier nur anstossen.
         # Scheitert es (alte Datenbank), laeuft der Versand trotzdem.
         if not args.dry_run:
+            # 0105: sonntags der Wochenrueckblick, gleiche Logik.
+            try:
+                r = http.post(f"{rest}/rpc/wochenrueckblick_erinnerungen", json={})
+                r.raise_for_status()
+                log.info("Rueckblick-Erinnerungen angelegt: %s", r.json())
+            except httpx.HTTPStatusError as exc:
+                log.warning("Rueckblick-Erinnerungen nicht angelegt: HTTP %s %s",
+                            exc.response.status_code, exc.response.text[:200])
+            except httpx.HTTPError as exc:
+                log.warning("Rueckblick-Erinnerungen nicht angelegt: %s: %s", type(exc).__name__, exc)
             try:
                 r = http.post(f"{rest}/rpc/streak_erinnerungen", json={})
                 r.raise_for_status()

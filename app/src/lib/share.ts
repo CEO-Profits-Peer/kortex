@@ -149,3 +149,36 @@ export async function sharePost(opts: {
     return 'failed';
   }
 }
+
+/**
+ * Den Wochenrueckblick teilen (0105): nur Zahlen, die man selbst gesammelt
+ * hat, plus Link auf die App - kein Karteninhalt.
+ */
+export async function shareRueckblick(text: string): Promise<ShareResult> {
+  const url = WEB_BASE;
+  if (Platform.OS === 'web') {
+    const nav = globalThis.navigator as Navigator & {
+      share?: (d: { title: string; text: string; url: string }) => Promise<void>;
+    };
+    if (typeof nav?.share === 'function') {
+      try {
+        await nav.share({ title: BRAND.name, text, url });
+        return 'shared';
+      } catch {
+        return 'cancelled';
+      }
+    }
+    try {
+      await Clipboard.setStringAsync(`${text} ${url}`);
+      return 'copied';
+    } catch {
+      return 'failed';
+    }
+  }
+  try {
+    const res = await Share.share({ message: `${text} ${url}`, title: BRAND.name });
+    return res.action === Share.dismissedAction ? 'cancelled' : 'shared';
+  } catch {
+    return 'failed';
+  }
+}
