@@ -3,7 +3,7 @@
 In den neuen Chat einfügen:
 
 > Lies `docs/HANDOFF.md` und `docs/NAECHSTER-CHAT.md` im Repo `CEO-Profits-Peer/kortex` (ElyCic).
-> Wir besprechen zuerst die offenen Entscheidungen unten, dann baust du.
+> Die Entscheidungen unten sind getroffen, du kannst direkt mit Schritt 1 bauen.
 
 ## Wo wir stehen
 - **Design 2.0 (V2.2)** ist per Schalter unter Einstellungen > Design aktiv:
@@ -43,20 +43,24 @@ In den neuen Chat einfügen:
    - Freischalten je Themenbereich und Level: Rahmen, Namensfarbe, Profilbild-Farben.
    - Gewünscht sind auch schwarze und dunkle Farben, die zum Stil passen.
 
-## Vorschläge aus dem Gespräch (noch zu entscheiden)
-Siehe die Antwort im alten Chat. Kurz:
-- **Punkt 1–3:** einfach, zuerst machen.
-- **Punkt 4:** nicht erzwingen. Als wählbares PRO-Muster („Gold-Dreiecke") und als Gold-Stein-Variante für den Tab umsetzen.
-- **Punkt 5, Reihenfolge nach Aufwand:**
-  1. Streak-Schutz
-  2. Export (CSV/Anki)
-  3. LAB-Szenarien
-  4. Profil-Themes
-  5. Planen
-  6. Statistik (braucht Aufruf-Zählung)
-  7. Ligen
-  - **Stimmen:** kostenpflichtige Google-Stimmen gehen NICHT, weil die Abrechnung aus bleiben muss. Nur Tempo und Browser-Stimmen.
-- **Punkt 6:** kostenlos erlernbar, berechnet vom Server aus Mastery je Hauptthema. Kein bezahlter Pass.
+## ENTSCHIEDEN (18.09., Nutzer hat allen vier Punkten zugestimmt)
+1. **Muster wählbar, nie automatisch:** Das Hintergrund-Muster „Gold-Dreiecke" (sehr dezent) und die Gold-Stein-Variante des Sechsecks (Tab- und Feed-Leiste, neben Stein und Flach) sind PRO-Optionen. Die App wird für PRO nicht automatisch umgefärbt.
+2. **Meisterwege** (Name bestätigt, NICHT „Battlepass"):
+   - Stufen je Hauptthema, die der Server aus der Mastery berechnet. Nicht kaufbar, nicht mogelbar.
+   - Beispiel Wissenschaft: Stufe 2 Rahmen „Laborglas", Stufe 3 Namensfarbe, Stufe 5 besondere Profilbild-Farbe.
+   - Namensfarben nur aus einer kleinen, lesbaren Design-2.0-Palette.
+   - Dunkle Profilbild-Farben: Obsidian, Anthrazit, Tiefgrün, Nachtblau, Schwarz-Gold. Dazu helle Gründe: Elfenbein, Champagner, Sand.
+   - PRO bekommt je Meisterweg eine Zusatzvariante, aber NIE schnelleren Fortschritt.
+3. **Reihenfolge:**
+   1. Quiz 5 Antworten mit PRO (kostenlos 3).
+   2. Freischalt-Animation, etwa 3 s, jederzeit überspringbar:
+      - Der Bildschirm wird Bordeaux, die sechs Facetten fliegen zum Sechseck, die Goldkante zeichnet sich, goldene Dreiecke sprühen, „Willkommen bei PRO".
+      - Danach 3–4 Wischkarten (Profilbild-Stile, Stapel 50, Anpinnen, Abzeichen), jede mit Knopf „Ausprobieren".
+      - Ruhige Version bei „Bewegung reduzieren".
+   3. Das „PRO werden"-Banner verschwindet bei PRO ersatzlos.
+   4. Meisterwege.
+   5. PRO-Features: Streak-Schutz → Export (CSV/Anki, später PDF) → LAB-Szenarien → Profil-Themes → Planen → Statistik (braucht Aufruf-Zählung, nicht rückwirkend) → Ligen.
+4. **Stimmen:** nur Tempo und Browser-Stimmen. Keine kostenpflichtigen Google-Stimmen, die Abrechnung bleibt aus.
 
 ## Regeln, die weiter gelten
 - Kein Geheimnis ausgeben.
