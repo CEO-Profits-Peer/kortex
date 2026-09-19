@@ -27,7 +27,7 @@ import { color, space, type } from '@/theme/tokens';
 /**
  * "Willkommen bei PRO" - einmal, wenn PRO frisch aktiv wird.
  *
- * Ablauf (~3 s, jederzeit "Überspringen"):
+ * Ablauf (~5 s, jederzeit "Überspringen"):
  *   Bordeaux blendet ein -> die sechs Stein-Facetten fliegen aus den Ecken
  *   herein -> die Goldkante zeichnet sich einmal herum -> goldene Dreiecke
  *   spruehen -> "Willkommen bei PRO" -> Wischkarten mit "Ausprobieren".
@@ -173,17 +173,18 @@ function ProWillkommen({ onZu }: { onZu: () => void }) {
         setKartenDa(true);
         return;
       }
-      grund.value = withTiming(1, { duration: 260 });
-      flug.value = withDelay(150, withTiming(1, { duration: 950, easing: aus }));
-      kante.value = withDelay(1100, withTiming(1, { duration: 600, easing: Easing.inOut(Easing.quad) }));
-      funken.value = withDelay(1650, withTiming(1, { duration: 750, easing: aus }));
-      titel.value = withDelay(1900, withTiming(1, { duration: 450, easing: aus }));
-      zeiten.current.push(setTimeout(() => haptics.success(), 1650));
+      // ~5 s bis zu den Karten (Wunsch 19.09.; zuerst waren es 3 s).
+      grund.value = withTiming(1, { duration: 400 });
+      flug.value = withDelay(300, withTiming(1, { duration: 1600, easing: aus }));
+      kante.value = withDelay(1950, withTiming(1, { duration: 950, easing: Easing.inOut(Easing.quad) }));
+      funken.value = withDelay(2850, withTiming(1, { duration: 1100, easing: aus }));
+      titel.value = withDelay(3200, withTiming(1, { duration: 700, easing: aus }));
+      zeiten.current.push(setTimeout(() => haptics.success(), 2850));
       zeiten.current.push(
         setTimeout(() => {
-          hoch.value = withTiming(1, { duration: 420, easing: aus });
+          hoch.value = withTiming(1, { duration: 500, easing: aus });
           setKartenDa(true);
-        }, 2900),
+        }, 4700),
       );
     });
     return () => {

@@ -52,8 +52,8 @@ In den neuen Chat einfügen:
    - Dunkle Profilbild-Farben: Obsidian, Anthrazit, Tiefgrün, Nachtblau, Schwarz-Gold. Dazu helle Gründe: Elfenbein, Champagner, Sand.
    - PRO bekommt je Meisterweg eine Zusatzvariante, aber NIE schnelleren Fortschritt.
 3. **Reihenfolge:**
-   1. ✅ Quiz 5 Antworten mit PRO (kostenlos 3). Migration `0093_quiz_fuenf.sql` ist geschrieben, aber NOCH NICHT eingespielt.
-   2. ✅ Freischalt-Animation (`features/pro/ProWillkommen.tsx`, Vorschau: `/atelier` → design → „Willkommen“), etwa 3 s, jederzeit überspringbar:
+   1. ✅ Quiz 5 Antworten mit PRO (kostenlos 3). Migration `0093_quiz_fuenf.sql` eingespielt (19.09.).
+   2. ✅ Freischalt-Animation (`features/pro/ProWillkommen.tsx`, Vorschau: `/atelier` → design → „Willkommen“), etwa 5 s, jederzeit überspringbar:
       - Der Bildschirm wird Bordeaux, die sechs Facetten fliegen zum Sechseck, die Goldkante zeichnet sich, goldene Dreiecke sprühen, „Willkommen bei PRO".
       - Danach 3–4 Wischkarten (Profilbild-Stile, Stapel 50, Anpinnen, Abzeichen), jede mit Knopf „Ausprobieren".
       - Ruhige Version bei „Bewegung reduzieren".
