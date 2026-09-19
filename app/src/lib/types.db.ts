@@ -466,7 +466,19 @@ export type Statistik = {
     kommentare: number;
     geteilt: number;
     neue_follower: number;
+    /** 0099 (PRO): verschiedene Leute, die ihn im Home gesehen haben. */
+    leute?: number | null;
   }[];
+  /** 0099: Reichweite und Heatmap - Inhalt nur mit PRO. */
+  reichweite?:
+    | { pro: false }
+    | {
+        pro: true;
+        seit: string | null;
+        leute_30: number;
+        beitraege: { id: string; body: string; art: string; at: string; leute: number; likes: number }[];
+        heatmap: { tag: string; anzahl: number }[];
+      };
 };
 
 export type PersonHit = {

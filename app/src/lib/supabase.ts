@@ -492,6 +492,12 @@ export const api = {
     return (data ?? []) as { id: string; art: string; body: string; at: string }[];
   },
 
+  /** 0099: diese Beitraege waren gerade auf dem Bildschirm (fuer die Reichweite). */
+  async beitraegeGesehen(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await supabase.rpc('beitraege_gesehen', { p_ids: ids.slice(0, 50) });
+  },
+
   async geplantLoeschen(id: string): Promise<void> {
     const { error } = await supabase.rpc('geplant_loeschen', { p_post: id });
     if (error) throw error;

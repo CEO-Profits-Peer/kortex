@@ -67,7 +67,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
   {
     titel: 'Mehr',
     punkte: [
-      { icon: 'chart', titel: 'Statistik', text: 'Reichweite je Beitrag, woher Follower kommen, Lern-Heatmap' },
+      { icon: 'chart', titel: 'Statistik', text: 'Reichweite je Beitrag und Lern-Heatmap', da: true },
       { icon: 'leaderboard', titel: 'Ligen', text: 'Private Ligen und Turniere mit Freunden' },
       { icon: 'interactive', titel: 'LAB-Szenarien', text: 'Bis zu sechs Varianten je Werkzeug merken und vergleichen', da: true },
       { icon: 'lesson', titel: 'Export', text: 'Stapel als Datei für Anki – PDF folgt', da: true },

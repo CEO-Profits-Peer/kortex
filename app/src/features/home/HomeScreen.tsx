@@ -69,6 +69,25 @@ export function HomeScreen() {
   const [kommentare, setKommentare] = useState<{ id: string; titel: string } | null>(null);
   const [ungelesen, setUngelesen] = useState(0);
   const liste = useRef<FlatList<HomeEntry>>(null);
+  // 0099: Reichweite. Gesammelt, was auf dem Bildschirm war, und alle paar
+  // Sekunden auf einmal geschickt - nicht eine Anfrage pro Beitrag. Der
+  // Server zaehlt jede Person hoechstens einmal am Tag.
+  const gesehen = useRef(new Set<string>());
+  const geschickt = useRef(new Set<string>());
+  useEffect(() => {
+    const t = setInterval(() => {
+      const neu = [...gesehen.current].filter((id) => !geschickt.current.has(id));
+      if (neu.length === 0) return;
+      neu.forEach((id) => geschickt.current.add(id));
+      void api.beitraegeGesehen(neu).catch(() => undefined);
+    }, 4000);
+    return () => clearInterval(t);
+  }, []);
+  const sichtbarGeaendert = useRef(({ viewableItems }: { viewableItems: { item: HomeEntry }[] }) => {
+    for (const v of viewableItems) {
+      if (v.item.art === 'post' && !v.item.wer.ich) gesehen.current.add(v.item.was.id);
+    }
+  }).current;
   const geladenAm = useRef(0);
   const scrollOben = useRef(0);
 
@@ -414,6 +433,8 @@ export function HomeScreen() {
         ref={liste}
         data={ansicht === 'following' ? eintraege : exploreEintraege}
         keyExtractor={schluessel}
+        onViewableItemsChanged={sichtbarGeaendert}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 60, minimumViewTime: 800 }}
         renderItem={({ item }) => (
           <Eintrag e={item} onNotiz={zeige} onKommentare={(id, titel) => setKommentare({ id, titel })} />
         )}

@@ -53,6 +53,45 @@ function Zahl({ wert, label, farbe }: { wert: number | string; label: string; fa
   );
 }
 
+/**
+ * Lern-Heatmap (PRO): 12 Wochen als Spalten, Montag oben. Je dunkler das
+ * Gold, desto mehr gelesene Karten. Stufen relativ zum eigenen besten Tag -
+ * absolute Schwellen waeren fuer Wenig- und Viel-Leser gleich falsch.
+ */
+function Heatmap({ tage }: { tage: { tag: string; anzahl: number }[] }) {
+  const max = Math.max(1, ...tage.map((t) => t.anzahl));
+  const erster = tage.length ? (new Date(tage[0].tag).getDay() + 6) % 7 : 0;
+  const zellen = [...Array(erster).fill(null), ...tage];
+  const spalten: (typeof tage[number] | null)[][] = [];
+  for (let i = 0; i < zellen.length; i += 7) spalten.push(zellen.slice(i, i + 7));
+  return (
+    <View style={{ gap: 6, marginTop: space.md }}>
+      <View style={{ flexDirection: 'row', gap: 3 }}>
+        {spalten.map((sp, i) => (
+          <View key={i} style={{ gap: 3 }}>
+            {sp.map((t, j) => (
+              <View
+                key={j}
+                style={{
+                  width: 11,
+                  height: 11,
+                  borderRadius: 2,
+                  backgroundColor: !t
+                    ? 'transparent'
+                    : t.anzahl === 0
+                      ? color.ink.faint
+                      : `rgba(217, 184, 114, ${0.25 + 0.75 * (t.anzahl / max)})`,
+                }}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+      <Text style={styles.klein}>Gelesene Karten, zwölf Wochen · dein bester Tag: {max}</Text>
+    </View>
+  );
+}
+
 function Abschnitt({ titel, children }: { titel: string; children: React.ReactNode }) {
   return (
     <View style={styles.abschnitt}>
@@ -223,9 +262,47 @@ export function StatistikScreen() {
                 <Text style={styles.beitragZahlen}>
                   {b.likes} Likes · {b.kommentare} Kommentare · {b.geteilt}× geteilt
                   {b.neue_follower > 0 ? `  ·  +${b.neue_follower} Follower` : ''}
+                  {typeof b.leute === 'number' ? `  ·  ${b.leute} gesehen` : ''}
                 </Text>
               </Pressable>
             ))
+          )}
+        </Abschnitt>
+
+        <Abschnitt titel="Reichweite">
+          {!s.reichweite || !s.reichweite.pro ? (
+            <Pressable onPress={() => router.push('/pro')} style={({ pressed }) => [styles.beitrag, pressed && { opacity: 0.8 }]}>
+              <Text style={styles.beitragText}>Wie viele Leute deine Beiträge sehen – je Beitrag und über 30 Tage.</Text>
+              <Text style={styles.beitragZahlen}>Mit PRO · dazu eine Lern-Heatmap über zwölf Wochen</Text>
+            </Pressable>
+          ) : (
+            <>
+              <View style={styles.reihe}>
+                <Zahl wert={s.reichweite.leute_30} label="Leute in 30 Tagen" farbe={color.signal.primary} />
+              </View>
+              {s.reichweite.beitraege.length === 0 ? (
+                <Text style={styles.leer}>
+                  Noch keine Aufrufe gezählt. Gezählt wird{s.reichweite.seit ? ` seit ${new Date(s.reichweite.seit).toLocaleDateString('de-AT')}` : ' ab jetzt'}, wenn jemand deinen Beitrag im Home sieht.
+                </Text>
+              ) : (
+                s.reichweite.beitraege.map((b) => (
+                  <Pressable
+                    key={b.id}
+                    onPress={() => router.push(`/post/${encodeURIComponent(b.id)}`)}
+                    style={({ pressed }) => [styles.beitrag, pressed && { opacity: 0.8 }]}
+                  >
+                    <Text style={styles.beitragText} numberOfLines={2}>
+                      {b.body || 'Ohne Text'}
+                    </Text>
+                    <Text style={styles.beitragZahlen}>
+                      {b.leute} gesehen · {b.likes} Likes
+                      {b.leute > 0 ? `  ·  ${Math.round((100 * b.likes) / b.leute)} % gelikt` : ''}
+                    </Text>
+                  </Pressable>
+                ))
+              )}
+              <Heatmap tage={s.reichweite.heatmap} />
+            </>
           )}
         </Abschnitt>
 
