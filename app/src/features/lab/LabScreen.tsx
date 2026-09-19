@@ -467,11 +467,15 @@ function Anker({ w }: { w: Werkzeug }) {
     }, 70);
   };
 
+  const [ligen, setLigen] = useState<Awaited<ReturnType<typeof api.ankerLigen>>>([]);
+
   const abschicken = async () => {
     setBusy(true);
     setFehler(null);
     try {
       setStand(await api.labAnker(anker, schaetzung));
+      // 0102: dieselbe Frage in den eigenen Ligen - Klassenvergleich.
+      api.ankerLigen().then(setLigen).catch(() => setLigen([]));
       setSchritt('fertig');
     } catch (e) {
       setFehler(fehlerText(e, 'Hat nicht geklappt'));
@@ -528,6 +532,20 @@ function Anker({ w }: { w: Werkzeug }) {
             Wer die 65 sah: {stand.hoch.schnitt ?? '–'} % ({stand.hoch.n} Leute). Die Zahl vom Rad war Zufall –
             ist der Unterschied groß, hat sie trotzdem gewirkt.
           </Text>
+        ) : null}
+
+        {schritt === 'fertig' && ligen.length > 0 ? (
+          <View style={{ gap: space.xs }}>
+            <Text style={styles.reglerLabel}>In deinen Ligen</Text>
+            {ligen.map((l) => (
+              <Text key={l.liga} style={styles.hinweis}>
+                {l.liga}:{' '}
+                {l.niedrig && l.hoch
+                  ? `nach 10 im Schnitt ${l.niedrig.schnitt ?? '–'} %, nach 65 im Schnitt ${l.hoch.schnitt ?? '–'} % (${l.n} Leute)`
+                  : `erst ${l.n} von 3 Antworten – schick den Ankereffekt in die Gruppe`}
+              </Text>
+            ))}
+          </View>
         ) : null}
       </Flaeche>
       {schritt === 'fertig' && stand ? (

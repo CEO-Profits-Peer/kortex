@@ -523,6 +523,13 @@ export const api = {
     return (data ?? []) as { id: string; art: string; body: string; at: string }[];
   },
 
+  /** 0102: Ankereffekt-Schnitte je eigener Liga (ab drei Antworten). */
+  async ankerLigen(): Promise<{ liga: string; n: number; niedrig: { n: number; schnitt: number } | null; hoch: { n: number; schnitt: number } | null }[]> {
+    const { data, error } = await supabase.rpc('anker_ligen');
+    if (error) throw error;
+    return (data ?? []) as { liga: string; n: number; niedrig: { n: number; schnitt: number } | null; hoch: { n: number; schnitt: number } | null }[];
+  },
+
   /** 0101: Schaetz-Duell unter einem LAB-Beitrag. */
   async labTipps(postId: string): Promise<LabTipps> {
     const { data, error } = await supabase.rpc('lab_tipps', { p_post: postId });
