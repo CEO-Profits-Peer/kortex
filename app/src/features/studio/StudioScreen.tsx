@@ -393,6 +393,18 @@ export function StudioScreen() {
               />
             </View>
 
+            {/* 0106: gemeinsam fuer die Schularbeit sammeln. */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                router.push('/gruppenstapel');
+              }}
+              style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.labTitel}>Gruppen-Stapel</Text>
+              <Text style={styles.labKurz}>Mit der Klasse Karten für eine Schularbeit sammeln</Text>
+            </Pressable>
+
             <DailyBanner />
 
             <Abschnitt titel="Kurse" zahl={courses?.length} />

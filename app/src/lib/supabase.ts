@@ -24,6 +24,15 @@ export type Wochenrueckblick = {
   ligen: { name: string; platz: number; von: number }[];
 };
 
+export type GruppenStapel = {
+  id: string;
+  titel: string;
+  code: string;
+  meiner: boolean;
+  leute: number;
+  karten: { content_id: string; title: string; category: string; von: string | null }[];
+};
+
 export type LabTipps = {
   getippt: boolean;
   anzahl: number;
@@ -258,6 +267,35 @@ export const api = {
     const { data, error } = await supabase.rpc('wochenrueckblick');
     if (error) throw error;
     return data as Wochenrueckblick;
+  },
+
+  /** 0106: Lerngruppen-Stapel. */
+  async meineGruppenStapel(): Promise<GruppenStapel[]> {
+    const { data, error } = await supabase.rpc('meine_gruppen_stapel');
+    if (error) throw error;
+    return (data ?? []) as GruppenStapel[];
+  },
+
+  async gsErstellen(titel: string): Promise<{ id: string; code: string }> {
+    const { data, error } = await supabase.rpc('gs_erstellen', { p_titel: titel });
+    if (error) throw error;
+    return data as { id: string; code: string };
+  },
+
+  async gsBeitreten(code: string): Promise<{ ok: true; id: string; titel: string } | { ok: false; fehler: string }> {
+    const { data, error } = await supabase.rpc('gs_beitreten', { p_code: code });
+    if (error) throw error;
+    return data as { ok: true; id: string; titel: string } | { ok: false; fehler: string };
+  },
+
+  async gsKarte(stapel: string, contentId: string, rein: boolean): Promise<void> {
+    const { error } = await supabase.rpc('gs_karte', { p_stapel: stapel, p_content: contentId, p_rein: rein });
+    if (error) throw error;
+  },
+
+  async gsVerlassen(stapel: string): Promise<void> {
+    const { error } = await supabase.rpc('gs_verlassen', { p_stapel: stapel });
+    if (error) throw error;
   },
 
   async getMyStats(): Promise<Stats> {
