@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +49,9 @@ function wannNaechste(iso: string | null): string {
 
 export function ReviewScreen() {
   const insets = useSafeAreaInsets();
+  // 0110: /review?pruefung=ID - Fragen nur aus den Themen der Pruefung,
+  // auch vorgezogen. Ohne Parameter wie immer: was faellig ist.
+  const { pruefung } = useLocalSearchParams<{ pruefung?: string }>();
   const [queue, setQueue] = useState<DueReview[] | null>(null);
   const [index, setIndex] = useState(0);
   const [chosen, setChosen] = useState<number | null>(null);
@@ -63,8 +66,7 @@ export function ReviewScreen() {
   }, []);
 
   useEffect(() => {
-    void api
-      .dueReviews(12)
+    void (pruefung ? api.pruefungFragen(pruefung, 12) : api.dueReviews(12))
       .then((q) => {
         setQueue(q);
         analytics.reviewOpened(q.length);
@@ -83,7 +85,9 @@ export function ReviewScreen() {
       setBusy(true);
       setChosen(option);
       try {
-        const r = await api.submitReview(current.review_id, option);
+        const r = pruefung
+          ? await api.pruefungAntworten(current.review_id, option)
+          : await api.submitReview(current.review_id, option);
         r.correct ? feedback.correct() : feedback.wrong();
         rewards.xp(r.xp);
 
@@ -130,7 +134,7 @@ export function ReviewScreen() {
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Wiederholen" titleInBarOnly />
+          <ScreenHeader title={pruefung ? 'Für die Prüfung' : 'Wiederholen'} titleInBarOnly />
         </View>
         <ScrollView contentContainerStyle={styles.leer}>
           <Text style={styles.emptyTitle}>Gerade nichts fällig</Text>

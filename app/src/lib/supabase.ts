@@ -33,6 +33,19 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+export type Pruefung = {
+  id: string;
+  titel: string;
+  datum: string;
+  kategorien: string[];
+  tage: number;
+  gesamt: number;
+  gelesen: number;
+  sicher: number;
+  offen: number;
+  heute: number;
+};
+
 export type LabTipps = {
   getippt: boolean;
   anzahl: number;
@@ -361,6 +374,37 @@ export const api = {
     const { data, error } = await supabase.rpc('get_due_reviews', { p_limit: limit });
     if (error) throw error;
     return (data ?? []) as DueReview[];
+  },
+
+  /** 0110: Pruefungsmodus. */
+  async meinePruefungen(): Promise<Pruefung[]> {
+    const { data, error } = await supabase.rpc('meine_pruefungen');
+    if (error) throw error;
+    return (data ?? []) as Pruefung[];
+  },
+
+  async pruefungAnlegen(titel: string, datum: string, kategorien: string[]): Promise<string> {
+    const { data, error } = await supabase.rpc('pruefung_anlegen', { p_titel: titel, p_datum: datum, p_kategorien: kategorien });
+    if (error) throw error;
+    return data as string;
+  },
+
+  async pruefungLoeschen(id: string): Promise<void> {
+    const { error } = await supabase.rpc('pruefung_loeschen', { p_id: id });
+    if (error) throw error;
+  },
+
+  async pruefungFragen(id: string, limit = 12): Promise<DueReview[]> {
+    const { data, error } = await supabase.rpc('pruefung_fragen', { p_id: id, p_limit: limit });
+    if (error) throw error;
+    return (data ?? []) as DueReview[];
+  },
+
+  /** Vorgezogene Antworten bringen keine XP und aendern den Plan nicht (0110). */
+  async pruefungAntworten(reviewId: string, answerIndex: number) {
+    const { data, error } = await supabase.rpc('pruefung_antworten', { p_review: reviewId, p_answer: answerIndex });
+    if (error) throw error;
+    return data as { correct: boolean; correct_index: number; xp: number; vorgezogen?: boolean };
   },
 
   async reviewSummary(): Promise<ReviewSummary> {

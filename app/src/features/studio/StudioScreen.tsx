@@ -393,6 +393,18 @@ export function StudioScreen() {
               />
             </View>
 
+            {/* 0110: Pruefungsmodus. */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                router.push('/pruefung');
+              }}
+              style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.labTitel}>Prüfungen</Text>
+              <Text style={styles.labKurz}>Datum und Themen eintragen – die App plant bis zum Tag X</Text>
+            </Pressable>
+
             {/* 0106: gemeinsam fuer die Schularbeit sammeln. */}
             <Pressable
               onPress={() => {
