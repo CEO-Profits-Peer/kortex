@@ -28,6 +28,7 @@ import { isKineticScript } from '@/features/kinetic/types';
 import { Icon } from '@/components/Icon';
 import { isHero, paginate } from '@/components/paginate';
 import { SourceBadge } from '@/components/SourceBadge';
+import { werkzeugFuerKarte } from '@/features/lab/rechnen';
 import { Interaction, isInteractionBuilt } from '@/features/interactions';
 import { reportSeenNow } from '@/features/feed/useDwellTracking';
 import { eventBuffer, track } from '@/lib/eventBuffer';
@@ -330,6 +331,7 @@ function ContentCardBase({
   const onSurf = useCallback(() => {
     router.push(`/category/${encodeURIComponent(item.primary_category_id)}`);
   }, [item.primary_category_id]);
+  const labWerkzeug = React.useMemo(() => werkzeugFuerKarte(item), [item]);
 
   const onHashtag = useCallback((t: Hashtag) => {
     haptics.select();
@@ -618,12 +620,30 @@ function ContentCardBase({
             auf Wunsch - zwei kleine Knoepfe unter jeder Karte, die kaum
             jemand drueckt, sind Laerm. Die Ereignisart bleibt in der
             Datenbank, damit alte Auswertungen (Admin) weiter stimmen. */}
+        {/* 19.09.: passt ein LAB-Werkzeug zum Thema, darf man es gleich
+            selbst ausrechnen - von der Karte ins Werkzeug. */}
+        {labWerkzeug ? (
+          <Pressable
+            onPress={() => {
+              haptics.light();
+              router.push(`/lab/${labWerkzeug.id}`);
+            }}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${labWerkzeug.titel} selbst rechnen`}
+            style={styles.labLink}
+          >
+            <Text style={[styles.labLinkText, { color: labWerkzeug.farbe }]}>Rechnen</Text>
+          </Pressable>
+        ) : null}
       </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  labLink: { paddingHorizontal: space.sm, paddingVertical: 4 },
+  labLinkText: { ...type.label, fontSize: 13 },
   // overflow: hidden ist keine Feinheit, sondern die Absicherung: ohne sie
   // zeichnet ueberlaufender Inhalt ueber die Nachbarkarten.
   card: { paddingHorizontal: space.xl, overflow: 'hidden' },

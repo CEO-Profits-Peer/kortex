@@ -870,3 +870,17 @@ export function tippInfo(id: string, e: Record<string, unknown> | null | undefin
       return null;
   }
 }
+
+/**
+ * Passt ein Werkzeug zu dieser Karte? Hauptkategorie zuerst, dann die
+ * Zusatz-Hashtags (0081). Nur exakte Kategorien - "finance" allein soll
+ * nicht unter jeder Geldkarte "Zinseszins" anbieten.
+ */
+export function werkzeugFuerKarte(k: { primary_category_id: string; category_ids?: string[] | null }): Werkzeug | null {
+  const ids = [k.primary_category_id, ...(k.category_ids ?? [])];
+  for (const id of ids) {
+    const w = WERKZEUGE.find((x) => x.kategorie === id);
+    if (w) return w;
+  }
+  return null;
+}
