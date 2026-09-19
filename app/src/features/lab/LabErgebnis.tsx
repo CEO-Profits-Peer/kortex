@@ -2,7 +2,11 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
+import { Hochzaehlen } from '@/components/Hochzaehlen';
 import { haptics } from '@/lib/haptics';
+import { getPrefs } from '@/lib/prefs';
 import { color, radius, space, type } from '@/theme/tokens';
 import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette, flaeche } from '@/theme/design';
@@ -24,9 +28,14 @@ export function LabErgebnis({
 }: {
   werkzeugId: string;
   eingaben: Record<string, unknown> | null | undefined;
-  /** Im Beitrag: "Selbst ausprobieren" fuehrt ins Werkzeug. */
+  /** Im Beitrag: "Selbst ausprobieren" fuehrt ins Werkzeug - und die Karte spielt sich ab. */
   mitLink?: boolean;
 }) {
+  // Im Beitrag laeuft das Ergebnis ab wie ein Special: Zahl zaehlt hoch, der
+  // Rest kommt gestaffelt. Im Werkzeug selbst NICHT - dort aendert jeder
+  // Reglerzug das Ergebnis, eine Animation pro Zug waere Flackern.
+  const abspielen = !!mitLink && !getPrefs().reduceMotion;
+  const rein = (ms: number) => (abspielen ? FadeInDown.delay(ms).duration(380) : undefined);
   const w = werkzeug(werkzeugId);
   const e = w ? ergebnis(w.id, eingaben) : null;
 
@@ -48,28 +57,33 @@ export function LabErgebnis({
         <Text style={[styles.meta, { color: w.farbe }]}>LAB · {w.titel}</Text>
         <Text style={styles.tag}>#{w.hashtag}</Text>
       </View>
-      <Text style={styles.gross}>{e.gross}</Text>
-      <Text style={styles.satz}>{e.satz}</Text>
-      {e.einordnung ? <Text style={[styles.einordnung, { color: w.farbe }]}>{e.einordnung}</Text> : null}
+      {abspielen ? <Hochzaehlen text={e.gross} style={styles.gross} verzoegerung={150} /> : <Text style={styles.gross}>{e.gross}</Text>}
+      <Animated.Text entering={rein(700)} style={styles.satz}>{e.satz}</Animated.Text>
 
       {eingezahlt !== null && e.balken ? (
-        <View style={{ gap: 6 }}>
+        <Animated.View entering={rein(1000)} style={{ gap: 6 }}>
           <View style={styles.balken}>
             <View style={{ flex: eingezahlt, backgroundColor: color.ink.mid }} />
             <View style={{ flex: 1 - eingezahlt, backgroundColor: w.farbe }} />
           </View>
-        </View>
+        </Animated.View>
       ) : null}
 
       {e.details.length > 0 ? (
         <View style={styles.details}>
-          {e.details.map((d) => (
-            <View key={d.label} style={styles.detail}>
+          {e.details.map((d, i) => (
+            <Animated.View key={d.label} entering={rein(1250 + i * 120)} style={styles.detail}>
               <Text style={styles.detailWert}>{d.wert}</Text>
               <Text style={styles.detailLabel}>{d.label}</Text>
-            </View>
+            </Animated.View>
           ))}
         </View>
+      ) : null}
+
+      {e.einordnung ? (
+        <Animated.Text entering={rein(1250 + e.details.length * 120 + 200)} style={[styles.einordnung, { color: w.farbe }]}>
+          {e.einordnung}
+        </Animated.Text>
       ) : null}
 
       <Text style={styles.quelle}>{w.quelle}</Text>
