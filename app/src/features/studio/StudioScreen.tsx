@@ -406,6 +406,18 @@ export function StudioScreen() {
               <Text style={styles.labKurz}>Datum und Themen eintragen – die App plant bis zum Tag X</Text>
             </Pressable>
 
+            {/* 0114: zu zweit ein Wochenziel. */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                router.push('/lernpartner');
+              }}
+              style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.labTitel}>Lernpartner</Text>
+              <Text style={styles.labKurz}>Zu zweit ein Wochenziel – ihr seht, wie weit der andere ist</Text>
+            </Pressable>
+
             {/* 0111: Themen wuenschen. */}
             <Pressable
               onPress={() => {

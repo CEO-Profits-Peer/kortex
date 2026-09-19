@@ -119,7 +119,10 @@ export function LernpfadeScreen() {
       >
         <Text style={styles.intro}>Mehrere Kurse in einer Reihenfolge – jeder baut auf dem davor auf.</Text>
         {pfade === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
-        {pfade?.map((p) => <PfadKarte key={p.id} p={p} breit />)}
+        {pfade
+          ?.slice()
+          .sort((a, b) => Number(b.bereit > 0) - Number(a.bereit > 0))
+          .map((p) => <PfadKarte key={p.id} p={p} breit />)}
       </ScrollView>
     </GridBackground>
   );

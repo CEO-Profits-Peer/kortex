@@ -33,6 +33,18 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+/** 0114: Lernpartner. ich/er/serie nur bei aktiven. */
+export type Lernpartner = {
+  id: string;
+  status: 'offen' | 'aktiv';
+  ziel: number;
+  eingehend: boolean;
+  partner: { handle: string; name: string; avatar_path: string | null };
+  ich: number | null;
+  er: number | null;
+  serie: number | null;
+};
+
 /** 0113: Klassen-Ueberblick. quote ist null, solange weniger als `min` geantwortet haben. */
 export type Klassenstand = {
   leute: number;
@@ -448,6 +460,41 @@ export const api = {
     const { data, error } = await supabase.rpc('pruefung_anlegen', { p_titel: titel, p_datum: datum, p_kategorien: kategorien });
     if (error) throw error;
     return data as string;
+  },
+
+  // --- Lernpartner (0114) ------------------------------------------------
+
+  async meineLernpartner(): Promise<Lernpartner[]> {
+    const { data, error } = await supabase.rpc('meine_lernpartner');
+    if (error) throw error;
+    return (data ?? []) as Lernpartner[];
+  },
+
+  async lpAnfragen(handle: string, ziel: number): Promise<void> {
+    const { error } = await supabase.rpc('lp_anfragen', { p_handle: handle, p_ziel: ziel });
+    if (error) throw error;
+  },
+
+  async lpAntworten(id: string, ja: boolean): Promise<void> {
+    const { error } = await supabase.rpc('lp_antworten', { p_id: id, p_ja: ja });
+    if (error) throw error;
+  },
+
+  async lpZiel(id: string, ziel: number): Promise<void> {
+    const { error } = await supabase.rpc('lp_ziel', { p_id: id, p_ziel: ziel });
+    if (error) throw error;
+  },
+
+  async lpBeenden(id: string): Promise<void> {
+    const { error } = await supabase.rpc('lp_beenden', { p_id: id });
+    if (error) throw error;
+  },
+
+  /** false = heute schon gestupst. */
+  async lpAnstupsen(id: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('lp_anstupsen', { p_id: id });
+    if (error) throw error;
+    return !!data;
   },
 
   // --- Lernpfade (0112) --------------------------------------------------
