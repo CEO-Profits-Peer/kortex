@@ -102,9 +102,15 @@ export function ProfileScreen() {
   // die auch die Stufen fuer die Kachel liefert. Fehlt sie (Migration noch
   // nicht da, kein Netz), bleibt das Profil wie bisher.
   const [meister, setMeister] = useState<Meisterwege | null>(null);
+  // Offene Duelle fuer die Wabe (19.09.: Duelle ins Profil, Wiederholen ins Studio).
+  const [duelle, setDuelle] = useState(0);
   useFocusEffect(
     useCallback(() => {
       api.meisterwege().then(setMeister).catch(() => setMeister(null));
+      api
+        .duelList()
+        .then((d) => setDuelle(d.filter((x) => x.laeuft && x.mein_stand !== 'fertig').length))
+        .catch(() => setDuelle(0));
     }, []),
   );
 
@@ -194,7 +200,6 @@ export function ProfileScreen() {
   const focusMin = Math.round((p?.focus_seconds_total ?? 0) / 60);
   const list = tab === 'reposts' ? social.reposts : social.likes;
   const gesamt = tab === 'reposts' ? social.repost_count : social.like_count;
-  const due = stats?.reviews_due ?? 0;
 
   return (
     <GridBackground>
@@ -292,16 +297,16 @@ export function ProfileScreen() {
         {einladeNotiz ? <Text style={styles.einladeNotiz}>{einladeNotiz}</Text> : null}
 
         {/* --- Wege als Waben (19.09.) ------------------------------------------
-            Fuenf statt acht: Duelle stehen im Studio, Ligen hinter der
-            Rangliste, der Rueckblick in der Statistik. */}
+            Fuenf statt acht: Wiederholen steht im Studio (beim Lernen),
+            Ligen hinter der Rangliste, der Rueckblick in der Statistik. */}
         <WabenKacheln
           waben={[
             {
-              icon: 'refresh',
-              label: 'Wiederholen',
-              badge: due,
-              tint: due > 0 ? color.signal.mastery : undefined,
-              onPress: () => router.push('/review'),
+              icon: 'xp',
+              label: 'Duelle',
+              badge: duelle,
+              tint: duelle > 0 ? color.signal.warn : undefined,
+              onPress: () => router.push('/duels'),
             },
             { icon: 'mastery', label: 'Meisterwege', onPress: () => router.push('/meisterwege') },
             { icon: 'profile', label: 'Leute', onPress: () => router.push('/following') },

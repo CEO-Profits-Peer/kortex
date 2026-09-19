@@ -67,7 +67,7 @@ export function StudioScreen() {
   const [ansicht, setAnsicht] = useState<Ansicht>('erstellen');
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
   const [faellig, setFaellig] = useState(0);
-  const [duelle, setDuelle] = useState(0);
+  const [pruefungen, setPruefungen] = useState(0);
   const [meine, setMeine] = useState<Post[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,9 +112,9 @@ export function StudioScreen() {
       .then((r) => setFaellig(r?.due_now ?? 0))
       .catch(() => setFaellig(0));
     void api
-      .duelList()
-      .then((d) => setDuelle(d.filter((x) => x.laeuft && x.mein_stand !== 'fertig').length))
-      .catch(() => setDuelle(0));
+      .meinePruefungen()
+      .then((l) => setPruefungen(l.filter((p) => p.tage > 0 || new Date(p.datum) >= new Date(new Date().toDateString())).length))
+      .catch(() => setPruefungen(0));
     void ladenMeine();
     try {
       setCourses(await api.listCourses());
@@ -384,27 +384,15 @@ export function StudioScreen() {
                 ton={faellig > 0 ? color.signal.mastery : undefined}
                 onPress={() => router.push('/review')}
               />
+              {/* 0110: Pruefungsmodus. Duelle stehen seit 19.09. im Profil. */}
               <Kachel
-                icon="xp"
-                label="Duelle"
-                zahl={duelle}
-                unter={duelle > 0 ? 'offen' : 'jemanden fordern'}
-                ton={duelle > 0 ? color.signal.warn : undefined}
-                onPress={() => router.push('/duels')}
+                icon="clock"
+                label="Prüfungen"
+                zahl={pruefungen}
+                unter={pruefungen > 0 ? 'geplant' : 'Tag X planen'}
+                onPress={() => router.push('/pruefung')}
               />
             </View>
-
-            {/* 0110: Pruefungsmodus. */}
-            <Pressable
-              onPress={() => {
-                haptics.light();
-                router.push('/pruefung');
-              }}
-              style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={styles.labTitel}>Prüfungen</Text>
-              <Text style={styles.labKurz}>Datum und Themen eintragen – die App plant bis zum Tag X</Text>
-            </Pressable>
 
             {/* 0114: zu zweit ein Wochenziel. */}
             <Pressable
