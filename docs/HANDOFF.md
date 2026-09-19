@@ -326,6 +326,23 @@ functions return `quiz_items` incl. `correct_index` to the client.
 - No purchase yet. RevenueCat is planned. `plan='pro'` is for purchases.
 - When PRO expires, existing pins, big stacks and avatars stay.
 
+## 0093–0100 (2026-09-19)
+
+- 0093 quiz 3/5 with PRO (applied), 0094 LAB tools inflation/netto/co2 may be
+  shared (applied). **0095–0100 written, NOT applied yet.**
+- 0095 Meisterwege: stage 1-5 per root category from summed mastery
+  (50/150/400/800/1500), rewards table, `meister_waehlen` (no column grants),
+  `avatar_erlaubt` in the avatar trigger; PRO backgrounds are now index 8-11,
+  12+ are Meisterweg rewards (grund 12-14, farbe 12-16).
+- 0096 streak shield (PRO: one missed day per 7 days), 0097 scheduled posts
+  (status 'geplant', released by `geplante_freigeben()` - no pg_cron; Home
+  calls it on load), 0098 profile themes, 0099 post reach (`post_aufrufe`,
+  one row per person/day) + heatmap in `get_my_statistik`, 0100 private
+  weekly leagues (create = PRO, join = everyone).
+- App: `components/Laden.tsx` replaces every ActivityIndicator; LAB results
+  carry an `einordnung` derived from the user's own numbers; data tools cite
+  official tables in `features/lab/rechnen.ts` (renew every January).
+
 ## Backlog after that
 
 - **More courses** (multi-card structured sequences; `features/courses`).

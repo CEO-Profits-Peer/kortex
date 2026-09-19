@@ -1,4 +1,4 @@
-# Start für den nächsten Chat (Stand 2026-09-18)
+# Start für den nächsten Chat (Stand 2026-09-19)
 
 In den neuen Chat einfügen:
 
@@ -59,7 +59,18 @@ In den neuen Chat einfügen:
       - Ruhige Version bei „Bewegung reduzieren".
    3. ✅ Das „PRO werden"-Banner verschwindet bei PRO ersatzlos.
    4. ✅ Meisterwege (19.09.): `0095_meisterwege.sql` (muss eingespielt werden), Seite `/meisterwege`, Rahmen am Profilbild, Namensfarbe, Meister-Farben im Editor. Stufen 50/150/400/800/1500 Mastery je Hauptthema.
-   5. PRO-Features: Streak-Schutz → Export (CSV/Anki, später PDF) → LAB-Szenarien → Profil-Themes → Planen → Statistik (braucht Aufruf-Zählung, nicht rückwirkend) → Ligen.
+   5. ✅ PRO-Features (19.09.), alle gebaut:
+      - Streak-Schutz (0096)
+      - Gold-Stein und Gold-Dreiecke (nur App)
+      - Stapel-Export für Anki (nur App)
+      - Vorlese-Tempo und Browser-Stimme (nur App)
+      - LAB-Szenarien (nur App, gespeichert auf dem Gerät)
+      - Beiträge planen (0097)
+      - Profil-Themes (0098)
+      - Reichweite und Lern-Heatmap (0099, zählt erst ab dem Einspielen)
+      - private Ligen (0100)
+   6. **Migrationen 0095–0100 müssen eingespielt werden** (`npx supabase db push --linked --yes`). Jede hat einen Selbsttest mit Rollback.
+   7. Offen: PDF-Export; beim Gold-Profil-Theme fehlt die Kante an den abgeschrägten Ecken.
 4. **Stimmen:** nur Tempo und Browser-Stimmen. Keine kostenpflichtigen Google-Stimmen, die Abrechnung bleibt aus.
 
 ## Regeln, die weiter gelten
