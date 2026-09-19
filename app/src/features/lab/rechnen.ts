@@ -800,3 +800,73 @@ export function ergebnis(id: string, e: Record<string, unknown> | null | undefin
       return null;
   }
 }
+
+// --- Schaetzen: gemeinsame Bereiche fuer Werkzeug und Duell (0101) ------------------
+
+export type TippInfo = {
+  /** Die richtige Zahl in derselben Einheit wie der Tipp. */
+  echt: number;
+  min: number;
+  max: number;
+  step: number;
+  fmt: (n: number) => string;
+  /** Die Frage ohne Antwort - fuer den verdeckten Beitrag. */
+  frage: string;
+};
+
+/**
+ * Fuer Werkzeuge mit "Schaetzen": Regler-Bereich, Einheit und die richtige
+ * Zahl. Eine Stelle fuer LabScreen UND das Schaetz-Duell im Beitrag, damit
+ * beide denselben Tipp gleich lesen. null = dieses Werkzeug schaetzt nicht.
+ */
+export function tippInfo(id: string, e: Record<string, unknown> | null | undefined): TippInfo | null {
+  if (!e) return null;
+  switch (id) {
+    case 'geburtstag': {
+      const n = zahl(e.leute, 2, 400);
+      if (n === null) return null;
+      const leute = Math.round(n);
+      const ich = e.modus === 'ich';
+      const p = ich ? 1 - Math.pow(364 / 365, leute - 1) : geburtstag(leute);
+      return {
+        echt: p * 100, min: 0, max: 100, step: 1, fmt: (x) => `${zahlFmt(x)} %`,
+        frage: ich
+          ? `Wie wahrscheinlich hat unter ${leute} Leuten jemand am selben Tag Geburtstag wie du?`
+          : `Wie wahrscheinlich haben unter ${leute} Leuten zwei am selben Tag Geburtstag?`,
+      };
+    }
+    case 'licht': {
+      const ziel = LICHT_ZIELE.find((z) => z.id === e.ziel);
+      if (!ziel) return null;
+      return {
+        echt: ziel.km / LICHT_C, min: 0, max: 1_800, step: 5,
+        fmt: (x) => (x < 60 ? `${zahlFmt(x)} s` : `${Math.floor(x / 60)} min${Math.round(x % 60) ? ` ${Math.round(x % 60)} s` : ''}`),
+        frage: `Wie lange braucht Licht ${ziel.satz}?`,
+      };
+    }
+    case 'inflation': {
+      const betrag = zahl(e.betrag, 1, 100_000);
+      const von = zahl(e.von, VPI_ERSTES, VPI_LETZTES - 1);
+      const bis = zahl(e.bis, VPI_ERSTES + 1, VPI_LETZTES);
+      if (betrag === null || von === null || bis === null || bis <= von) return null;
+      return {
+        echt: inflation(betrag, von, bis).heute, min: betrag, max: betrag * 3, step: Math.max(1, betrag / 50),
+        fmt: (x) => euro(x),
+        frage: `Was kostete ${bis}, was ${von} ${euro(betrag)} gekostet hat?`,
+      };
+    }
+    case 'co2': {
+      const km = zahl(e.km, 1, 20_000);
+      const mittel = CO2_MITTEL.find((m) => m.id === e.mittel);
+      if (km === null || !mittel) return null;
+      const strecke = e.retour === true ? km * 2 : km;
+      return {
+        echt: co2ProPerson(mittel.id, strecke, zahl(e.personen, 1, 9)),
+        min: 0, max: Math.max(20, Math.round(strecke * 0.3)), step: 1, fmt: (x) => kg(x),
+        frage: `Wie viel CO₂ kosten ${zahlFmt(strecke)} km mit ${mittel.label} pro Person?`,
+      };
+    }
+    default:
+      return null;
+  }
+}

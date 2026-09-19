@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
+import { Slider } from '@/components/Slider';
 import { LabErgebnis } from '@/features/lab/LabErgebnis';
+import { tippInfo, type TippInfo } from '@/features/lab/rechnen';
 import { fehlerText } from '@/lib/fehler';
 import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
-import { api } from '@/lib/supabase';
+import { api, type LabTipps } from '@/lib/supabase';
 import type { AbstimmDaten, LabDaten, PostArt, PostDaten, StapelDaten } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
@@ -51,9 +53,82 @@ export function PostInhalt({
   if (art === 'stapel') return <StapelVorschau postId={postId} daten={daten as StapelDaten} />;
   if (art === 'lab') {
     const d = daten as LabDaten;
+    // 0101: mit Tipp geteilt = Schaetz-Duell, die Zahl bleibt erst verdeckt.
+    const t = d.eingaben && typeof (d.eingaben as { tipp?: unknown }).tipp === 'number' ? tippInfo(d.werkzeug, d.eingaben) : null;
+    if (t) return <SchaetzDuell postId={postId} d={d} t={t} istMeins={istMeins} />;
     return <LabErgebnis werkzeugId={d.werkzeug} eingaben={d.eingaben} mitLink />;
   }
   return null;
+}
+
+/**
+ * Schaetz-Duell (0101): Frage oben, Regler, "Tippen". Danach die aufgeloeste
+ * Karte und alle Tipps - wer am naechsten lag, steht oben. Der Autor hat
+ * schon beim Teilen getippt; sein Tipp steckt in den Eingaben.
+ */
+function SchaetzDuell({ postId, d, t, istMeins }: { postId: string; d: LabDaten; t: TippInfo; istMeins: boolean }) {
+  const autorTipp = (d.eingaben as { tipp: number }).tipp;
+  const [stand, setStand] = useState<LabTipps | null>(null);
+  const [tipp, setTipp] = useState(() => Math.round((t.min + t.max) / 2));
+  const [busy, setBusy] = useState(false);
+  const [fehler, setFehler] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.labTipps(postId).then(setStand).catch(() => setStand({ getippt: false, anzahl: 0, tipps: [] }));
+  }, [postId]);
+
+  const offen = istMeins || stand?.getippt;
+
+  const abgeben = async () => {
+    setBusy(true);
+    setFehler(null);
+    try {
+      const r = await api.labTippen(postId, tipp);
+      setStand(r);
+      const abw = Math.abs(tipp - t.echt);
+      if (abw <= Math.abs(autorTipp - t.echt)) feedback.correct();
+      else feedback.wrong();
+    } catch (e) {
+      setFehler(fehlerText(e, 'Tippen ging nicht'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!stand) return <View style={styles.duell} />;
+
+  if (!offen) {
+    return (
+      <View style={styles.duell}>
+        <Text style={styles.duellKopf}>SCHÄTZ-DUELL{stand.anzahl ? ` · ${stand.anzahl} getippt` : ''}</Text>
+        <Text style={styles.duellFrage}>{t.frage}</Text>
+        <Text style={styles.duellTipp}>{t.fmt(tipp)}</Text>
+        <Slider min={t.min} max={t.max} step={t.step} value={tipp} onChange={setTipp} tint={color.signal.primary} />
+        <Pressable onPress={() => void abgeben()} disabled={busy} style={({ pressed }) => [styles.duellKnopf, (pressed || busy) && { opacity: 0.8 }]}>
+          <Text style={styles.duellKnopfText}>{busy ? '…' : 'Tippen'}</Text>
+        </Pressable>
+        {fehler ? <Text style={styles.fuss}>{fehler}</Text> : null}
+      </View>
+    );
+  }
+
+  const alle = [...stand.tipps.map((x) => ({ name: x.ich ? 'Du' : x.name, tipp: x.tipp, ich: x.ich })), { name: istMeins ? 'Du (Frage)' : 'Frage', tipp: autorTipp, ich: istMeins }]
+    .sort((a, b) => Math.abs(a.tipp - t.echt) - Math.abs(b.tipp - t.echt));
+  return (
+    <View style={{ gap: space.sm }}>
+      <LabErgebnis werkzeugId={d.werkzeug} eingaben={d.eingaben} mitLink />
+      <View style={styles.duell}>
+        <Text style={styles.duellKopf}>WER LAG AM NÄCHSTEN</Text>
+        {alle.slice(0, 8).map((x, i) => (
+          <View key={`${x.name}-${i}`} style={styles.duellZeile}>
+            <Text style={[styles.duellPlatz, i === 0 && { color: color.signal.primary }]}>{i + 1}</Text>
+            <Text style={[styles.duellName, x.ich && { color: color.ink.max }]} numberOfLines={1}>{x.name}</Text>
+            <Text style={styles.duellWert}>{t.fmt(x.tipp)}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 }
 
 function Abstimmung({
@@ -188,6 +263,24 @@ function StapelVorschau({ postId, daten }: { postId: string; daten: StapelDaten 
 }
 
 const styles = StyleSheet.create({
+  duell: {
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgSunken,
+    minHeight: 40,
+  },
+  duellKopf: { ...type.meta, fontSize: 10, letterSpacing: 1, color: color.signal.primary },
+  duellFrage: { ...type.label, fontSize: 15, lineHeight: 21, color: color.ink.max },
+  duellTipp: { ...type.mono, fontSize: 22, color: color.ink.max, textAlign: 'center' },
+  duellKnopf: { alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, backgroundColor: color.signal.primary },
+  duellKnopfText: { ...type.label, fontSize: 15, color: color.bg },
+  duellZeile: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  duellPlatz: { ...type.mono, fontSize: 12, width: 16, color: color.ink.low },
+  duellName: { ...type.label, fontSize: 13, color: color.ink.high, flex: 1 },
+  duellWert: { ...type.mono, fontSize: 13, color: color.ink.max },
   abstimmung: { gap: space.sm },
   option: {
     flexDirection: 'row',

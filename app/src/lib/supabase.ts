@@ -13,6 +13,12 @@ import { beobachteterFetch } from './online';
 import type { Meisterwege } from './meisterwege';
 import type { Liga } from './ligen';
 
+export type LabTipps = {
+  getippt: boolean;
+  anzahl: number;
+  tipps: { handle: string; name: string; ich: boolean; tipp: number }[];
+};
+
 import type {
   AdminCategory,
   AdminData,
@@ -515,6 +521,19 @@ export const api = {
     const { data, error } = await supabase.rpc('meine_geplanten');
     if (error) throw error;
     return (data ?? []) as { id: string; art: string; body: string; at: string }[];
+  },
+
+  /** 0101: Schaetz-Duell unter einem LAB-Beitrag. */
+  async labTipps(postId: string): Promise<LabTipps> {
+    const { data, error } = await supabase.rpc('lab_tipps', { p_post: postId });
+    if (error) throw error;
+    return data as LabTipps;
+  },
+
+  async labTippen(postId: string, tipp: number): Promise<LabTipps> {
+    const { data, error } = await supabase.rpc('lab_tippen', { p_post: postId, p_tipp: tipp });
+    if (error) throw error;
+    return data as LabTipps;
   },
 
   /** 0099: diese Beitraege waren gerade auf dem Bildschirm (fuer die Reichweite). */
