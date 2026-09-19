@@ -21,6 +21,7 @@ import { personName } from '@/lib/name';
 import { sound } from '@/lib/sound';
 import i18n, { SUPPORTED, type Language } from '@/lib/i18n';
 import { setPref, usePrefs } from '@/lib/prefs';
+import { stimmProbe, stimmenFuer } from '@/lib/speech';
 import { type PushState, disablePush, enablePush, pushState } from '@/lib/push';
 import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
@@ -196,6 +197,12 @@ function Schalter({
 }
 
 /** Auswahl als zusammenhaengende Leiste statt einzelner Kaestchen. */
+/** "Microsoft Katja Online (Natural) - German (Germany)" -> "Katja". */
+function kurzName(name: string): string {
+  const ohne = name.replace(/^(Microsoft|Google|Apple)\s+/i, '').split(/[\s(-]/)[0];
+  return ohne || name;
+}
+
 function Auswahl<T extends string | number>({
   optionen,
   wert,
@@ -242,6 +249,10 @@ export function SettingsScreen() {
   const [designAn, setDesignAn] = useState(ZWEI);
   const ichPro = useIchPro();
   const [muster, setMuster] = useState<Muster>(MUSTER);
+  const [stimmen, setStimmen] = useState<Record<string, { id: string; name: string }[]>>({});
+  useEffect(() => {
+    void Promise.all([stimmenFuer('de'), stimmenFuer('en')]).then(([de, en]) => setStimmen({ de, en }));
+  }, []);
   const [linse, setLinse] = useState<Linse>(LINSE);
   const [designLaedt, setDesignLaedt] = useState(false);
 
@@ -672,6 +683,61 @@ export function SettingsScreen() {
             }}
             rechts={<Aktion text={tutorialWieder ? 'Erledigt' : 'Zeigen'} />}
           />
+        </Gruppe>
+
+        {/* --- Vorlesen (PRO, 19.09.) ------------------------------------------------ */}
+        <Gruppe icon="listen" titel="Vorlesen">
+          <Zeile
+            erste
+            label="Tempo"
+            hint={ichPro.pro ? 'Für Vorlesen und Erklärkarten' : 'Mit PRO wählbar'}
+            unten={
+              <Auswahl
+                optionen={[
+                  { wert: 0.85, label: 'Ruhig' },
+                  { wert: 1, label: 'Normal' },
+                  { wert: 1.2, label: 'Zügig' },
+                  { wert: 1.4, label: 'Schnell' },
+                ]}
+                wert={ichPro.pro ? prefs.sprechTempo : 1}
+                onChange={(v) => {
+                  if (!ichPro.pro) {
+                    zeigeProSperre('Vorlese-Tempo und Stimme wählst du mit PRO – vorgelesen wird für alle.');
+                    return;
+                  }
+                  void setPref('sprechTempo', v);
+                  stimmProbe('de');
+                }}
+              />
+            }
+          />
+          {(['de', 'en'] as const).map((sprache) => {
+            const liste = stimmen[sprache] ?? [];
+            const aktuell = liste.find((v) => v.id === prefs.stimmen?.[sprache]);
+            return (
+              <Zeile
+                key={sprache}
+                label={sprache === 'de' ? 'Stimme Deutsch' : 'Stimme Englisch'}
+                hint={liste.length === 0 ? 'Dieses Gerät bietet keine Auswahl' : `${liste.length} Stimmen auf diesem Gerät`}
+                onPress={() => {
+                  if (!ichPro.pro) {
+                    zeigeProSperre('Vorlese-Tempo und Stimme wählst du mit PRO – vorgelesen wird für alle.');
+                    return;
+                  }
+                  if (liste.length === 0) return;
+                  // Tippen blaettert weiter - bei 20 Stimmen passt keine Leiste.
+                  const i = aktuell ? liste.indexOf(aktuell) : -1;
+                  const naechste = i + 1 < liste.length ? liste[i + 1] : null;
+                  const neu = { ...(prefs.stimmen ?? {}) };
+                  if (naechste) neu[sprache] = naechste.id;
+                  else delete neu[sprache];
+                  void setPref('stimmen', neu).then(() => stimmProbe(sprache));
+                  haptics.select();
+                }}
+                rechts={<Aktion text={ichPro.pro && aktuell ? kurzName(aktuell.name) : 'Standard'} />}
+              />
+            );
+          })}
         </Gruppe>
 
         {/* --- Daten ---------------------------------------------------------------- */}
