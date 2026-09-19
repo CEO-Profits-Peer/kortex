@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
+import Svg, { Defs, Path, Pattern, Polygon, Rect } from 'react-native-svg';
 
 import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette } from '@/theme/design';
@@ -48,6 +48,40 @@ function Linien({ farbe }: { farbe: string }) {
   );
 }
 
+/**
+ * Goldlinie entlang der geschliffenen Form. Ein borderWidth wurde vom
+ * clip-path an den vier Schraegen abgeschnitten - die Kante fehlte genau an
+ * den Ecken, die den Schliff ausmachen. Das SVG zeichnet die Schraegen mit.
+ */
+const SCHLIFF = 12;
+function GoldKante() {
+  const [g, setG] = React.useState<{ w: number; h: number } | null>(null);
+  const i = 0.75;
+  const k = SCHLIFF;
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      onLayout={(e) => setG({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+    >
+      {g ? (
+        <Svg width={g.w} height={g.h}>
+          <Polygon
+            points={[
+              [k, i], [g.w - k, i], [g.w - i, k], [g.w - i, g.h - k],
+              [g.w - k, g.h - i], [k, g.h - i], [i, g.h - k], [i, k],
+            ].map(([x, y]) => `${x},${y}`).join(' ')}
+            fill="none"
+            stroke="#D9B872"
+            strokeOpacity={0.8}
+            strokeWidth={1.2}
+          />
+        </Svg>
+      ) : null}
+    </View>
+  );
+}
+
 export function ProfilKopf({
   theme,
   children,
@@ -63,7 +97,7 @@ export function ProfilKopf({
       {theme === 'bordeaux' ? <BordeauxMuster voll /> : null}
       {theme === 'nacht' ? <Linien farbe="#8FA5E8" /> : null}
       {theme === 'smaragd' ? <Linien farbe="#8FBF9A" /> : null}
-      {theme === 'gold' ? <View style={styles.goldKante} pointerEvents="none" /> : null}
+      {theme === 'gold' ? <GoldKante /> : null}
       {children}
     </View>
   );
@@ -73,16 +107,6 @@ const styles = StyleSheet.create({
   karte: {
     padding: space.lg,
     overflow: 'hidden',
-    ...facette(12),
-  },
-  goldKante: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: 1,
-    borderColor: '#D9B872',
-    opacity: 0.7,
+    ...facette(SCHLIFF),
   },
 });

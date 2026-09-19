@@ -203,7 +203,10 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
                 accessibilityLabel={label}
               >
                 <TabIcon name={icon} color={focused ? (ZWEI && LINSE_SYMBOL ? LINSE_SYMBOL : color.signal.primary) : color.ink.mid} />
-                <Text style={[styles.label, focused && styles.labelOn]} numberOfLines={1}>
+                <Text
+                  style={[styles.label, focused && styles.labelOn, focused && ZWEI && LINSE_SYMBOL ? { color: LINSE_SYMBOL } : null]}
+                  numberOfLines={1}
+                >
                   {label}
                 </Text>
               </Pressable>

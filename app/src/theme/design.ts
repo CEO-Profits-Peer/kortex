@@ -62,7 +62,9 @@ const geleseneLinse = lesen(SCHLUESSEL_LINSE);
 export const LINSE: Linse = geleseneLinse === 'flach' || geleseneLinse === 'gold' ? geleseneLinse : 'stein';
 
 /** Symbolfarbe AUF dem aktiven Sechseck: auf Gold waere Gold unsichtbar. */
-export const LINSE_SYMBOL = LINSE === 'gold' ? '#3A0F1B' : null;
+// Schwarz statt Bordeaux (Wunsch 19.09.): auf dem Gold-Stein liest sich
+// Schwarz am klarsten - Symbol UND Beschriftung des aktiven Tabs.
+export const LINSE_SYMBOL = LINSE === 'gold' ? '#0F0D10' : null;
 
 /** Kann dieses Geraet ueberhaupt umschalten? */
 export const UMSCHALTBAR = Platform.OS === 'web' && typeof window !== 'undefined';
