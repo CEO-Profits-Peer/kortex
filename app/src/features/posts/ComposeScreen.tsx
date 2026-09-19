@@ -348,7 +348,7 @@ export function ComposeScreen() {
     if (!pro && optionen.length >= frei) {
       zeigeProSperre(
         art === 'quiz'
-          ? 'Eine vierte Antwort im Quiz gibt es mit PRO.'
+          ? 'Mehr als drei Antworten im Quiz gibt es mit PRO – bis zu fünf.'
           : 'Mehr als vier Antworten gibt es mit PRO – bis zu sechs.',
       );
       return;

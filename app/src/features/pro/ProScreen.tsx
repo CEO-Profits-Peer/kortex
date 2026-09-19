@@ -58,7 +58,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
     punkte: [
       { icon: 'courses', titel: 'Größere Stapel', text: 'Bis zu 50 Karten statt 10', da: true },
       { icon: 'knowledge', titel: 'Längere Beiträge', text: 'Bis zu 1500 Zeichen statt 500', da: true },
-      { icon: 'comment', titel: 'Mehr Antworten', text: 'Umfragen mit 6, Quiz mit 4 Antworten', da: true },
+      { icon: 'comment', titel: 'Mehr Antworten', text: 'Umfragen mit 6, Quiz mit 5 Antworten', da: true },
       { icon: 'clock', titel: 'Planen', text: 'Beiträge zu einer Uhrzeit veröffentlichen' },
       { icon: 'plus', titel: 'Anpinnen', text: 'Drei Beiträge oben im Profil statt einem', da: true },
     ],
@@ -70,7 +70,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
       { icon: 'leaderboard', titel: 'Ligen', text: 'Private Ligen und Turniere mit Freunden' },
       { icon: 'interactive', titel: 'LAB-Szenarien', text: 'Speichern und nebeneinander vergleichen' },
       { icon: 'lesson', titel: 'Export', text: 'Stapel als PDF oder für Anki, auch offline' },
-      { icon: 'listen', titel: 'Stimmen', text: 'Bessere Vorlese-Stimmen, eigenes Tempo' },
+      { icon: 'listen', titel: 'Stimmen', text: 'Vorlese-Stimme und Tempo wählen' },
       { icon: 'streak', titel: 'Streak-Schutz', text: 'Einmal pro Woche' },
     ],
   },

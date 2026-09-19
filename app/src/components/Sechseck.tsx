@@ -88,9 +88,11 @@ export const SechseckLinse = memo(SechseckLinseBase);
  * Tiefe. Liegt absolut hinter dem Inhalt - der Aufrufer setzt es als erstes
  * Kind.
  */
-function BordeauxMusterBase() {
+function BordeauxMusterBase({ voll }: { voll?: boolean }) {
+  // voll: ueber eine ganze Flaeche. Ohne Groesse zeichnet ein <svg> im
+  // Browser nur 300 x 150 - in kleinen Karten faellt das nicht auf.
   return (
-    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Svg style={StyleSheet.absoluteFill} pointerEvents="none" {...(voll ? { width: '100%', height: '100%' } : null)}>
       <Defs>
         <Pattern id="bordeauxDreiecke" width={28} height={24} patternUnits="userSpaceOnUse">
           <Path d="M0 24 L14 0 L28 24 M0 0 L28 0" stroke={color.signal.primary} strokeWidth={0.6} fill="none" />

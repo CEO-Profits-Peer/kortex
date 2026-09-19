@@ -337,7 +337,10 @@ export function ProfileScreen() {
           <Shortcut icon="chart" label="Statistik" onPress={() => router.push('/statistik')} />
         </View>
 
-        <ProBanner />
+        {/* Mit PRO nichts an seiner Stelle: den Stand zeigen die Einstellungen
+            und das Abzeichen. Ein "Du bist PRO"-Banner waere nur Werbung fuer
+            etwas, das man schon hat. */}
+        {ichPro.pro ? null : <ProBanner />}
 
         {/* Verschwindet von selbst, sobald die App installiert ist - und
             ist auf dem Handy und im installierten Fenster nie da. */}

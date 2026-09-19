@@ -2,6 +2,21 @@
 
 Alles, was noch offen ist, in einer Liste. Abhaken von oben nach unten.
 
+> **Achtung:** Teil A bis D unten sind vom 9. September und großteils überholt
+> (Migrationen, Seeds, Anmeldung, GitHub sind längst erledigt). Aktuell ist
+> der Abschnitt „Für später“ direkt hier und `docs/NAECHSTER-CHAT.md`.
+
+## 📌 Für später (vom Nutzer gemerkt)
+
+- **Namen ändern** (18.09.) — `ElyCic` ist seit Anfang ein Platzhalter.
+  Er steht in `app/src/lib/brand.ts`, `app.json`, im Titel der Web-App, in
+  Texten und in der Adresse `elycic.pages.dev`. Vorsicht beim Umbenennen:
+  - Die Speicher-Schlüssel `elycic.*` im Browser (Design, Muster, Linse,
+    PRO-Willkommen) NICHT umbenennen, sonst verlieren alle ihre Einstellungen.
+  - Die Pages-Adresse und der Worker `elycic-ingest-anstoss` sind eigene
+    Umzüge mit Weiterleitung, nicht nur ein Textersatz.
+  - Erst den neuen Namen prüfen (Marke, Domain, App-Store) — dann umbauen.
+
 ---
 
 ## ✅ Erledigt (von mir, du musst nichts tun)

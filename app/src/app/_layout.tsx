@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ProSperreHost } from '@/components/ProSperre';
+import { ProWillkommenHost } from '@/features/pro/ProWillkommen';
 import { RewardLayer } from '@/components/RewardLayer';
 /**
  * Nur wegen der Nebenwirkung geladen, und die ist wichtig: das Modul
@@ -187,6 +188,7 @@ export default function RootLayout() {
             Bildschirm sie kommt. Siehe lib/rewards.ts. */}
         <RewardLayer />
         <ProSperreHost />
+        <ProWillkommenHost />
         <OfflineBanner />
       </SafeAreaProvider>
     </GestureHandlerRootView>

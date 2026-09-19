@@ -52,12 +52,12 @@ In den neuen Chat einfügen:
    - Dunkle Profilbild-Farben: Obsidian, Anthrazit, Tiefgrün, Nachtblau, Schwarz-Gold. Dazu helle Gründe: Elfenbein, Champagner, Sand.
    - PRO bekommt je Meisterweg eine Zusatzvariante, aber NIE schnelleren Fortschritt.
 3. **Reihenfolge:**
-   1. Quiz 5 Antworten mit PRO (kostenlos 3).
-   2. Freischalt-Animation, etwa 3 s, jederzeit überspringbar:
+   1. ✅ Quiz 5 Antworten mit PRO (kostenlos 3). Migration `0093_quiz_fuenf.sql` ist geschrieben, aber NOCH NICHT eingespielt.
+   2. ✅ Freischalt-Animation (`features/pro/ProWillkommen.tsx`, Vorschau: `/atelier` → design → „Willkommen“), etwa 3 s, jederzeit überspringbar:
       - Der Bildschirm wird Bordeaux, die sechs Facetten fliegen zum Sechseck, die Goldkante zeichnet sich, goldene Dreiecke sprühen, „Willkommen bei PRO".
       - Danach 3–4 Wischkarten (Profilbild-Stile, Stapel 50, Anpinnen, Abzeichen), jede mit Knopf „Ausprobieren".
       - Ruhige Version bei „Bewegung reduzieren".
-   3. Das „PRO werden"-Banner verschwindet bei PRO ersatzlos.
+   3. ✅ Das „PRO werden"-Banner verschwindet bei PRO ersatzlos.
    4. Meisterwege.
    5. PRO-Features: Streak-Schutz → Export (CSV/Anki, später PDF) → LAB-Szenarien → Profil-Themes → Planen → Statistik (braucht Aufruf-Zählung, nicht rückwirkend) → Ligen.
 4. **Stimmen:** nur Tempo und Browser-Stimmen. Keine kostenpflichtigen Google-Stimmen, die Abrechnung bleibt aus.

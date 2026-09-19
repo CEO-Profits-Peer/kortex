@@ -14,12 +14,18 @@ import { api } from '@/lib/supabase';
 
 export const GRENZEN = {
   frei: { text: 500, umfrage: 4, quiz: 3, stapel: 10, anpinnen: 1 },
-  pro: { text: 1500, umfrage: 6, quiz: 4, stapel: 50, anpinnen: 3 },
+  pro: { text: 1500, umfrage: 6, quiz: 5, stapel: 50, anpinnen: 3 },
 } as const;
 
-export type ProStand = { pro: boolean; plan: 'free' | 'pro' | 'gifted'; bis: string | null };
+export type ProStand = {
+  pro: boolean;
+  plan: 'free' | 'pro' | 'gifted';
+  bis: string | null;
+  /** false, solange nur die Voreinstellung gilt - "kein PRO" heisst dann "noch nicht gefragt". */
+  geladen: boolean;
+};
 
-const FREI: ProStand = { pro: false, plan: 'free', bis: null };
+const FREI: ProStand = { pro: false, plan: 'free', bis: null, geladen: false };
 
 let stand: ProStand = FREI;
 let geladen: Promise<void> | null = null;
@@ -34,10 +40,10 @@ function setzen(s: ProStand) {
 export async function proNeuLaden(): Promise<void> {
   try {
     const p = await api.getMyProfile();
-    if (!p) return setzen(FREI);
+    if (!p) return setzen({ ...FREI, geladen: true });
     const bis = p.plan_expires_at ?? null;
     const aktiv = (p.plan === 'pro' || p.plan === 'gifted') && (!bis || new Date(bis).getTime() > Date.now());
-    setzen({ pro: aktiv, plan: p.plan, bis });
+    setzen({ pro: aktiv, plan: p.plan, bis, geladen: true });
   } catch {
     // Kein Netz: beim alten Stand bleiben. Der Server prueft ohnehin.
   }
