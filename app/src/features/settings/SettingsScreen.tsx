@@ -30,6 +30,7 @@ import { fehlerText } from '@/lib/fehler';
 import { CodeEinloesen } from '@/features/pro/CodeEinloesen';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { proNeuLaden, useIchPro } from '@/lib/pro';
+import { VERSION } from '@/lib/updates';
 import { PROFIL_THEMES } from '@/features/pro/ProfilKopf';
 import {
   LINSE,
@@ -810,6 +811,16 @@ export function SettingsScreen() {
           />
         </Gruppe>
 
+        <Gruppe icon="news" titel="App">
+          <Zeile
+            erste
+            label="Updates"
+            hint={`Version ${VERSION} – was neu ist, von Anfang an`}
+            onPress={() => router.push('/updates')}
+            rechts={<Aktion text="Ansehen" />}
+          />
+        </Gruppe>
+
         <Gruppe icon="mastery" titel="PRO">
           <CodeEinloesen />
         </Gruppe>
@@ -817,7 +828,7 @@ export function SettingsScreen() {
         <Button label="Abmelden" variant="ghost" busy={busy} onPress={() => void signOut()} />
 
         <Text style={styles.fuss}>
-          {BRAND.name} 0.1.0 · Prototyp · Konto {profile.id.slice(0, 8)}
+          {BRAND.name} {VERSION} · Prototyp · Konto {profile.id.slice(0, 8)}
         </Text>
       </ScrollView>
     </GridBackground>
