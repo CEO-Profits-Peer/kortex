@@ -74,3 +74,12 @@ export function Hochzaehlen({
 
   return <Text style={style}>{anzeige}</Text>;
 }
+
+/**
+ * Zahl, die nur im Test-Modus hochzaehlt (Profil, Statistik). Ohne Schalter
+ * ein normaler Text - so kann man vor dem Release vergleichen.
+ */
+export function ZahlText({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
+  if (!getPrefs().testAnimationen) return <Text style={style}>{text}</Text>;
+  return <Hochzaehlen text={text} style={style} />;
+}

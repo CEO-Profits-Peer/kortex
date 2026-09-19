@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Laden } from '@/components/Laden';
+import { ZahlText } from '@/components/Hochzaehlen';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
@@ -47,7 +48,7 @@ function datum(iso: string, mitJahr = false) {
 function Zahl({ wert, label, farbe }: { wert: number | string; label: string; farbe?: string }) {
   return (
     <View style={styles.zahl}>
-      <Text style={[styles.zahlWert, farbe ? { color: farbe } : null]}>{wert}</Text>
+      <ZahlText text={String(wert)} style={[styles.zahlWert, farbe ? { color: farbe } : null]} />
       <Text style={styles.zahlLabel}>{label}</Text>
     </View>
   );

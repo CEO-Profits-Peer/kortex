@@ -670,6 +670,11 @@ export function SettingsScreen() {
             rechts={<Schalter wert={prefs.haptics} onChange={(v) => void setPref('haptics', v)} />}
           />
           <Zeile
+            label="Neue Animationen"
+            hint="Test: Zahlen zählen hoch, Bildschirme gleiten herein"
+            rechts={<Schalter wert={prefs.testAnimationen} onChange={(v) => void setPref('testAnimationen', v)} />}
+          />
+          <Zeile
             label="Weniger Bewegung"
             hint="Ruhigere Animationen"
             rechts={<Schalter wert={prefs.reduceMotion} onChange={(v) => void setPref('reduceMotion', v)} />}

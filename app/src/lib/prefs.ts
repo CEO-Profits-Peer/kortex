@@ -30,6 +30,11 @@ export type Prefs = {
    */
   sprechTempo: number;
   stimmen: Record<string, string>;
+  /**
+   * Test vor dem Release (19.09.): hochzaehlende Zahlen und Bildschirm-
+   * Uebergaenge. Standard AUS, bis entschieden ist, ob sie bleiben.
+   */
+  testAnimationen: boolean;
 };
 
 const DEFAULTS: Prefs = {
@@ -39,6 +44,7 @@ const DEFAULTS: Prefs = {
   musicEnabled: false,
   sprechTempo: 1,
   stimmen: {},
+  testAnimationen: false,
 };
 
 const KEY = 'prefs_v1';

@@ -1,6 +1,9 @@
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Defs, Line, Path, Pattern, Rect } from 'react-native-svg';
+
+import { getPrefs } from '@/lib/prefs';
 
 import { MUSTER, ZWEI } from '@/theme/design';
 import { GRID_CELL, color } from '@/theme/tokens';
@@ -91,7 +94,7 @@ function GridBackgroundBase({ cell = GRID_CELL, opacity = 0.35, children }: Prop
             />
           ) : null}
         </Svg>
-        {children}
+        <Uebergang>{children}</Uebergang>
       </View>
     );
   }
@@ -113,8 +116,25 @@ function GridBackgroundBase({ cell = GRID_CELL, opacity = 0.35, children }: Prop
         <Rect width="100%" height="100%" fill={color.bg} />
         <Rect width="100%" height="100%" fill="url(#major)" opacity={opacity} />
       </Svg>
-      {children}
+      <Uebergang>{children}</Uebergang>
     </View>
+  );
+}
+
+/**
+ * Bildschirm-Uebergang (Test, 19.09.): jeder Bildschirm gleitet beim Oeffnen
+ * leicht von unten herein. Liegt hier, weil fast jeder Bildschirm auf
+ * GridBackground steht - eine Stelle statt vierzig. Nur mit dem Test-Schalter
+ * und nie bei "Bewegung reduzieren". Die Stack-Animationen von expo-router
+ * greifen im Browser nicht, deshalb nicht dort.
+ */
+function Uebergang({ children }: { children: React.ReactNode }) {
+  const p = getPrefs();
+  if (!p.testAnimationen || p.reduceMotion) return <>{children}</>;
+  return (
+    <Animated.View entering={FadeInDown.duration(260)} style={{ flex: 1 }}>
+      {children}
+    </Animated.View>
   );
 }
 

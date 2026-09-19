@@ -22,6 +22,7 @@ import type { MySocial, Stats } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { ProBanner } from '@/features/pro/ProBanner';
 import { ProAbzeichen } from '@/components/ProSperre';
+import { ZahlText } from '@/components/Hochzaehlen';
 import { ProfilKopf } from '@/features/pro/ProfilKopf';
 import { type Meisterwege, namensfarbe } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
@@ -67,7 +68,7 @@ function Count({
 }) {
   const inner = (
     <>
-      <Text style={[styles.countValue, tint ? { color: tint } : null]}>{value}</Text>
+      <ZahlText text={String(value)} style={[styles.countValue, tint ? { color: tint } : null]} />
       <Text style={styles.countLabel}>{label}</Text>
     </>
   );
