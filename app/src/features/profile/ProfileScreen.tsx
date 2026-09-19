@@ -346,6 +346,7 @@ export function ProfileScreen() {
           />
           <Shortcut icon="chart" label="Statistik" onPress={() => router.push('/statistik')} />
           <Shortcut icon="mastery" label="Meisterwege" onPress={() => router.push('/meisterwege')} />
+          <Shortcut icon="leaderboard" label="Ligen" onPress={() => router.push('/ligen')} />
         </View>
 
         {/* Mit PRO nichts an seiner Stelle: den Stand zeigen die Einstellungen

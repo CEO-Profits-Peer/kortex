@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 
 import { beobachteterFetch } from './online';
 import type { Meisterwege } from './meisterwege';
+import type { Liga } from './ligen';
 
 import type {
   AdminCategory,
@@ -208,6 +209,30 @@ export const api = {
   /** 0098 (PRO): Theme der Profil-Kopfkarte, null = ohne. */
   async profilThemeSetzen(theme: string | null): Promise<void> {
     const { error } = await supabase.rpc('profil_theme_setzen', { p_theme: theme });
+    if (error) throw error;
+  },
+
+  /** 0100: private Ligen. Anlegen braucht PRO, beitreten nicht. */
+  async meineLigen(): Promise<Liga[]> {
+    const { data, error } = await supabase.rpc('meine_ligen');
+    if (error) throw error;
+    return (data ?? []) as Liga[];
+  },
+
+  async ligaErstellen(name: string): Promise<{ id: string; code: string }> {
+    const { data, error } = await supabase.rpc('liga_erstellen', { p_name: name });
+    if (error) throw error;
+    return data as { id: string; code: string };
+  },
+
+  async ligaBeitreten(code: string): Promise<{ ok: true; id: string; name: string } | { ok: false; fehler: string }> {
+    const { data, error } = await supabase.rpc('liga_beitreten', { p_code: code });
+    if (error) throw error;
+    return data as { ok: true; id: string; name: string } | { ok: false; fehler: string };
+  },
+
+  async ligaVerlassen(id: string): Promise<void> {
+    const { error } = await supabase.rpc('liga_verlassen', { p_liga: id });
     if (error) throw error;
   },
 
