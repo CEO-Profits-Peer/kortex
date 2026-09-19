@@ -86,6 +86,26 @@ def wide(logo: Image.Image, w: int, h: int, bg: tuple[int, int, int, int]) -> Im
     return canvas
 
 
+def badge(logo: Image.Image, size: int) -> Image.Image:
+    """Einfarbiges Symbol fuer die Statusleiste (Android "badge").
+
+    Android zeigt dort NUR die Deckkraft: ein farbiges Logo wird zum weissen
+    Quadrat oder Sechseck ohne Innenleben. Deshalb eine Silhouette - weiss,
+    wo das Logo deckt, durchsichtig, wo es dunkel ist (der schwarze Ring um
+    den Knoten). So bleibt der Knoten auch in 24 Pixeln erkennbar.
+    """
+    klein = logo.resize((size, size), Image.LANCZOS)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    px, po = klein.load(), out.load()
+    for y in range(size):
+        for x in range(size):
+            r, g, b, a = px[x, y]
+            hell = 0.299 * r + 0.587 * g + 0.114 * b
+            if a > 128 and hell > 30:
+                po[x, y] = (255, 255, 255, 255)
+    return out
+
+
 def main() -> int:
     logo = square(load())
     if min(logo.size) < 512:
@@ -113,6 +133,9 @@ def main() -> int:
         if name in WEB_FILES:
             img.save(WEB / name)
         print(f"  {name:24} {size}x{size}")
+
+    badge(logo, 96).save(WEB / "badge-96.png")
+    print(f"  {'badge-96.png':24} 96x96    (Push, Statusleiste)")
 
     og = wide(logo, 1200, 630, BG)
     og.save(OUT / "og-image.png")

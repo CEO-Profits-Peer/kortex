@@ -115,8 +115,11 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'ElyCic';
   const options = {
     body: payload.body || '',
-    icon: payload.icon || './icons/icon-192.png',
-    badge: './icons/icon-192.png',
+    // Das Logo. Bis 19.09. stand hier icon-192.png - die Datei heisst aber
+    // pwa-192.png (make_icons.py), also zeigte der Browser sein Standardbild.
+    icon: payload.icon || './icons/pwa-192.png',
+    // Statusleiste (Android): nur eine einfarbige Silhouette wirkt dort.
+    badge: './icons/badge-96.png',
     // Gleiche Sorte ersetzt sich gegenseitig, statt sich zu stapeln: drei
     // neue Follower sind eine Zeile wert, nicht drei Meldungen.
     tag: payload.tag || payload.kind || 'elycic',
