@@ -298,6 +298,13 @@ export const api = {
     if (error) throw error;
   },
 
+  /** 0109: naechste ungelesene Karten nach Bedeutung ("Dazu passt"). */
+  async verwandteKarten(ids: string[], n = 3): Promise<{ content_id: string; title: string; category: string }[]> {
+    const { data, error } = await supabase.rpc('verwandte_karten', { p_ids: ids.slice(0, 10), p_n: n });
+    if (error) throw error;
+    return (data ?? []) as { content_id: string; title: string; category: string }[];
+  },
+
   async getMyStats(): Promise<Stats> {
     const { data, error } = await supabase.rpc('get_my_stats');
     if (error) throw error;

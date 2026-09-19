@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { feedback } from '@/lib/feedback';
 
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
+import { Icon } from '@/components/Icon';
 import { BRAND } from '@/lib/brand';
 import { api } from '@/lib/supabase';
 import type { ContentItem, SubmitQuizResult } from '@/lib/types.db';
@@ -51,6 +53,10 @@ export function BatchCheckpoint({
   const [busy, setBusy] = useState(false);
   const [answers, setAnswers] = useState<Answered[]>([]);
   const [bonusXp, setBonusXp] = useState(0);
+  // 1: "Nochmal" nach einer falschen Antwort zeigt den Kern der Karte.
+  const [nochmal, setNochmal] = useState(false);
+  // 4: "Dazu passt" in der Zusammenfassung.
+  const [verwandt, setVerwandt] = useState<{ content_id: string; title: string }[]>([]);
 
   // Gefragt wird nur, was auch gelesen wurde - und hoechstens drei Fragen.
   // Uebersprungene Karten fliegen im Feed schon vorher aus dem Pool.
@@ -85,6 +91,7 @@ export function BatchCheckpoint({
   const next = async () => {
     setResult(null);
     setChosen(null);
+    setNochmal(false);
     if (step + 1 < questions.length) {
       setStep(step + 1);
       return;
@@ -106,6 +113,8 @@ export function BatchCheckpoint({
       /* Bonus ist ein Extra - ein Fehler darf den Flow nicht stoppen. */
     }
     setPhase('summary');
+    // Im Hintergrund - fehlt es, steht einfach nichts da.
+    api.verwandteKarten(batch.map((b) => b.id), 3).then(setVerwandt).catch(() => setVerwandt([]));
   };
 
   // --- Angebot ---------------------------------------------------------------
@@ -195,6 +204,24 @@ export function BatchCheckpoint({
             ) : null}
           </View>
 
+          {verwandt.length > 0 ? (
+            <View style={styles.verwandt}>
+              <Text style={styles.eyebrow}>Dazu passt</Text>
+              {verwandt.map((k) => (
+                <Pressable
+                  key={k.content_id}
+                  onPress={() => router.push(`/reel/${encodeURIComponent(k.content_id)}`)}
+                  style={({ pressed }) => [styles.verwandtZeile, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.verwandtText} numberOfLines={2}>
+                    {k.title}
+                  </Text>
+                  <Icon name="chevron" size={13} color={color.ink.low} />
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
           <Button label="Weiterlesen" onPress={onContinue} />
         </View>
       </GridBackground>
@@ -274,6 +301,27 @@ export function BatchCheckpoint({
               {result.explanation ? (
                 <Text style={styles.explanation}>{result.explanation}</Text>
               ) : null}
+              {/* 1: Bei "Daneben" den Kern der Karte noch einmal - aus der
+                  Karte selbst, also aus derselben Quelle, ohne Modellaufruf. */}
+              {!result.correct && !nochmal ? (
+                <Pressable onPress={() => setNochmal(true)} hitSlop={8} style={styles.nochmalKnopf}>
+                  <Text style={styles.nochmalText}>Nochmal</Text>
+                </Pressable>
+              ) : null}
+              {!result.correct && nochmal ? (
+                <View style={styles.nochmalBox}>
+                  {current.deck ? <Text style={styles.nochmalDeck}>{current.deck}</Text> : null}
+                  {(current.body_blocks ?? []).slice(0, 2).map((b, i) => (
+                    <Text key={i} style={styles.explanation}>
+                      {b.type === 'bullet'
+                        ? b.items.map((x) => `• ${x}`).join('\n')
+                        : b.type === 'stat'
+                          ? `${b.value} ${b.label}`
+                          : b.text}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
             </View>
           ) : null}
         </ScrollView>
@@ -290,6 +338,27 @@ export function BatchCheckpoint({
 }
 
 const styles = StyleSheet.create({
+  nochmalKnopf: { alignSelf: 'flex-start', paddingVertical: 6 },
+  nochmalText: { ...type.label, fontSize: 14, color: color.akzent },
+  nochmalBox: {
+    gap: space.sm,
+    padding: space.md,
+    borderLeftWidth: 2,
+    borderLeftColor: color.signal.primary,
+    backgroundColor: color.bgSunken,
+    borderRadius: radius.sm,
+  },
+  nochmalDeck: { ...type.label, fontSize: 15, color: color.ink.max },
+  verwandt: { alignSelf: 'stretch', gap: space.xs, marginBottom: space.md },
+  verwandtZeile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: color.ink.faint,
+  },
+  verwandtText: { ...type.label, fontSize: 14, color: color.ink.high, flex: 1 },
   root: { flex: 1, paddingHorizontal: space.xl, justifyContent: 'space-between' },
 
   hero: { flex: 1, justifyContent: 'center', gap: space.sm },
