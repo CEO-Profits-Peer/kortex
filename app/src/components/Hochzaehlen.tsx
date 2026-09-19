@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Text, type StyleProp, type TextStyle } from 'react-native';
 
+import { useImBild } from '@/lib/imBild';
 import { getPrefs } from '@/lib/prefs';
 
 /**
@@ -50,8 +51,12 @@ export function Hochzaehlen({
   const teile = zerlegen(text);
   const [anzeige, setAnzeige] = useState(() => (teile && !getPrefs().reduceMotion ? teile.vor + formatieren(0, teile.stellen, teile.trenner) + teile.nach : text));
   const rahmen = useRef<number | null>(null);
+  // Erst zaehlen, wenn die Zahl im Bild ist (19.09.) - sonst ist sie fertig,
+  // bevor jemand hinscrollt.
+  const { ref, imBild } = useImBild<Text>(0.6);
 
   useEffect(() => {
+    if (!imBild) return;
     const t = zerlegen(text);
     if (!t || getPrefs().reduceMotion || typeof requestAnimationFrame === 'undefined') {
       setAnzeige(text);
@@ -70,9 +75,13 @@ export function Hochzaehlen({
     return () => {
       if (rahmen.current !== null) cancelAnimationFrame(rahmen.current);
     };
-  }, [text, dauer, verzoegerung]);
+  }, [text, dauer, verzoegerung, imBild]);
 
-  return <Text style={style}>{anzeige}</Text>;
+  return (
+    <Text ref={ref} style={style}>
+      {anzeige}
+    </Text>
+  );
 }
 
 /**

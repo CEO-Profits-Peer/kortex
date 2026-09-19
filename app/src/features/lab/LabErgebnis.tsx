@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Hochzaehlen } from '@/components/Hochzaehlen';
 import { haptics } from '@/lib/haptics';
+import { useImBild } from '@/lib/imBild';
 import { getPrefs } from '@/lib/prefs';
 import { color, radius, space, type } from '@/theme/tokens';
 import { BordeauxMuster } from '@/components/Sechseck';
@@ -34,7 +35,11 @@ export function LabErgebnis({
   // Im Beitrag laeuft das Ergebnis ab wie ein Special: Zahl zaehlt hoch, der
   // Rest kommt gestaffelt. Im Werkzeug selbst NICHT - dort aendert jeder
   // Reglerzug das Ergebnis, eine Animation pro Zug waere Flackern.
-  const abspielen = !!mitLink && !getPrefs().reduceMotion;
+  const soll = !!mitLink && !getPrefs().reduceMotion;
+  // Erst abspielen, wenn die Karte im Bild ist (19.09.) - im Home liegen
+  // Beitraege weit unten schon fertig geladen, und dort sah es niemand.
+  const { ref, imBild } = useImBild<View>(0.5);
+  const abspielen = soll && imBild;
   const rein = (ms: number) => (abspielen ? FadeInDown.delay(ms).duration(380) : undefined);
   const w = werkzeug(werkzeugId);
   const e = w ? ergebnis(w.id, eingaben) : null;
@@ -51,7 +56,12 @@ export function LabErgebnis({
   const eingezahlt = e.balken ? Math.min(1, Math.max(0, e.balken.anteil)) : null;
 
   return (
-    <View style={styles.karte}>
+    // Aussen der Beobachter, innen die Karte: der key laesst die Karte neu
+    // entstehen, sobald sie ins Bild kommt - erst dann greifen die
+    // Einblend-Animationen. Vorher unsichtbar, aber mit ihrer Hoehe, damit
+    // beim Scrollen nichts springt.
+    <View ref={ref}>
+    <View key={abspielen ? 'an' : 'aus'} style={[styles.karte, soll && !imBild ? { opacity: 0 } : null]}>
       {ZWEI ? <BordeauxMuster /> : null}
       <View style={styles.kopf}>
         <Text style={[styles.meta, { color: w.farbe }]}>LAB · {w.titel}</Text>
@@ -100,6 +110,7 @@ export function LabErgebnis({
           <Text style={[styles.linkText, { color: w.farbe }]}>Ausprobieren</Text>
         </Pressable>
       ) : null}
+    </View>
     </View>
   );
 }
