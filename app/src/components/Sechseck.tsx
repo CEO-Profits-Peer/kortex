@@ -21,6 +21,8 @@ import { color } from '@/theme/tokens';
 
 /** Reihenfolge wie sechseckPunkte: oben, oben rechts, unten rechts, unten, unten links, oben links. */
 const STEIN_TOENE = ['#7A2B40', '#5E1E30', '#431523', '#4B1827', '#641F33', '#6E2438'];
+/** Gold-Stein (PRO, 18.09.): dieselbe Lichtfuehrung in Gold, Kante in Bordeaux. */
+const GOLD_TOENE = ['#EAD7A6', '#D9B872', '#B8964F', '#A8883F', '#C9A862', '#DEC284'];
 
 function punkte(b: number, h: number, inset: number): [number, number][] {
   return sechseckPunkte(b, h, inset)
@@ -69,13 +71,19 @@ function SechseckLinseBase({
   const e = punkte(b, h, 0.75);
   const mx = b / 2;
   const my = h / 2;
+  const gold = LINSE === 'gold';
   return (
     <Svg width={b} height={h} pointerEvents="none">
       {e.map(([x, y], i) => {
         const [x2, y2] = e[(i + 1) % 6];
-        return <Polygon key={i} points={`${x},${y} ${x2},${y2} ${mx},${my}`} fill={STEIN_TOENE[i]} />;
+        return <Polygon key={i} points={`${x},${y} ${x2},${y2} ${mx},${my}`} fill={(gold ? GOLD_TOENE : STEIN_TOENE)[i]} />;
       })}
-      <Polygon points={sechseckPunkte(b, h, 0.75)} fill="none" stroke={color.signal.primary} strokeWidth={1.2} />
+      <Polygon
+        points={sechseckPunkte(b, h, 0.75)}
+        fill="none"
+        stroke={gold ? '#5A1B2C' : color.signal.primary}
+        strokeWidth={1.2}
+      />
     </Svg>
   );
 }

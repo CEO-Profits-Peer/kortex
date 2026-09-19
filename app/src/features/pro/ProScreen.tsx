@@ -48,6 +48,7 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
     titel: 'Sammeln',
     punkte: [
       { icon: 'mastery', titel: 'Profilbild-Stile', text: 'Metall, Glas und besondere Gründe', da: true },
+      { icon: 'sliders', titel: 'Gold-Optik', text: 'Gold-Stein für Tab und Feed, Gold-Dreiecke im Hintergrund – wählbar', da: true },
       { icon: 'sliders', titel: 'Profil-Themes', text: 'Bordeaux-Kopfkarte, eigene Muster' },
       { icon: 'streak', titel: 'Saison-Rahmen', text: 'Nur eine Saison lang – ohne Zufallsboxen' },
       { icon: 'check', titel: 'Abzeichen', text: 'PRO neben deinem Namen', da: true },
@@ -69,9 +70,9 @@ const GRUPPEN: { titel: string; punkte: Punkt[] }[] = [
       { icon: 'chart', titel: 'Statistik', text: 'Reichweite je Beitrag, woher Follower kommen, Lern-Heatmap' },
       { icon: 'leaderboard', titel: 'Ligen', text: 'Private Ligen und Turniere mit Freunden' },
       { icon: 'interactive', titel: 'LAB-Szenarien', text: 'Speichern und nebeneinander vergleichen' },
-      { icon: 'lesson', titel: 'Export', text: 'Stapel als PDF oder für Anki, auch offline' },
+      { icon: 'lesson', titel: 'Export', text: 'Stapel als Datei für Anki – PDF folgt', da: true },
       { icon: 'listen', titel: 'Stimmen', text: 'Vorlese-Stimme und Tempo wählen' },
-      { icon: 'streak', titel: 'Streak-Schutz', text: 'Einmal pro Woche' },
+      { icon: 'streak', titel: 'Streak-Schutz', text: 'Ein verpasster Tag pro Woche kostet dich den Streak nicht', da: true },
     ],
   },
 ];

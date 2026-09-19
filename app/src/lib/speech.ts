@@ -2,6 +2,7 @@ import * as Speech from 'expo-speech';
 
 import { duckMusic } from './music';
 import { getPrefs } from './prefs';
+import { proAktiv } from './pro';
 import type { BodyBlock, ContentItem } from './types.db';
 
 /**
@@ -96,10 +97,47 @@ let pending: ReturnType<typeof setTimeout> | null = null;
 function stopThenSpeak(text: string, options: Parameters<typeof Speech.speak>[1]): void {
   if (pending) clearTimeout(pending);
   Speech.stop();
+  const mit = eigeneStimme(options);
   pending = setTimeout(() => {
     pending = null;
-    Speech.speak(text, options);
+    Speech.speak(text, mit);
   }, SPEAK_GAP_MS);
+}
+
+/**
+ * PRO: gewaehltes Tempo und gewaehlte Stimme. Eine Stelle fuer alles, was
+ * spricht - Vorlesen UND Erklaerkarten. Die Karten warten auf das Satzende
+ * (speakSentence), ein schnelleres Tempo verschiebt also keinen Takt.
+ */
+function eigeneStimme(options: Parameters<typeof Speech.speak>[1]): Parameters<typeof Speech.speak>[1] {
+  if (!proAktiv()) return options;
+  const p = getPrefs();
+  const aus = { ...options };
+  if (p.sprechTempo && p.sprechTempo !== 1) aus.rate = (aus.rate ?? 1) * p.sprechTempo;
+  const stimme = p.stimmen?.[(aus.language ?? '').slice(0, 2)];
+  if (stimme) aus.voice = stimme;
+  return aus;
+}
+
+/** Stimmen des Geraets fuer eine Sprache ('de' | 'en'), fuer die Auswahl. */
+export async function stimmenFuer(sprache: string): Promise<{ id: string; name: string }[]> {
+  try {
+    const alle = await Speech.getAvailableVoicesAsync();
+    return alle
+      .filter((v) => (v.language ?? '').toLowerCase().startsWith(sprache))
+      .map((v) => ({ id: v.identifier, name: v.name }));
+  } catch {
+    return [];
+  }
+}
+
+/** Ein kurzer Probesatz mit den aktuellen Einstellungen. */
+export function stimmProbe(sprache: 'de' | 'en') {
+  stopThenSpeak(sprache === 'en' ? 'This is how cards will sound.' : 'So klingen deine Karten.', {
+    language: voiceLanguage(sprache),
+    rate: 0.98,
+    pitch: 1.0,
+  });
 }
 
 function announce(id: string | null) {

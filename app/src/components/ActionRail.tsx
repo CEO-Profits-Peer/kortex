@@ -10,7 +10,7 @@ import Animated, {
 import { Icon, type IconName } from '@/components/Icon';
 import { SechseckLinse } from '@/components/Sechseck';
 import { haptics } from '@/lib/haptics';
-import { ZWEI } from '@/theme/design';
+import { LINSE_SYMBOL, ZWEI } from '@/theme/design';
 import { color, motion, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -99,7 +99,7 @@ function RailButton({
           <Icon
             name={icon}
             size={21}
-            color={ZWEI ? (active ? color.signal.primary : color.ink.high) : active ? tint : color.ink.mid}
+            color={ZWEI ? (active ? (LINSE_SYMBOL ?? color.signal.primary) : color.ink.high) : active ? tint : color.ink.mid}
           />
         </View>
       </AnimatedPressable>

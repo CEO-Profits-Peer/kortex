@@ -41,6 +41,21 @@ function Waben({ s }: { s: number }) {
   );
 }
 
+/**
+ * Gold-Dreiecke (PRO, 18.09.): vereinzelte kleine goldene Dreiecke, sehr
+ * leise. Kein Raster - ein Raster in Gold waere laut, einzelne Funken nicht.
+ */
+function GoldDreiecke({ a }: { a: number }) {
+  const k = a * 0.09;
+  const tri = (x: number, y: number, auf: boolean) =>
+    auf ? `M${x} ${y + k} L${x + k} ${y + k} L${x + k / 2} ${y} Z` : `M${x} ${y} L${x + k} ${y} L${x + k / 2} ${y + k} Z`;
+  return (
+    <Pattern id="gold" width={a} height={a * 1.3} patternUnits="userSpaceOnUse">
+      <Path d={`${tri(a * 0.12, a * 0.18, true)} ${tri(a * 0.62, a * 0.78, false)} ${tri(a * 0.8, a * 0.2, true)}`} fill="#D9B872" opacity={0.16} />
+    </Pattern>
+  );
+}
+
 /** Gleichseitige Dreiecke: waagrecht, 60° und 120°. */
 function Dreiecke({ a }: { a: number }) {
   const h = a * Math.sqrt(3);
@@ -58,18 +73,21 @@ function GridBackgroundBase({ cell = GRID_CELL, opacity = 0.35, children }: Prop
   if (ZWEI) {
     return (
       <View style={styles.root}>
-        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+        {/* width/height: ohne Groesse ist ein <svg> im Browser 300 x 150 -
+            das Muster lag bis 19.09. nur in der linken oberen Ecke. */}
+        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
           <Defs>
             {MUSTER === 'sechseck' ? <Waben s={16} /> : null}
             {MUSTER === 'dreieck' ? <Dreiecke a={36} /> : null}
+            {MUSTER === 'gold' ? <GoldDreiecke a={64} /> : null}
           </Defs>
           <Rect width="100%" height="100%" fill={color.bg} />
           {MUSTER !== 'keins' ? (
             <Rect
               width="100%"
               height="100%"
-              fill={`url(#${MUSTER === 'sechseck' ? 'waben' : 'dreiecke'})`}
-              opacity={0.55}
+              fill={`url(#${MUSTER === 'sechseck' ? 'waben' : MUSTER === 'gold' ? 'gold' : 'dreiecke'})`}
+              opacity={MUSTER === 'gold' ? 1 : 0.55}
             />
           ) : null}
         </Svg>

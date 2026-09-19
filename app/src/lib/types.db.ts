@@ -155,6 +155,8 @@ export type Profile = {
   /** Meisterwege (0095) */
   rahmen?: string | null;
   namensfarbe?: string | null;
+  /** 0096: wann der PRO-Streak-Schutz zuletzt gegriffen hat (YYYY-MM-DD). */
+  streak_schutz_am?: string | null;
 };
 
 // --- Events, die der Client sendet ------------------------------------------

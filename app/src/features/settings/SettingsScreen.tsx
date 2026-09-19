@@ -27,6 +27,8 @@ import type { Profile } from '@/lib/types.db';
 import { signOut } from '@/lib/useSession';
 import { fehlerText } from '@/lib/fehler';
 import { CodeEinloesen } from '@/features/pro/CodeEinloesen';
+import { zeigeProSperre } from '@/components/ProSperre';
+import { useIchPro } from '@/lib/pro';
 import {
   LINSE,
   MUSTER,
@@ -238,6 +240,7 @@ export function SettingsScreen() {
   // Feed beim naechsten Oeffnen - hier steht nur, dass die Merkung weg ist.
   const [tutorialWieder, setTutorialWieder] = useState(false);
   const [designAn, setDesignAn] = useState(ZWEI);
+  const ichPro = useIchPro();
   const [muster, setMuster] = useState<Muster>(MUSTER);
   const [linse, setLinse] = useState<Linse>(LINSE);
   const [designLaedt, setDesignLaedt] = useState(false);
@@ -417,9 +420,14 @@ export function SettingsScreen() {
                     optionen={[
                       { wert: 'stein' as Linse, label: 'Stein' },
                       { wert: 'flach' as Linse, label: 'Flach' },
+                      { wert: 'gold' as Linse, label: 'Gold' },
                     ]}
                     wert={linse}
                     onChange={(l) => {
+                      if (l === 'gold' && !ichPro.pro) {
+                        zeigeProSperre('Der Gold-Stein für Tab- und Feed-Leiste ist eine PRO-Option. Stein und Flach bleiben für alle.');
+                        return;
+                      }
                       setLinse(l);
                       setDesignLaedt(true);
                       linseWechseln(l);
@@ -436,10 +444,15 @@ export function SettingsScreen() {
                     optionen={[
                       { wert: 'sechseck' as Muster, label: 'Waben' },
                       { wert: 'dreieck' as Muster, label: 'Dreiecke' },
+                      { wert: 'gold' as Muster, label: 'Gold' },
                       { wert: 'keins' as Muster, label: 'Ohne' },
                     ]}
                     wert={muster}
                     onChange={(m) => {
+                      if (m === 'gold' && !ichPro.pro) {
+                        zeigeProSperre('Die Gold-Dreiecke im Hintergrund sind eine PRO-Option – sehr dezent und nur, wenn du sie willst.');
+                        return;
+                      }
                       setMuster(m);
                       setDesignLaedt(true);
                       musterWechseln(m);

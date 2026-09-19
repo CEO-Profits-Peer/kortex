@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SechseckLinse } from '@/components/Sechseck';
 import { haptics } from '@/lib/haptics';
-import { ZWEI, facette } from '@/theme/design';
+import { LINSE_SYMBOL, ZWEI, facette } from '@/theme/design';
 
 import { TabIcon, type TabName } from '@/components/TabIcon';
 import { color, type } from '@/theme/tokens';
@@ -202,7 +202,7 @@ export function BlueprintTabBar({ state, descriptors, navigation }: TabBarProps)
                 accessibilityState={{ selected: focused }}
                 accessibilityLabel={label}
               >
-                <TabIcon name={icon} color={focused ? color.signal.primary : color.ink.mid} />
+                <TabIcon name={icon} color={focused ? (ZWEI && LINSE_SYMBOL ? LINSE_SYMBOL : color.signal.primary) : color.ink.mid} />
                 <Text style={[styles.label, focused && styles.labelOn]} numberOfLines={1}>
                   {label}
                 </Text>

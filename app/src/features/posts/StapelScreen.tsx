@@ -7,7 +7,11 @@ import { Laden } from '@/components/Laden';
 import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
+import { zeigeProSperre } from '@/components/ProSperre';
+import { stapelAlsAnki, textSpeichern } from '@/lib/export';
 import { fehlerText } from '@/lib/fehler';
+import { haptics } from '@/lib/haptics';
+import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import type { ContentItem, StapelDaten } from '@/lib/types.db';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -26,6 +30,27 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
   const [wer, setWer] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const geliefert = useRef(false);
+  const ichPro = useIchPro();
+  const [exportiert, setExportiert] = useState<string | null>(null);
+
+  // PRO (19.09.): den Stapel fuer Anki mitnehmen. Nur eine App-Grenze - der
+  // Export liest dieselben Karten, die man hier ohnehin sieht.
+  const exportieren = async () => {
+    if (!ids) return;
+    if (!ichPro.pro) {
+      zeigeProSperre('Stapel als Datei für Anki exportieren gibt es mit PRO.');
+      return;
+    }
+    haptics.medium();
+    try {
+      const karten = await api.contentByIds(ids);
+      await textSpeichern(`stapel-${wer ?? 'elycic'}.txt`, stapelAlsAnki(karten));
+      setExportiert(`${karten.length} Karten exportiert – in Anki: Datei › Importieren`);
+    } catch (e) {
+      setExportiert(fehlerText(e, 'Export ging nicht'));
+    }
+    setTimeout(() => setExportiert(null), 3500);
+  };
 
   useEffect(() => {
     void api
@@ -85,6 +110,19 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
         emptyBody="Sie wurden zurückgezogen."
       />
       {zurueck}
+      <Pressable
+        onPress={() => void exportieren()}
+        hitSlop={12}
+        style={[styles.zurueck, styles.export, { top: insets.top + space.md }]}
+        accessibilityRole="button"
+      >
+        <Text style={styles.zurueckText}>Export</Text>
+      </Pressable>
+      {exportiert ? (
+        <View style={[styles.hinweis, { top: insets.top + space.md + 44 }]}>
+          <Text style={styles.zurueckText}>{exportiert}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -104,4 +142,13 @@ const styles = StyleSheet.create({
     backgroundColor: color.overlay,
   },
   zurueckText: { ...type.mono, fontSize: 12, color: color.ink.high },
+  export: { left: undefined, right: space.lg },
+  hinweis: {
+    position: 'absolute',
+    right: space.lg,
+    left: space.lg,
+    padding: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: color.overlay,
+  },
 });

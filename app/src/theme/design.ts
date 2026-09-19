@@ -23,9 +23,9 @@ import { Platform, type ViewStyle } from 'react-native';
  */
 
 export type DesignVersion = 'klassisch' | 'zwei';
-export type Muster = 'sechseck' | 'dreieck' | 'keins';
+export type Muster = 'sechseck' | 'dreieck' | 'gold' | 'keins';
 /** Wie das Sechseck auf dem aktiven Tab aussieht: flach mit Goldlinie oder geschliffen. */
-export type Linse = 'flach' | 'stein';
+export type Linse = 'flach' | 'stein' | 'gold';
 
 const SCHLUESSEL_DESIGN = 'elycic.design';
 const SCHLUESSEL_MUSTER = 'elycic.design.muster';
@@ -50,10 +50,19 @@ export const ZWEI = DESIGN === 'zwei';
  */
 const gelesenesMuster = lesen(SCHLUESSEL_MUSTER);
 export const MUSTER: Muster =
-  gelesenesMuster === 'dreieck' || gelesenesMuster === 'sechseck' ? gelesenesMuster : 'keins';
+  gelesenesMuster === 'dreieck' || gelesenesMuster === 'sechseck' || gelesenesMuster === 'gold' ? gelesenesMuster : 'keins';
 
 /** Entwurf B ("Stein") ist der Standard, A ("Flach") per Schalter. */
-export const LINSE: Linse = lesen(SCHLUESSEL_LINSE) === 'flach' ? 'flach' : 'stein';
+const geleseneLinse = lesen(SCHLUESSEL_LINSE);
+/**
+ * 'gold' (Gold-Stein) ist eine PRO-Option (entschieden 18.09.): die
+ * Einstellungen fragen vor dem Umschalten. Laeuft PRO ab, bleibt die Wahl
+ * auf dem Geraet - wie ein PRO-Profilbild, das auch bleibt.
+ */
+export const LINSE: Linse = geleseneLinse === 'flach' || geleseneLinse === 'gold' ? geleseneLinse : 'stein';
+
+/** Symbolfarbe AUF dem aktiven Sechseck: auf Gold waere Gold unsichtbar. */
+export const LINSE_SYMBOL = LINSE === 'gold' ? '#3A0F1B' : null;
 
 /** Kann dieses Geraet ueberhaupt umschalten? */
 export const UMSCHALTBAR = Platform.OS === 'web' && typeof window !== 'undefined';

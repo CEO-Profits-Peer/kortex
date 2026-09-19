@@ -5,7 +5,7 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { Icon } from '@/components/Icon';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
-import { bisText, proNeuLaden, useIchPro } from '@/lib/pro';
+import { bisText, proNeuLaden, schutzText, useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import { KANTE, ZWEI } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -57,6 +57,7 @@ export function CodeEinloesen() {
           <Text style={styles.standUnter}>
             {stand.pro ? `${stand.plan === 'gifted' ? 'Geschenkt' : 'Abo'}, ${bisText(stand.bis)}` : 'Was PRO kann'}
           </Text>
+          {stand.pro ? <Text style={styles.standUnter}>{schutzText(stand.schutzAm)}</Text> : null}
         </View>
         <Icon name="chevron" size={13} color={color.ink.low} />
       </Pressable>

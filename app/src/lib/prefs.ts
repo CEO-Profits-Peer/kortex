@@ -23,6 +23,13 @@ export type Prefs = {
    * finden.
    */
   musicEnabled: boolean;
+  /**
+   * PRO (19.09.): Vorlese-Tempo als Faktor auf das Grundtempo (1 = wie
+   * bisher) und je Sprache eine Browser-Stimme (Kennung aus
+   * getAvailableVoicesAsync). Keine bezahlten Stimmen - entschieden 18.09.
+   */
+  sprechTempo: number;
+  stimmen: Record<string, string>;
 };
 
 const DEFAULTS: Prefs = {
@@ -30,6 +37,8 @@ const DEFAULTS: Prefs = {
   reduceMotion: false,
   audioEnabled: true,
   musicEnabled: false,
+  sprechTempo: 1,
+  stimmen: {},
 };
 
 const KEY = 'prefs_v1';

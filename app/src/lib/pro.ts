@@ -23,9 +23,11 @@ export type ProStand = {
   bis: string | null;
   /** false, solange nur die Voreinstellung gilt - "kein PRO" heisst dann "noch nicht gefragt". */
   geladen: boolean;
+  /** 0096: wann der Streak-Schutz zuletzt gegriffen hat. */
+  schutzAm: string | null;
 };
 
-const FREI: ProStand = { pro: false, plan: 'free', bis: null, geladen: false };
+const FREI: ProStand = { pro: false, plan: 'free', bis: null, geladen: false, schutzAm: null };
 
 let stand: ProStand = FREI;
 let geladen: Promise<void> | null = null;
@@ -43,7 +45,7 @@ export async function proNeuLaden(): Promise<void> {
     if (!p) return setzen({ ...FREI, geladen: true });
     const bis = p.plan_expires_at ?? null;
     const aktiv = (p.plan === 'pro' || p.plan === 'gifted') && (!bis || new Date(bis).getTime() > Date.now());
-    setzen({ pro: aktiv, plan: p.plan, bis, geladen: true });
+    setzen({ pro: aktiv, plan: p.plan, bis, geladen: true, schutzAm: p.streak_schutz_am ?? null });
   } catch {
     // Kein Netz: beim alten Stand bleiben. Der Server prueft ohnehin.
   }
@@ -62,6 +64,11 @@ export function useIchPro(): ProStand {
   return s;
 }
 
+/** Fuer Stellen ohne React (Vorlesen): gilt PRO gerade? Nur Anzeige-Wissen. */
+export function proAktiv(): boolean {
+  return stand.pro;
+}
+
 export function grenzen(pro: boolean) {
   return pro ? GRENZEN.pro : GRENZEN.frei;
 }
@@ -78,4 +85,16 @@ export function proMeldung(e: unknown): string | null {
 export function bisText(bis: string | null): string {
   if (!bis) return 'ohne Ablauf';
   return `bis ${new Date(bis).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+}
+
+/**
+ * Streak-Schutz (0096) als Satz: bereit, oder wann er wieder bereit ist.
+ * Nur Anzeige - ob er greift, entscheidet touch_streak.
+ */
+export function schutzText(schutzAm: string | null): string {
+  if (!schutzAm) return 'Streak-Schutz bereit';
+  const wieder = new Date(`${schutzAm}T00:00:00`);
+  wieder.setDate(wieder.getDate() + 7);
+  if (wieder.getTime() <= Date.now()) return 'Streak-Schutz bereit';
+  return `Streak-Schutz genutzt – wieder bereit ab ${wieder.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`;
 }
