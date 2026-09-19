@@ -11,6 +11,7 @@ import { feedback } from '@/lib/feedback';
 import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { notizenLaden, useNotiz } from '@/lib/notizen';
 import { api } from '@/lib/supabase';
 import type { DueReview, ReviewUeberblick } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
@@ -234,6 +235,7 @@ export function ReviewScreen() {
             </Text>
           </View>
 
+          <ReviewNotiz id={current.content_id} />
           <Text style={styles.question}>{current.question}</Text>
           <Text style={styles.origin}>aus: {current.source_title}</Text>
 
@@ -295,7 +297,29 @@ export function ReviewScreen() {
   );
 }
 
+/** 0107: das eigene Stichwort zur Karte, ueber der Frage. */
+function ReviewNotiz({ id }: { id: string }) {
+  useEffect(() => {
+    void notizenLaden([id]);
+  }, [id]);
+  const text = useNotiz(id);
+  if (!text) return null;
+  return (
+    <View style={styles.notiz}>
+      <Text style={styles.notizText}>Deine Notiz: {text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  notiz: {
+    padding: space.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: color.signal.primary,
+    backgroundColor: color.bgSunken,
+    borderRadius: radius.sm,
+  },
+  notizText: { ...type.body, fontSize: 13, lineHeight: 19, color: color.ink.high },
   root: { flex: 1, paddingHorizontal: space.xl, justifyContent: 'space-between' },
   center: {
     flex: 1,

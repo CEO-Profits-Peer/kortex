@@ -26,6 +26,7 @@ import type { Category, ContentItem, Source } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { beiWiederOnline, istNetzfehler, useOnline } from '@/lib/online';
 import { vorratAuffuellen, vorratNehmen } from '@/lib/vorrat';
+import { notizenLaden } from '@/lib/notizen';
 import { color, space, type } from '@/theme/tokens';
 
 import { FeedTutorial, useFeedTutorial } from './FeedTutorial';
@@ -327,6 +328,7 @@ export function FeedScreen({
         // sind Likes und Reposts nach jedem Neuladen unsichtbar - siehe
         // lib/contentState.ts.
         if (!offline) void hydrateContentState(next.map((i) => i.id));
+        if (!offline) void notizenLaden(batch.map((i) => i.id));
         loadedIds.current = next.map((i) => i.id);
         // Vorrat nachfuellen, solange Netz da ist - im Hintergrund.
         if (!loader && !offline) void vorratAuffuellen(loadedIds.current);

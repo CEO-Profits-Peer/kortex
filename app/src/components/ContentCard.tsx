@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { memo, useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -29,6 +29,7 @@ import { Icon } from '@/components/Icon';
 import { isHero, paginate } from '@/components/paginate';
 import { SourceBadge } from '@/components/SourceBadge';
 import { werkzeugFuerKarte } from '@/features/lab/rechnen';
+import { notizSpeichern, useNotiz } from '@/lib/notizen';
 import { Interaction, isInteractionBuilt } from '@/features/interactions';
 import { reportSeenNow } from '@/features/feed/useDwellTracking';
 import { eventBuffer, track } from '@/lib/eventBuffer';
@@ -636,12 +637,92 @@ function ContentCardBase({
             <Text style={[styles.labLinkText, { color: labWerkzeug.farbe }]}>Rechnen</Text>
           </Pressable>
         ) : null}
+        <NotizKnopf id={item.id} farbe={accent} />
       </View>
     </Animated.View>
   );
 }
 
+/**
+ * Karten-Notiz (0107): "Notiz" oeffnet ein kleines Feld unter der Karte.
+ * Steht schon eine da, zeigt der Knopf ein Haekchen - der Text selbst kommt
+ * beim Wiederholen wieder.
+ */
+function NotizKnopf({ id, farbe }: { id: string; farbe: string }) {
+  const text = useNotiz(id);
+  const [offen, setOffen] = React.useState(false);
+  const [entwurf, setEntwurf] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  return (
+    <>
+      <Pressable
+        onPress={() => {
+          haptics.light();
+          setEntwurf(text);
+          setOffen((o) => !o);
+        }}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={text ? 'Notiz ansehen' : 'Notiz schreiben'}
+        style={styles.labLink}
+      >
+        <Text style={[styles.labLinkText, { color: text ? farbe : color.ink.low }]}>{text ? 'Notiz ✓' : 'Notiz'}</Text>
+      </Pressable>
+      {offen ? (
+        <View style={styles.notizFeld}>
+          <TextInput
+            value={entwurf}
+            onChangeText={setEntwurf}
+            placeholder="Dein Stichwort zu dieser Karte"
+            placeholderTextColor={color.ink.low}
+            maxLength={280}
+            multiline
+            autoFocus
+            style={styles.notizEingabe}
+          />
+          <Pressable
+            disabled={busy}
+            onPress={async () => {
+              setBusy(true);
+              try {
+                await notizSpeichern(id, entwurf);
+                haptics.success();
+                setOffen(false);
+              } catch {
+                haptics.warning();
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={styles.notizKnopf}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.labLinkText, { color: farbe }]}>{busy ? '…' : 'Speichern'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
+  notizFeld: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 36,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: space.sm,
+    padding: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: color.bgSunken,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    zIndex: 5,
+  },
+  notizEingabe: { flex: 1, ...type.body, fontSize: 14, color: color.ink.max, maxHeight: 90, padding: 4 },
+  notizKnopf: { paddingHorizontal: space.sm, paddingVertical: 6 },
   labLink: { paddingHorizontal: space.sm, paddingVertical: 4 },
   labLinkText: { ...type.label, fontSize: 13 },
   // overflow: hidden ist keine Feinheit, sondern die Absicherung: ohne sie
