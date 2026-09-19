@@ -34,8 +34,11 @@ was sonst noch offen ist — vor allem das, was nur du tun kannst.
 1. ✅ **Meisterwege** (0095)
 2. ✅ **PRO-Optik wählbar**: Gold-Dreiecke, Gold-Stein
 3. ✅ **PRO-Features**: Streak-Schutz (0096), Anki-Export, Stimmen, LAB-Szenarien, Planen (0097), Profil-Themes (0098), Reichweite und Heatmap (0099), Ligen (0100)
-   - **Einspielen: 0095–0100** mit `npx supabase db push --linked --yes`
-   - Offen: PDF-Export, Kante am Gold-Profil-Theme
+   - 0095–0108 alle eingespielt (19.09.)
+   - PDF-Export und Gold-Kante erledigt
+5. ✅ **LAB-Ideen**: animierte Ergebnisse, Schätz-Duell (0101), Anker je Liga (0102), „Rechnen“ unter Karten, Kanada-Tabellen, Ratenkauf/Miete/Energie (0103), Reaktions-Verlauf
+6. ✅ **App-Ideen**: Streak-Push (0104), Wochenrückblick (0105), Gruppen-Stapel (0106), Offline-Vorrat, Karten-Notizen (0107), Test-Schalter „Neue Animationen“, Saison-Rahmen (0108), animierter Stein
+   - **Vor dem Release entscheiden:** Test-Schalter „Neue Animationen“ an oder aus?
 4. ✅ **LAB**: Inflation, Brutto → Netto, Wege & CO₂ gebaut (19.09.), mit amtlichen Tabellen, die Quellen stehen in `features/lab/rechnen.ts`. Zum Teilen muss `0094_lab_daten.sql` eingespielt sein.
    - **Jährlich erneuern:** VPI (jeden Jänner), Steuertarif und SV-Werte (jeden Jänner), UBA-Kennzahlen (etwa jährlich). Dabei nur die Tabellen ändern.
 
@@ -73,7 +76,7 @@ was sonst noch offen ist — vor allem das, was nur du tun kannst.
 
 ## ✅ Erledigt seit dem 9. September (Auswahl)
 
-- Migrationen 0001–0094 eingespielt, Seeds drin, anonyme Anmeldung an
+- Migrationen 0001–0108 eingespielt, Seeds drin, anonyme Anmeldung an
 - GitHub-Repo `CEO-Profits-Peer/kortex` mit laufender Geschichte
 - Pipeline läuft automatisch: Nachrichten, Wikipedia-Evergreens, Kurse, Specials (~50 %)
 - Push-Benachrichtigungen (Edge Function), Glocke, Erwähnungen

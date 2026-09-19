@@ -343,6 +343,19 @@ functions return `quiz_items` incl. `correct_index` to the client.
   carry an `einordnung` derived from the user's own numbers; data tools cite
   official tables in `features/lab/rechnen.ts` (renew every January).
 
+## 0101–0108 (2026-09-19, all applied by Claude via CLI)
+
+- 0101 LAB guessing duel (`lab_tipps`, list only visible after own guess),
+  0102 anchor effect averages per league (>= 3 answers), 0103 create_post
+  tool list + kredit/miete/energie, 0104 `streak_erinnerungen()` and 0105
+  `wochenrueckblick(_erinnerungen)()` - both nudged by pipeline/push.py
+  (no pg_cron), 0106 group stacks, 0107 private card notes, 0108 seasons
+  (`meister_frei`/`meisterwege` rewritten from 0095).
+- Canada: StatCan CPI 18-10-0005-01 and CRA T4127 (Jan 2026, Ontario) in
+  `features/lab/rechnen.ts`. Offline stock: `lib/vorrat.ts`.
+- Test toggle `testAnimationen` (count-up numbers, screen transitions) is
+  OFF by default - the user wants to try it before release.
+
 ## Backlog after that
 
 - **More courses** (multi-card structured sequences; `features/courses`).
