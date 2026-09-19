@@ -19,6 +19,20 @@ export type Update = {
 
 export const UPDATES: Update[] = [
   {
+    version: '2.5',
+    datum: '2026-09-19',
+    titel: 'Zuhören, fragen, dranbleiben',
+    kurz: 'Lernen im Ohr, Fragen an alle – und ein Jahr, das man zurückblicken kann.',
+    punkte: [
+      'Anhören: Karten und Kurse wie einen Podcast, für Bus und Laufen',
+      'Frage an die Community: unter Karten fragen, die beste Antwort wird markiert',
+      'Monats-Abzeichen: Bronze, Silber, Gold für Lerntage im Monat',
+      'Jahresrückblick: dein Jahr auf Folien, zum Teilen',
+      'Lokale Karten: Themen aus deinem Bundesland, Kanton oder deiner Provinz',
+      'Updates-Seite, Duelle im Profil, Wiederholen im Studio',
+    ],
+  },
+  {
     version: '2.4',
     datum: '2026-09-19',
     titel: 'Lernen mit Plan',

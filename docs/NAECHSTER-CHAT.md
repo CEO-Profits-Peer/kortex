@@ -99,7 +99,13 @@ In den neuen Chat einfügen:
   - 5 Klassen-Modus (0113): „Überblick“ im eigenen Gruppen-Stapel, anonym, Quote erst ab 3 Antworten
   - 6 Lernpartner (0114): `/lernpartner`, Wochenziel zu zweit, Anstupsen
 - **Web-Deploy darf ich selbst** (`npm run deploy:web`).
-- **Weiter mit:** 7 Community-Frage, 9 Monats-Abzeichen, 10 Jahresrückblick, 12 Lokale Karten, 13 Audio-Modus.
+  - 7 Frage an die Community (0115/0116): Schalter „Als Frage stellen“, beste Antwort, im Studio „Kannst du helfen?“
+  - 9 Monats-Abzeichen (0117): `/abzeichen`, Leiste im Profil, 8/15/22 Lerntage
+  - 10 Jahresrückblick (0118): `/jahr`, Einstieg in der Statistik
+  - 12 Lokale Karten (0119): 122 regionale Themen, `content_items.region_code` über Evergreen
+  - 13 Audio-Modus: `/hoeren` (Feed/Offline-Vorrat oder `?kurs=`), keine XP fürs Hören
+  - Update-Historie `/updates` (lib/updates.ts, neue Pakete oben eintragen), Duelle ins Profil, Wiederholen + Prüfungen ins Studio
+- **Als Nächstes:** Karten in die andere Sprache übersetzen (Pipeline, nie dieselbe Karte doppelt für eine Person), dann Karten-UI-Remaster, dann volle englische Übersetzung. Offen: 8 „Fertig für heute“, 11 Karten vorschlagen.
 - **Noch offen:**
   - 8 „Fertig für heute“ – überlegt er noch.
   - 11 Karten vorschlagen – beliebte Themen entweder ihm zur Freigabe vorlegen oder die Pipeline muss Unangemessenes erkennen. Erst besprechen.
