@@ -12,6 +12,7 @@ import { TabHint, useTabHint } from '@/components/TabHint';
 import { DailyBanner } from '@/features/daily/DailyBanner';
 import { BALD, WERKZEUGE } from '@/features/lab/rechnen';
 import { wann } from '@/features/posts/PostParts';
+import { LernpfadLeiste } from '@/features/lernpfade/Lernpfade';
 import { entwurfLoeschen, useEntwuerfe } from '@/lib/entwuerfe';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
@@ -430,6 +431,10 @@ export function StudioScreen() {
             </Pressable>
 
             <DailyBanner />
+
+            {/* 0112: Lernpfade - Kurse in einer Reihenfolge. */}
+            <Abschnitt titel="Lernpfade" rechts={{ text: 'Alle', onPress: () => router.push('/lernpfade') }} />
+            <LernpfadLeiste />
 
             <Abschnitt titel="Kurse" zahl={courses?.length} />
 

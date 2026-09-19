@@ -362,6 +362,45 @@ class Database:
 
     # --- Kurse ----------------------------------------------------------------
 
+    def lernpfad_luecken(self, languages: tuple[str, ...]) -> list[dict[str, Any]]:
+        """Stationen der Lernpfade (0112), zu denen es noch keinen Kurs gibt.
+
+        In Pfad- und Stationsreihenfolge: die erste Station eines Pfades ist
+        wichtiger als die fuenfte eines anderen. Leer ohne 0112.
+        """
+        try:
+            pfade = self._get("/lernpfade", {"select": "id,language,sort", "order": "sort.asc"})
+            stationen = self._get(
+                "/lernpfad_stationen",
+                {"select": "pfad_id,position,url,category_id,fehlversuche",
+                 "fehlversuche": "lt.3", "order": "position.asc"},
+            )
+            kurse = self._get("/courses", {"select": "language,source_url"})
+        except RuntimeError as exc:
+            if "lernpfad" in str(exc) or ": 404" in str(exc):
+                return []
+            raise
+        schon = {(k["language"], k["source_url"]) for k in kurse if k.get("source_url")}
+        pfad = {p["id"]: p for p in pfade if p["language"] in languages}
+        offen = [
+            {"category_id": s["category_id"], "language": pfad[s["pfad_id"]]["language"],
+             "url": s["url"], "pfad_id": s["pfad_id"], "position": s["position"],
+             "fehlversuche": s["fehlversuche"]}
+            for s in stationen
+            if s["pfad_id"] in pfad and (pfad[s["pfad_id"]]["language"], s["url"]) not in schon
+        ]
+        # Erst alle ersten Stationen, dann alle zweiten - so wird jeder Pfad
+        # schnell betretbar, statt einer nach dem anderen fertig.
+        return sorted(offen, key=lambda s: (s["position"], pfad[s["pfad_id"]]["sort"]))
+
+    def lernpfad_fehlversuch(self, station: dict[str, Any]) -> None:
+        self.http.patch(
+            "/lernpfad_stationen",
+            params={"pfad_id": f"eq.{station['pfad_id']}", "position": f"eq.{station['position']}"},
+            headers={"Prefer": "return=minimal"},
+            json={"fehlversuche": int(station.get("fehlversuche") or 0) + 1},
+        )
+
     def course_candidates(
         self, languages: tuple[str, ...], category: str | None = None
     ) -> list[dict[str, str]] | None:

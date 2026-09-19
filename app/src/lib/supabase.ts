@@ -33,6 +33,33 @@ export type GruppenStapel = {
   karten: { content_id: string; title: string; category: string; von: string | null }[];
 };
 
+/** 0112: Lernpfade - Kurse in einer Reihenfolge. */
+export type Lernpfad = {
+  id: string;
+  slug: string;
+  titel: string;
+  beschreibung: string;
+  accent: string | null;
+  emoji: string | null;
+  stationen: number;
+  bereit: number;
+  fertig: number;
+  naechste: string | null;
+};
+export type LernpfadStation = {
+  position: number;
+  lemma: string;
+  category_id: string;
+  course_slug: string | null;
+  title: string | null;
+  lessons: number;
+  gelesen: number;
+  fertig: boolean;
+};
+export type LernpfadDetail = Omit<Lernpfad, 'stationen' | 'bereit' | 'fertig' | 'naechste'> & {
+  stationen: LernpfadStation[];
+};
+
 /** 0111: Themenwuensche. */
 export type WunschStatus = 'offen' | 'frei' | 'nein' | 'in_arbeit' | 'fertig';
 export type MeineWuensche = {
@@ -407,6 +434,20 @@ export const api = {
     const { data, error } = await supabase.rpc('pruefung_anlegen', { p_titel: titel, p_datum: datum, p_kategorien: kategorien });
     if (error) throw error;
     return data as string;
+  },
+
+  // --- Lernpfade (0112) --------------------------------------------------
+
+  async listLernpfade(): Promise<Lernpfad[]> {
+    const { data, error } = await supabase.rpc('list_lernpfade');
+    if (error) throw error;
+    return (data ?? []) as Lernpfad[];
+  },
+
+  async getLernpfad(slug: string): Promise<LernpfadDetail | null> {
+    const { data, error } = await supabase.rpc('get_lernpfad', { p_slug: slug });
+    if (error) throw error;
+    return (data ?? null) as LernpfadDetail | null;
   },
 
   // --- Themenwuensche (0111) ---------------------------------------------

@@ -162,6 +162,13 @@ def main() -> int:
             kandidaten = [{"category_id": args.category, "language": args.language, "url": args.url}]
         else:
             kandidaten = db.course_candidates(tuple(quellen), args.category)
+            # Lernpfade (0112) zuerst: dort wartet eine Reihenfolge auf die Luecke.
+            if kandidaten is not None and not args.category:
+                luecken = db.lernpfad_luecken(tuple(quellen))
+                if luecken:
+                    log.info("%d Lernpfad-Stationen ohne Kurs - die zuerst.", len(luecken))
+                urls = {(l["language"], l["url"]) for l in luecken}
+                kandidaten = luecken + [k for k in kandidaten if (k["language"], k["url"]) not in urls]
         if kandidaten is None:
             log.error("courses.source_url fehlt - Migration 0075 eingespielt?")
             bilanz.fehler = "Migration 0075 fehlt"
@@ -202,6 +209,8 @@ def main() -> int:
                 item = fetch_article(Topic(category_id=kategorie, language=sprache, title=lemma), src, http)
                 if item is None or len(item.text.split()) < MIN_WOERTER:
                     stats["zu_kurz"] += 1
+                    if "pfad_id" in kandidat and not dry:
+                        db.lernpfad_fehlversuch(kandidat)
                     log.info("  zu kurz fuer einen Kurs: %s", lemma)
                     continue
 
@@ -214,6 +223,8 @@ def main() -> int:
                         log.warning("Tageskontingent aufgebraucht.")
                         break
                     stats["bogen_ungeeignet"] += 1
+                    if "pfad_id" in kandidat and not dry:
+                        db.lernpfad_fehlversuch(kandidat)
                     log.info("  kein Bogen: %s", lemma)
                     continue
 
@@ -262,6 +273,8 @@ def main() -> int:
 
                 if len(fertig) < MIN_LEKTIONEN:
                     stats["kurs_zu_kurz"] += 1
+                    if "pfad_id" in kandidat and not dry:
+                        db.lernpfad_fehlversuch(kandidat)
                     log.info("  nur %d Lektionen am Stueck - kein Kurs.", len(fertig))
                     if gen.exhausted:
                         bilanz.stopp = "kontingent"
