@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
@@ -174,6 +175,8 @@ export function CourseDetailScreen({ slug }: { slug: string }) {
           accent={accent}
           onPress={start}
         />
+        {/* 19.09.: Audio-Modus - die Lektionen nacheinander anhoeren. */}
+        <Button label="Anhören" variant="ghost" onPress={() => router.push(`/hoeren?kurs=${encodeURIComponent(course.id)}`)} />
         <Text style={styles.note}>
           Lektionen zählen wie normale Karten: gelesen zählt, gelöste Aufgaben
           geben Mastery, und die Fragen kommen später zur Wiederholung zurück.

@@ -395,6 +395,18 @@ export function StudioScreen() {
               />
             </View>
 
+            {/* 19.09.: Audio-Modus. */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                router.push('/hoeren');
+              }}
+              style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.labTitel}>Anhören</Text>
+              <Text style={styles.labKurz}>Karten wie einen Podcast – für Bus, Laufen, Abwasch</Text>
+            </Pressable>
+
             {/* 0115: offene Fragen zu gelesenen Karten. */}
             <OffeneFragen />
 

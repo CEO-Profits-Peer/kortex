@@ -58,6 +58,28 @@ export function cardToSpeech(item: ContentItem, withQuestion = true): string {
   return parts.join(BLOCK_PAUSE);
 }
 
+/**
+ * Audio-Modus (19.09.): eine Karte als Folge kurzer Stuecke.
+ *
+ * Satzweise statt am Stueck, weil Browser lange Aeusserungen gern nach
+ * etwa 15 Sekunden abschneiden (Chrome) - und weil man so zurueck- und
+ * weiterspringen kann, ohne mitten im Wort zu landen. Stuecke unter 30
+ * Zeichen werden an das naechste gehaengt, sonst stockt die Stimme.
+ */
+export function karteAlsStuecke(item: ContentItem): string[] {
+  const roh = cardToSpeech(item, true)
+    .split(BLOCK_PAUSE)
+    .flatMap((teil) => teil.match(/[^.!?…]+[.!?…]*\s*/g) ?? [teil])
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const aus: string[] = [];
+  for (const t of roh) {
+    if (aus.length > 0 && (aus[aus.length - 1].length < 30 || t.length < 12)) aus[aus.length - 1] += ` ${t}`;
+    else aus.push(t);
+  }
+  return aus;
+}
+
 /** BCP-47 fuer die Sprachausgabe. 'de' allein waehlt auf iOS manchmal nichts. */
 function voiceLanguage(language: string | null | undefined): string {
   return language === 'en' ? 'en-US' : 'de-DE';
