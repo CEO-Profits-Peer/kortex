@@ -29,6 +29,7 @@ import { AbzeichenLeiste } from '@/features/abzeichen/MonatsAbzeichen';
 import { type Meisterwege, namensfarbe } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { beiWiederOnline } from '@/lib/online';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -241,7 +242,7 @@ export function ProfileScreen() {
           <Pressable
             onPress={() => router.push('/settings')}
             hitSlop={10}
-            accessibilityLabel="Einstellungen"
+            accessibilityLabel={T('Einstellungen')}
           >
             <Icon name="settings" size={20} color={color.ink.low} />
           </Pressable>
@@ -251,11 +252,11 @@ export function ProfileScreen() {
         {social.bio ? <Text style={styles.bio}>{social.bio}</Text> : null}
 
         <View style={styles.counts}>
-          <Count value={social.repost_count} label="Empfohlen" />
+          <Count value={social.repost_count} label={T('Empfohlen')} />
           <View style={styles.divider} />
           <Count
             value={social.follower_count}
-            label="Follower"
+            label={T('Follower')}
             onPress={() =>
               router.push(`/people/${encodeURIComponent(social.handle)}?mode=followers`)
             }
@@ -263,13 +264,13 @@ export function ProfileScreen() {
           <View style={styles.divider} />
           <Count
             value={social.following_count}
-            label="Folgt"
+            label={T('Folgt')}
             onPress={() =>
               router.push(`/people/${encodeURIComponent(social.handle)}?mode=following`)
             }
           />
           <View style={styles.divider} />
-          <Count value={p?.mastery_total ?? 0} label="Mastery" tint={color.signal.mastery} />
+          <Count value={p?.mastery_total ?? 0} label={T('Mastery')} tint={color.signal.mastery} />
         </View>
 
         <View style={styles.knopfReihe}>
@@ -406,26 +407,24 @@ export function ProfileScreen() {
         ) : null}
 
         {/* --- Lernstand ----------------------------------------------------- */}
-        <Text style={styles.sectionTitle}>Lernstand</Text>
+        <Text style={styles.sectionTitle}>{T('Lernstand')}</Text>
 
         <View style={styles.learnRow}>
-          <Count value={p?.xp_total ?? 0} label="XP" tint={color.signal.primary} />
+          <Count value={p?.xp_total ?? 0} label={T('XP')} tint={color.signal.primary} />
           <Count
             value={p?.streak_current ?? 0}
-            label="Streak"
+            label={T('Streak')}
             tint={(p?.streak_current ?? 0) > 0 ? color.signal.warn : undefined}
           />
-          <Count value={p?.cards_read_total ?? 0} label="Gelesen" />
-          <Count value={`${focusMin}m`} label="Fokus" />
+          <Count value={p?.cards_read_total ?? 0} label={T('Gelesen')} />
+          <Count value={`${focusMin}m`} label={T('Fokus')} />
         </View>
 
         <Text style={styles.todayLine}>
           Heute: {stats?.read_today ?? 0} von {p?.daily_goal_cards ?? 60} Grids
         </Text>
         {(stats?.read_today ?? 0) >= (p?.daily_goal_cards ?? 60) ? (
-          <Text style={styles.enough}>
-            Das reicht für heute. Was hängen geblieben ist, fragen wir morgen.
-          </Text>
+          <Text style={styles.enough}>{T('Das reicht für heute. Was hängen geblieben ist, fragen wir morgen.')}</Text>
         ) : null}
 
         <KnowledgeRadar data={stats?.radar ?? []} />
@@ -434,8 +433,8 @@ export function ProfileScreen() {
       {hinweis.zeigen ? (
         <TabHint
           icon="profile"
-          titel="Dein Stand"
-          text="Hier steht, was hängen geblieben ist: Empfohlenes, Likes, Streak und der Radar, der zeigt, wo du stark bist. Die Zahlen oben führen auf Listen."
+          titel={T('Dein Stand')}
+          text={T('Hier steht, was hängen geblieben ist: Empfohlenes, Likes, Streak und der Radar, der zeigt, wo du stark bist. Die Zahlen oben führen auf Listen.')}
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />

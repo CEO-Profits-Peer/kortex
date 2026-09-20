@@ -9,6 +9,7 @@ import { Icon } from '@/components/Icon';
 import { BordeauxMuster, SechseckLinse } from '@/components/Sechseck';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
+import { T } from '@/lib/sprache';
 import { ZWEI, facette, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -58,7 +59,7 @@ export function ProMarke({ klein }: { klein?: boolean }) {
 export function ProAbzeichen() {
   return (
     <View style={styles.abzeichen}>
-      <Text style={styles.abzeichenText}>PRO</Text>
+      <Text style={styles.abzeichenText}>{T('PRO')}</Text>
     </View>
   );
 }
@@ -76,7 +77,7 @@ export function ProSperreHost() {
 
   return (
     <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)} style={styles.huelle}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={schliessen} accessibilityLabel="Schließen" />
+      <Pressable style={StyleSheet.absoluteFill} onPress={schliessen} accessibilityLabel={T('Schließen')} />
       <View style={styles.karte}>
         {ZWEI ? <BordeauxMuster /> : null}
         <View style={styles.zeichen}>
@@ -85,18 +86,18 @@ export function ProSperreHost() {
             <Icon name="mastery" size={22} color={color.signal.primary} />
           </View>
         </View>
-        <Text style={styles.titel}>Das ist PRO</Text>
+        <Text style={styles.titel}>{T('Das ist PRO')}</Text>
         <Text style={styles.satz}>{s.satz}</Text>
         <View style={styles.knoepfe}>
           <Button
-            label="Ansehen"
+            label={T('Ansehen')}
             onPress={() => {
               schliessen();
               router.push('/pro');
             }}
           />
           <Pressable onPress={schliessen} style={styles.spaeter} hitSlop={6} accessibilityRole="button">
-            <Text style={styles.spaeterText}>Später</Text>
+            <Text style={styles.spaeterText}>{T('Später')}</Text>
           </Pressable>
         </View>
       </View>

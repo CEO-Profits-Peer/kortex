@@ -11,6 +11,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { proAktiv } from '@/lib/pro';
 import { api, type MonatsAbzeichen as Daten } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -100,7 +101,7 @@ export function AbzeichenLeiste() {
     >
       <Monatsmedaille monat={jetzt.monat} stufe={jetzt.stufe} groesse={48} />
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={styles.leisteTitel}>Monats-Abzeichen</Text>
+        <Text style={styles.leisteTitel}>{T('Monats-Abzeichen')}</Text>
         <Text style={styles.klein} numberOfLines={1}>
           {jetzt.lerntage} Lerntage{n ? ` · noch ${n.bis - jetzt.lerntage} bis ${n.stufe}` : ' · Gold!'}
         </Text>
@@ -150,7 +151,7 @@ export function AbzeichenScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Abzeichen" eyebrow="jeden Monat neu" scrollY={scrollY} />
+        <ScreenHeader title={T('Abzeichen')} eyebrow={T('jeden Monat neu')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -161,7 +162,7 @@ export function AbzeichenScreen() {
         showsVerticalScrollIndicator={false}
       >
         {d === undefined ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
-        {d === null ? <Text style={styles.intro}>Abzeichen konnten nicht geladen werden.</Text> : null}
+        {d === null ? <Text style={styles.intro}>{T('Abzeichen konnten nicht geladen werden.')}</Text> : null}
         {d && jetzt ? (
           <>
             <View style={styles.held}>
@@ -186,7 +187,7 @@ export function AbzeichenScreen() {
               </View>
             </View>
 
-            <Text style={styles.abschnitt}>Die letzten zwölf Monate</Text>
+            <Text style={styles.abschnitt}>{T('Die letzten zwölf Monate')}</Text>
             <View style={styles.raster}>
               {d.monate.slice(1).map((m) => (
                 <View key={m.monat} style={styles.rasterFeld}>
@@ -195,9 +196,7 @@ export function AbzeichenScreen() {
                 </View>
               ))}
             </View>
-            <Text style={styles.klein}>
-              Ein Lerntag zählt, sobald du an dem Tag eine Karte gelesen hast. Vergangene Monate bleiben, wie sie sind.
-            </Text>
+            <Text style={styles.klein}>{T('Ein Lerntag zählt, sobald du an dem Tag eine Karte gelesen hast. Vergangene Monate bleiben, wie sie sind.')}</Text>
           </>
         ) : null}
       </ScrollView>

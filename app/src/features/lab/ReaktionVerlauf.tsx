@@ -4,6 +4,7 @@ import { Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Polyline } from 'react-native-svg';
 
 import { color, space, type } from '@/theme/tokens';
+import { T } from '@/lib/sprache';
 
 /**
  * Reaktionszeit ueber Wochen (19.09.): jede fertige Messung (Schnitt aus
@@ -58,7 +59,7 @@ export function ReaktionVerlauf({ liste, farbe }: { liste: Messung[]; farbe: str
   }, [liste]);
 
   if (liste.length < 2) {
-    return <Text style={{ ...type.meta, color: color.ink.low }}>Miss dich nächste Woche nochmal – dann entsteht hier deine Kurve.</Text>;
+    return <Text style={{ ...type.meta, color: color.ink.low }}>{T('Miss dich nächste Woche nochmal – dann entsteht hier deine Kurve.')}</Text>;
   }
 
   const b = Math.min(width, 440) - 2 * space.xl - 2 * space.lg;

@@ -15,6 +15,7 @@ import { COUNTRIES, type Country } from './regions';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 
 /**
  * Onboarding (seit 19.09.): Name, Land/Region, Geburtsjahr, Interessen - und
@@ -102,13 +103,10 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
             <Avatar seed={profil.avatar_seed} path={profil.avatar_path} size={112} />
             <Text style={styles.profilName}>{profil.display_name || name.trim()}</Text>
             <Text style={styles.profilHandle}>@{profil.handle}</Text>
-            <Text style={[styles.hint, { textAlign: 'center' }]}>
-              Das bist du. Profilbild und Name kannst du jederzeit im Profil ändern – jetzt zeigen wir dir kurz,
-              wie der Feed funktioniert.
-            </Text>
+            <Text style={[styles.hint, { textAlign: 'center' }]}>{T('Das bist du. Profilbild und Name kannst du jederzeit im Profil ändern – jetzt zeigen wir dir kurz, wie der Feed funktioniert.')}</Text>
           </View>
           <View style={[styles.footer, { alignSelf: 'stretch' }]}>
-            <Button label="Weiter" onPress={onDone} />
+            <Button label={T('Weiter')} onPress={onDone} />
           </View>
         </View>
       </GridBackground>
@@ -127,14 +125,12 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
         {/* --- 0 · Name ------------------------------------------------------ */}
         {step === 0 && (
           <>
-            <Text style={styles.question}>Wie heißt du?</Text>
-            <Text style={styles.hint}>
-              So sehen dich andere in Beiträgen, Duellen und Ligen. Ein Spitzname reicht völlig.
-            </Text>
+            <Text style={styles.question}>{T('Wie heißt du?')}</Text>
+            <Text style={styles.hint}>{T('So sehen dich andere in Beiträgen, Duellen und Ligen. Ein Spitzname reicht völlig.')}</Text>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Dein Name"
+              placeholder={T('Dein Name')}
               placeholderTextColor={color.ink.low}
               maxLength={30}
               autoFocus
@@ -151,11 +147,8 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
         {/* --- 1 · Region ---------------------------------------------------- */}
         {step === 1 && (
           <>
-            <Text style={styles.question}>Wo bist du zuhause?</Text>
-            <Text style={styles.hint}>
-              Bestimmt, welche lokalen Themen du siehst und gegen wen du auf der
-              Rangliste antrittst.
-            </Text>
+            <Text style={styles.question}>{T('Wo bist du zuhause?')}</Text>
+            <Text style={styles.hint}>{T('Bestimmt, welche lokalen Themen du siehst und gegen wen du auf der Rangliste antrittst.')}</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
               <View style={styles.chips}>
                 {COUNTRIES.map((c) => (
@@ -201,11 +194,8 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
         {/* --- 2 · Geburtsjahr ----------------------------------------------- */}
         {step === 2 && (
           <>
-            <Text style={styles.question}>In welchem Jahr bist du geboren?</Text>
-            <Text style={styles.hint}>
-              Nicht für Werbung. Es steuert das Schwierigkeitsniveau und die
-              gesetzlichen Regeln für Minderjährige.
-            </Text>
+            <Text style={styles.question}>{T('In welchem Jahr bist du geboren?')}</Text>
+            <Text style={styles.hint}>{T('Nicht für Werbung. Es steuert das Schwierigkeitsniveau und die gesetzlichen Regeln für Minderjährige.')}</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
               <View style={styles.chips}>
                 {years.map((y) => (
@@ -228,11 +218,8 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
         {/* --- 3 · Interessen ------------------------------------------------ */}
         {step === 3 && (
           <>
-            <Text style={styles.question}>Was interessiert dich?</Text>
-            <Text style={styles.hint}>
-              Mindestens 3. Zwanzig Prozent deines Feeds bleiben trotzdem
-              bewusst außerhalb davon.
-            </Text>
+            <Text style={styles.question}>{T('Was interessiert dich?')}</Text>
+            <Text style={styles.hint}>{T('Mindestens 3. Zwanzig Prozent deines Feeds bleiben trotzdem bewusst außerhalb davon.')}</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
               <View style={styles.tiles}>
                 {roots.map((c) => {
@@ -253,9 +240,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
                 })}
               </View>
               {roots.length === 0 ? (
-                <Text style={styles.hint}>
-                  Keine Kategorien geladen — sind die Seed-Dateien eingespielt?
-                </Text>
+                <Text style={styles.hint}>{T('Keine Kategorien geladen — sind die Seed-Dateien eingespielt?')}</Text>
               ) : null}
             </ScrollView>
           </>
@@ -282,7 +267,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
             }}
           />
           {step > 0 ? (
-            <Button label="Zurück" variant="quiet" onPress={() => setStep(step - 1)} />
+            <Button label={T('Zurück')} variant="quiet" onPress={() => setStep(step - 1)} />
           ) : null}
         </View>
       </View>

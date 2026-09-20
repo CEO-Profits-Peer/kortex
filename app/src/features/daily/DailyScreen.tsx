@@ -22,6 +22,7 @@ import type {
   DailySubmission,
 } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -151,11 +152,8 @@ export function DailyScreen() {
   if (!challenge.available) {
     return (
       <Shell insets={insets}>
-        <Text style={styles.headline}>Heute noch nichts</Text>
-        <Text style={styles.body}>
-          Für die Tagesaufgabe braucht es fünf Karten mit Frage in deiner Sprache.
-          Sobald genug da sind, steht sie hier jeden Morgen.
-        </Text>
+        <Text style={styles.headline}>{T('Heute noch nichts')}</Text>
+        <Text style={styles.body}>{T('Für die Tagesaufgabe braucht es fünf Karten mit Frage in deiner Sprache. Sobald genug da sind, steht sie hier jeden Morgen.')}</Text>
       </Shell>
     );
   }
@@ -226,10 +224,7 @@ export function DailyScreen() {
           </Text>
           {board ? (
             board.rows.length === 0 ? (
-              <Text style={styles.body}>
-                Noch niemand auf der Liste. Wer die Rangliste in den Einstellungen
-                ausgeschaltet hat, erscheint hier nicht.
-              </Text>
+              <Text style={styles.body}>{T('Noch niemand auf der Liste. Wer die Rangliste in den Einstellungen ausgeschaltet hat, erscheint hier nicht.')}</Text>
             ) : (
               <Animated.View layout={LinearTransition} style={styles.boardList}>
                 {board.rows.map((row) => (
@@ -363,7 +358,7 @@ function Shell({
           anderen Hoehe als auf jedem anderen Bildschirm, und der Inhalt
           musste einen Platz freihalten, den er nicht kannte. */}
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Tagesaufgabe" titleInBarOnly />
+        <ScreenHeader title={T('Tagesaufgabe')} titleInBarOnly />
       </View>
       {scroll ? (
         <ScrollView

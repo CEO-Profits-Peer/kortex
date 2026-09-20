@@ -18,6 +18,7 @@ import { pickAvatarImage } from '@/lib/pickImage';
 import { api } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -168,7 +169,7 @@ export function AvatarStudio() {
       {/* Die Kopfzeile liegt AUSSERHALB der Liste: sie muss stehen
           bleiben, um beim Scrollen zusammenklappen zu koennen. */}
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Profilbild" eyebrow="dein zeichen" scrollY={scrollY} />
+        <ScreenHeader title={T('Profilbild')} eyebrow={T('dein zeichen')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -189,21 +190,18 @@ export function AvatarStudio() {
         {profile.avatar_path ? (
           <View style={styles.liveRow}>
             <Avatar seed={profile.avatar_seed} path={profile.avatar_path} size={28} />
-            <Text style={styles.liveLabel}>Andere sehen gerade dein Foto</Text>
+            <Text style={styles.liveLabel}>{T('Andere sehen gerade dein Foto')}</Text>
           </View>
         ) : null}
 
         <AvatarEditor design={design} onChange={setDesign} pro={ichPro.pro} meisterFrei={freieIndizes(meister)} />
 
-        <Button label="Speichern" busy={busy} onPress={saveDesign} />
+        <Button label={T('Speichern')} busy={busy} onPress={saveDesign} />
 
         {/* --- Eigenes Foto ------------------------------------------------ */}
         <View style={styles.group}>
           <Text style={styles.sectionTitle}>Foto</Text>
-          <Text style={styles.hint}>
-            Ein Foto liegt über dem Muster. Nimmst du es wieder weg, ist dein
-            Zeichen unverändert da.
-          </Text>
+          <Text style={styles.hint}>{T('Ein Foto liegt über dem Muster. Nimmst du es wieder weg, ist dein Zeichen unverändert da.')}</Text>
           <View style={styles.actions}>
             <Pressable onPress={uploadPhoto} disabled={busy} style={styles.ghost}>
               <Text style={styles.ghostText}>

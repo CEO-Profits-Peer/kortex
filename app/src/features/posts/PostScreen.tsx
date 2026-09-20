@@ -19,6 +19,7 @@ import { sharePost } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomePerson, PostComment, PostDetail } from '@/lib/types.db';
 import { proMeldung } from '@/lib/pro';
+import { T } from '@/lib/sprache';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { flaeche, goldVerlauf, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -138,10 +139,10 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
     haptics.warning();
     try {
       await api.reportPostComment(cid);
-      zeige('Gemeldet. Danke.');
+      zeige(T('Gemeldet. Danke.'));
       await laden();
     } catch {
-      zeige('Melden hat nicht geklappt.');
+      zeige(T('Melden hat nicht geklappt.'));
     }
   };
 
@@ -151,24 +152,24 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
       await api.deletePostComment(cid);
       await laden();
     } catch {
-      zeige('Löschen hat nicht geklappt.');
+      zeige(T('Löschen hat nicht geklappt.'));
     }
   };
 
   const kommentarTeilen = async (k: PostComment) => {
     const r = await sharePost({ postId: id, text: `${k.wer.name}: ${k.body}`, kommentarId: k.id });
-    if (r === 'copied') zeige('Link zum Kommentar kopiert.');
-    if (r === 'failed') zeige('Teilen ging nicht.');
+    if (r === 'copied') zeige(T('Link zum Kommentar kopiert.'));
+    if (r === 'failed') zeige(T('Teilen ging nicht.'));
   };
 
   const beitragMelden = async () => {
     haptics.warning();
     try {
       await api.reportPost(id);
-      zeige('Gemeldet. Danke - drei Meldungen, und der Beitrag ist weg.');
+      zeige(T('Gemeldet. Danke - drei Meldungen, und der Beitrag ist weg.'));
       setMenue(false);
     } catch {
-      zeige('Melden hat nicht geklappt.');
+      zeige(T('Melden hat nicht geklappt.'));
     }
   };
 
@@ -191,7 +192,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
       await api.deletePost(id);
       router.back();
     } catch {
-      zeige('Löschen hat nicht geklappt.');
+      zeige(T('Löschen hat nicht geklappt.'));
     }
   };
 
@@ -199,7 +200,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Beitrag" titleInBarOnly />
+          <ScreenHeader title={T('Beitrag')} titleInBarOnly />
         </View>
         <View style={styles.center}>
           {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <Laden color={color.signal.primary} />}
@@ -212,14 +213,14 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Beitrag" titleInBarOnly />
+          <ScreenHeader title={T('Beitrag')} titleInBarOnly />
         </View>
         <View style={styles.gesperrt}>
           <Avatar seed={d.wer.avatar_seed} path={d.wer.avatar_path} size={64} />
           <Text style={styles.gesperrtText}>
             Diesen Beitrag von {d.wer.name} sehen nur Leute, die {d.wer.name} folgen.
           </Text>
-          <Button label="Zum Profil" onPress={() => zuProfil(d.wer.handle)} />
+          <Button label={T('Zum Profil')} onPress={() => zuProfil(d.wer.handle)} />
         </View>
       </GridBackground>
     );
@@ -230,7 +231,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Beitrag" titleInBarOnly scrollY={scrollY} />
+        <ScreenHeader title={T('Beitrag')} titleInBarOnly scrollY={scrollY} />
       </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -255,7 +256,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
                   <Text style={styles.menueText}>{post.angepinnt ? 'Lösen' : 'Anpinnen'}</Text>
                 </Pressable>
                 <Pressable onPress={() => void beitragLoeschen()} hitSlop={8}>
-                  <Text style={styles.menueText}>Löschen</Text>
+                  <Text style={styles.menueText}>{T('Löschen')}</Text>
                 </Pressable>
               </View>
             ) : menue ? (
@@ -354,7 +355,7 @@ export function PostScreen({ id, kommentarId }: { id: string; kommentarId?: stri
               onPress={() => void senden()}
               disabled={text.trim().length < 2 || busy}
               style={[styles.senden, (text.trim().length < 2 || busy) && styles.sendenAus]}
-              accessibilityLabel="Senden"
+              accessibilityLabel={T('Senden')}
             >
               {busy ? (
                 <Laden size="small" color={color.bg} />
@@ -427,14 +428,14 @@ function Kommentar({
         <ErwaehnungsText text={k.body} style={styles.kommentarText} />
         <View style={styles.kommentarAktionen}>
           <Pressable onPress={onAntworten} hitSlop={8}>
-            <Text style={styles.menueText}>Antworten</Text>
+            <Text style={styles.menueText}>{T('Antworten')}</Text>
           </Pressable>
-          <Pressable onPress={onTeilen} hitSlop={8} accessibilityLabel="Kommentar teilen">
+          <Pressable onPress={onTeilen} hitSlop={8} accessibilityLabel={T('Kommentar teilen')}>
             <Icon name="share" size={13} color={color.ink.mid} />
           </Pressable>
           {k.darf_loeschen ? (
             <Pressable onPress={() => onLoeschen(k.id)} hitSlop={8}>
-              <Text style={styles.menueText}>Löschen</Text>
+              <Text style={styles.menueText}>{T('Löschen')}</Text>
             </Pressable>
           ) : null}
           {!k.ist_meins ? (

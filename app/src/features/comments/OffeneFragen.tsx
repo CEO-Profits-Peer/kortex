@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { OffeneFrage } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { CommentSheet } from './CommentSheet';
@@ -29,7 +30,7 @@ export function OffeneFragen() {
   if (fragen.length === 0) return null;
   return (
     <View style={styles.box}>
-      <Text style={styles.titel}>Kannst du helfen?</Text>
+      <Text style={styles.titel}>{T('Kannst du helfen?')}</Text>
       {fragen.map((f) => (
         <Pressable
           key={f.id}

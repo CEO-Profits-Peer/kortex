@@ -21,6 +21,7 @@ import { beiWiederOnline } from '@/lib/online';
 import { shareCard, shareInvite } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomeData, HomeEntry, Post } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { ZWEI, facette, flaeche, goldVerlauf } from '@/theme/design';
 
@@ -259,8 +260,8 @@ export function HomeScreen() {
       const mein = await api.myInvite();
       if (!mein?.code) throw new Error('kein Code');
       const res = await shareInvite({ code: mein.code });
-      if (res === 'copied') zeige('Link kopiert. Wer darüber startet, folgt dir automatisch.');
-      if (res === 'failed') zeige('Teilen ging nicht.');
+      if (res === 'copied') zeige(T('Link kopiert. Wer darüber startet, folgt dir automatisch.'));
+      if (res === 'failed') zeige(T('Teilen ging nicht.'));
     } catch (e) {
       zeige(fehlerText(e, 'Einladen geht gerade nicht.'));
     }
@@ -311,7 +312,7 @@ export function HomeScreen() {
   const kopf = (
     <View style={styles.kopfBereich}>
       <View style={styles.titelZeile}>
-        <Text style={styles.titel}>Home</Text>
+        <Text style={styles.titel}>{T('Home')}</Text>
         <View style={styles.kopfKnoepfe}>
           <Pressable onPress={() => void einladen()} hitSlop={8} style={styles.einladen}>
             <Icon name="plus" size={14} color={color.akzent} />
@@ -345,9 +346,9 @@ export function HomeScreen() {
         }}
         style={({ pressed }) => [styles.schreiben, pressed && { opacity: 0.85 }]}
       >
-        <Text style={styles.schreibenText}>Was hast du heute gelernt?</Text>
+        <Text style={styles.schreibenText}>{T('Was hast du heute gelernt?')}</Text>
         <View style={styles.schreibenKnopf}>
-          <Text style={styles.schreibenKnopfText}>Posten</Text>
+          <Text style={styles.schreibenKnopfText}>{T('Posten')}</Text>
         </View>
       </Pressable>
 
@@ -372,7 +373,7 @@ export function HomeScreen() {
       {/* --- Vorschlaege: waagrecht, wie bei Instagram ------------------------- */}
       {ansicht === 'following' && daten.vorschlaege.length > 0 ? (
         <View style={{ gap: space.sm }}>
-          <Text style={styles.abschnitt}>Vorschläge für dich</Text>
+          <Text style={styles.abschnitt}>{T('Vorschläge für dich')}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -444,9 +445,7 @@ export function HomeScreen() {
             explore === null ? (
               <Laden color={color.ink.low} style={{ marginVertical: space.xl }} />
             ) : (
-              <Text style={styles.leer}>
-                In Explore ist gerade nichts – hier landen Beiträge von Leuten, denen du noch nicht folgst.
-              </Text>
+              <Text style={styles.leer}>{T('In Explore ist gerade nichts – hier landen Beiträge von Leuten, denen du noch nicht folgst.')}</Text>
             )
           ) : (
             <Text style={styles.leer}>
@@ -460,9 +459,9 @@ export function HomeScreen() {
           (ansicht === 'following' ? eintraege.length : exploreEintraege.length) === 0 ? null : nachLaedt ? (
             <Laden color={color.ink.low} style={{ marginVertical: space.lg }} />
           ) : ansicht === 'following' && !mehr ? (
-            <Text style={styles.ende}>Das ist alles von deinen Leuten.</Text>
+            <Text style={styles.ende}>{T('Das ist alles von deinen Leuten.')}</Text>
           ) : ansicht === 'explore' && !exploreMehr ? (
-            <Text style={styles.ende}>Mehr gibt es in Explore gerade nicht.</Text>
+            <Text style={styles.ende}>{T('Mehr gibt es in Explore gerade nicht.')}</Text>
           ) : null
         }
         ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
@@ -518,8 +517,8 @@ export function HomeScreen() {
       {hinweis.zeigen ? (
         <TabHint
           icon="comment"
-          titel="Home: deine Leute"
-          text="Hier stehen die Beiträge und Empfehlungen der Leute, denen du folgst - mit Like, Kommentar, Repost und Teilen. Was du postest, sehen deine Follower hier."
+          titel={T('Home: deine Leute')}
+          text={T('Hier stehen die Beiträge und Empfehlungen der Leute, denen du folgst - mit Like, Kommentar, Repost und Teilen. Was du postest, sehen deine Follower hier.')}
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />

@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { promptInstall, useInstallState } from '@/lib/install';
 import { BRAND } from '@/lib/brand';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -43,9 +44,7 @@ export function InstallBanner() {
 
           <View style={styles.body}>
             <Text style={styles.title}>{BRAND.name} als App</Text>
-            <Text style={styles.sub}>
-              Eigenes Symbol, kein Browser drumherum, startet schneller.
-            </Text>
+            <Text style={styles.sub}>{T('Eigenes Symbol, kein Browser drumherum, startet schneller.')}</Text>
           </View>
 
           {!showSteps ? (
@@ -59,7 +58,7 @@ export function InstallBanner() {
               }}
               style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.ctaText}>Hinzufügen</Text>
+              <Text style={styles.ctaText}>{T('Hinzufügen')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -68,15 +67,15 @@ export function InstallBanner() {
           <View style={styles.steps}>
             {ios ? (
               <>
-                <Step n="1" text="Unten im Browser auf Teilen tippen" />
+                <Step n="1" text={T('Unten im Browser auf Teilen tippen')} />
                 <Step n="2" text={'„Zum Home-Bildschirm“ wählen'} />
-                <Step n="3" text="Hinzufügen bestätigen" />
+                <Step n="3" text={T('Hinzufügen bestätigen')} />
               </>
             ) : (
               <>
                 <Step n="1" text="Browser-Menü öffnen (drei Punkte)" />
                 <Step n="2" text={'„App installieren“ oder „Zum Startbildschirm“'} />
-                <Step n="3" text="Bestätigen" />
+                <Step n="3" text={T('Bestätigen')} />
               </>
             )}
           </View>

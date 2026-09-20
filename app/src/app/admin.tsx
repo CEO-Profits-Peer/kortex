@@ -15,6 +15,7 @@ import type { AdminCategory, AdminData, AdminRuns } from '@/features/admin/types
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -126,7 +127,7 @@ export default function Admin() {
         try {
           setKategorien(await api.adminCategories(pin.current));
         } catch {
-          setFehler('Kategorien nicht ladbar');
+          setFehler(T('Kategorien nicht ladbar'));
         } finally {
           setBusy(false);
         }
@@ -143,29 +144,29 @@ export default function Admin() {
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Kontrollzentrum" titleInBarOnly />
+          <ScreenHeader title={T('Kontrollzentrum')} titleInBarOnly />
         </View>
         <View style={styles.tor}>
-          <Text style={styles.torTitel}>Kontrollzentrum</Text>
-          <Text style={styles.torText}>Nur für ein Konto, und auch dort nur mit PIN.</Text>
+          <Text style={styles.torTitel}>{T('Kontrollzentrum')}</Text>
+          <Text style={styles.torText}>{T('Nur für ein Konto, und auch dort nur mit PIN.')}</Text>
 
           <TextInput
             value={eingabe}
             onChangeText={setEingabe}
-            placeholder="PIN"
+            placeholder={T('PIN')}
             placeholderTextColor={color.ink.low}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
             onSubmitEditing={() => void oeffnen()}
             style={styles.feld}
-            accessibilityLabel="PIN"
+            accessibilityLabel={T('PIN')}
           />
 
           {busy ? (
             <Laden color={color.signal.primary} />
           ) : (
-            <Button label="Öffnen" onPress={() => void oeffnen()} />
+            <Button label={T('Öffnen')} onPress={() => void oeffnen()} />
           )}
 
           {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
@@ -178,7 +179,7 @@ export default function Admin() {
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
         <ScreenHeader
-          title="Kontrollzentrum"
+          title={T('Kontrollzentrum')}
           titleInBarOnly
           right={
             <Pressable onPress={sperren} hitSlop={8}>

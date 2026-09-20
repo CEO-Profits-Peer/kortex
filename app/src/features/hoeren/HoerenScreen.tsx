@@ -22,6 +22,7 @@ import { hintergrundSprechen, karteAlsStuecke, speakSentence, stopSpeech } from 
 import { api } from '@/lib/supabase';
 import type { ContentItem } from '@/lib/types.db';
 import { vorratNehmen } from '@/lib/vorrat';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -180,7 +181,7 @@ export function HoerenScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Anhören" eyebrow={kurs ? 'kurs' : offline ? 'offline-vorrat' : 'dein feed'} scrollY={scrollY} />
+        <ScreenHeader title={T('Anhören')} eyebrow={kurs ? 'kurs' : offline ? 'offline-vorrat' : 'dein feed'} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -192,7 +193,7 @@ export function HoerenScreen() {
       >
         {karten === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
         {karten && karten.length === 0 ? (
-          <Text style={styles.leise}>Gerade nichts zum Anhören da. Später nochmal.</Text>
+          <Text style={styles.leise}>{T('Gerade nichts zum Anhören da. Später nochmal.')}</Text>
         ) : null}
         {karte ? (
           <>
@@ -218,7 +219,7 @@ export function HoerenScreen() {
             </View>
 
             <View style={styles.steuerung}>
-              <Pressable onPress={() => springen(-1)} disabled={nr === 0} hitSlop={10} style={[styles.klein, nr === 0 && { opacity: 0.3 }]} accessibilityLabel="Vorige Karte">
+              <Pressable onPress={() => springen(-1)} disabled={nr === 0} hitSlop={10} style={[styles.klein, nr === 0 && { opacity: 0.3 }]} accessibilityLabel={T('Vorige Karte')}>
                 <Svg width={22} height={22}>
                   <Polygon points="18,4 8,11 18,18" fill={color.ink.max} />
                   <Rect x={4} y={4} width={3} height={14} fill={color.ink.max} />
@@ -249,7 +250,7 @@ export function HoerenScreen() {
                 disabled={nr + 1 >= karten!.length}
                 hitSlop={10}
                 style={[styles.klein, nr + 1 >= karten!.length && { opacity: 0.3 }]}
-                accessibilityLabel="Nächste Karte"
+                accessibilityLabel={T('Nächste Karte')}
               >
                 <Svg width={22} height={22}>
                   <Polygon points="4,4 14,11 4,18" fill={color.ink.max} />
@@ -274,20 +275,14 @@ export function HoerenScreen() {
 
             <Pressable onPress={() => router.push(`/reel/${encodeURIComponent(karte.id)}`)} style={styles.lesen}>
               <Icon name="knowledge" size={14} color={color.ink.mid} />
-              <Text style={styles.lesenText}>Karte lesen – fürs Quiz und die XP</Text>
+              <Text style={styles.lesenText}>{T('Karte lesen – fürs Quiz und die XP')}</Text>
             </Pressable>
 
-            <Text style={styles.leise}>
-              Die Frage am Ende wird vorgelesen, die Antwort nicht – denk mit. Tempo und Stimme stellst du unter
-              Einstellungen › Vorlesen ein.
-            </Text>
-            <Text style={styles.leise}>
-              In der Tasche: Steuerung liegt auf dem Sperrbildschirm. Manche Handys halten die Stimme trotzdem an,
-              wenn der Bildschirm ausgeht – dann hilft „Bildschirm an lassen“.
-            </Text>
+            <Text style={styles.leise}>{T('Die Frage am Ende wird vorgelesen, die Antwort nicht – denk mit. Tempo und Stimme stellst du unter Einstellungen › Vorlesen ein.')}</Text>
+            <Text style={styles.leise}>{T('In der Tasche: Steuerung liegt auf dem Sperrbildschirm. Manche Handys halten die Stimme trotzdem an, wenn der Bildschirm ausgeht – dann hilft „Bildschirm an lassen“.')}</Text>
 
             <View style={{ gap: space.xs }}>
-              <Text style={styles.abschnitt}>Als Nächstes</Text>
+              <Text style={styles.abschnitt}>{T('Als Nächstes')}</Text>
               {karten!.slice(nr + 1, nr + 5).map((k, i) => (
                 <Pressable key={k.id} onPress={() => springen(i + 1)} style={styles.naechste}>
                   <Text style={styles.naechsteText} numberOfLines={1}>

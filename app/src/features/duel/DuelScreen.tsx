@@ -17,6 +17,7 @@ import { api } from '@/lib/supabase';
 import type { DuelQuestion, DuelResult } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
 import { beiWiederOnline, istNetzfehler } from '@/lib/online';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -233,7 +234,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Einprägen" eyebrow="duell · 1 von 3" titleInBarOnly />
+          <ScreenHeader title={T('Einprägen')} eyebrow={T('duell · 1 von 3')} titleInBarOnly />
         </View>
 
         <View style={styles.uhrZeile}>
@@ -247,9 +248,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
             />
           </View>
         </View>
-        <Text style={styles.hinweis}>
-          Fünf Karten, eine Minute, ein einziges Mal. Danach kommen fünf Fragen dazu.
-        </Text>
+        <Text style={styles.hinweis}>{T('Fünf Karten, eine Minute, ein einziges Mal. Danach kommen fünf Fragen dazu.')}</Text>
 
         <FlatList
           ref={liste}
@@ -294,7 +293,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
               hitSlop={10}
               style={[styles.pfeil, seite === 0 && styles.pfeilAus]}
               accessibilityRole="button"
-              accessibilityLabel="Vorige Karte"
+              accessibilityLabel={T('Vorige Karte')}
             >
               <Icon name="back" size={18} color={color.ink.high} />
             </Pressable>
@@ -311,7 +310,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
                 hitSlop={10}
                 style={[styles.pfeil, styles.pfeilWeiter]}
                 accessibilityRole="button"
-                accessibilityLabel="Nächste Karte"
+                accessibilityLabel={T('Nächste Karte')}
               >
                 <Icon name="chevron" size={18} color={color.akzent} />
               </Pressable>
@@ -325,7 +324,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
                 style={styles.bereit}
                 accessibilityRole="button"
               >
-                <Text style={styles.bereitText}>Zu den Fragen</Text>
+                <Text style={styles.bereitText}>{T('Zu den Fragen')}</Text>
               </Pressable>
             )}
           </View>
@@ -349,7 +348,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Frage" eyebrow={`duell · ${frage + 1} von ${fragen.length}`} titleInBarOnly />
+          <ScreenHeader title={T('Frage')} eyebrow={`duell · ${frage + 1} von ${fragen.length}`} titleInBarOnly />
         </View>
 
         <View style={styles.uhrZeile}>
@@ -395,7 +394,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
           {/* Kein Zurueck. Wer eine Frage ueberspringen und spaeter
               wiederkommen kann, hat fuenfmal zwanzig Sekunden statt zwanzig. */}
           <Pressable onPress={() => weiter(-1)} hitSlop={8} style={styles.weiss}>
-            <Text style={styles.weissText}>Weiß ich nicht</Text>
+            <Text style={styles.weissText}>{T('Weiß ich nicht')}</Text>
           </Pressable>
         </Animated.View>
       </GridBackground>
@@ -406,7 +405,7 @@ export function DuelScreen({ duelId }: { duelId: string }) {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Ergebnis" titleInBarOnly onBack={() => router.back()} />
+        <ScreenHeader title={T('Ergebnis')} titleInBarOnly onBack={() => router.back()} />
       </View>
       <View style={styles.ergebnis}>
         {fehler ? (
@@ -418,17 +417,14 @@ export function DuelScreen({ duelId }: { duelId: string }) {
               <Text style={styles.punkteVon}> / {ergebnis.total}</Text>
             </Text>
             {ergebnis.late ? (
-              <Text style={styles.spaet}>
-                Nach Ablauf abgegeben — diese Runde zählt null. Die Uhr läuft auf dem
-                Server, nicht im Browser.
-              </Text>
+              <Text style={styles.spaet}>{T('Nach Ablauf abgegeben — diese Runde zählt null. Die Uhr läuft auf dem Server, nicht im Browser.')}</Text>
             ) : null}
             <Text style={styles.warten}>
               {ergebnis.waiting
                 ? 'Jetzt ist der andere dran. Das Ergebnis steht, sobald beide gespielt haben.'
                 : 'Beide sind durch — das Ergebnis steht in deiner Duell-Liste.'}
             </Text>
-            <Button label="Zu den Duellen" onPress={() => router.replace('/duels')} />
+            <Button label={T('Zu den Duellen')} onPress={() => router.replace('/duels')} />
           </Animated.View>
         ) : (
           <Laden color={color.signal.primary} />

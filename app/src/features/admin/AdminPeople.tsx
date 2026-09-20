@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import {
@@ -97,7 +98,7 @@ export function AdminPeople({
           hitSlop={8}
         >
           <Icon name="back" size={14} color={color.ink.mid} />
-          <Text style={styles.zurueckText}>alle Personen</Text>
+          <Text style={styles.zurueckText}>{T('alle Personen')}</Text>
         </Pressable>
         <PersonDetail p={person} />
       </View>
@@ -112,7 +113,7 @@ export function AdminPeople({
           value={q}
           onChangeText={setQ}
           onSubmitEditing={() => void suchen(q)}
-          placeholder="@handle oder Name"
+          placeholder={T('@handle oder Name')}
           placeholderTextColor={color.ink.faint}
           autoCapitalize="none"
           autoCorrect={false}
@@ -206,7 +207,7 @@ function PersonDetail({ p }: { p: AdminPerson }) {
 
       {/* --- Verlauf ------------------------------------------------------ */}
       <Gruppe
-        titel="30 Tage"
+        titel={T('30 Tage')}
         rechts={<Marke text={`${aktivitaet.tage_30} aktive Tage`} ton={
           aktivitaet.tage_30 > 7 ? 'gut' : aktivitaet.tage_30 > 1 ? 'still' : 'warnung'
         } />}
@@ -224,59 +225,59 @@ function PersonDetail({ p }: { p: AdminPerson }) {
       </Gruppe>
 
       {/* --- Lernen ------------------------------------------------------- */}
-      <Gruppe titel="Lernstand">
+      <Gruppe titel={T('Lernstand')}>
         <View style={styles.raster}>
-          <Kennzahl wert={zahl(lernen.xp)} label="XP" ton="signal" />
-          <Kennzahl wert={zahl(lernen.mastery)} label="Mastery" ton="mastery" />
+          <Kennzahl wert={zahl(lernen.xp)} label={T('XP')} ton="signal" />
+          <Kennzahl wert={zahl(lernen.mastery)} label={T('Mastery')} ton="mastery" />
           <Kennzahl
             wert={lernen.streak}
             label={`Streak (best ${lernen.streak_best})`}
             ton={lernen.streak > 0 ? 'warnung' : 'still'}
           />
-          <Kennzahl wert={zahl(lernen.gelesen)} label="Karten gelesen" />
+          <Kennzahl wert={zahl(lernen.gelesen)} label={T('Karten gelesen')} />
           <Kennzahl
             wert={`${Math.round(lernen.fokus_sekunden / 60)}m`}
-            label="Fokuszeit gesamt"
+            label={T('Fokuszeit gesamt')}
           />
           <Kennzahl
             wert={lernen.wiederholungen_faellig}
-            label="Wiederholungen fällig"
+            label={T('Wiederholungen fällig')}
             ton={lernen.wiederholungen_faellig > 0 ? 'warnung' : 'still'}
           />
         </View>
       </Gruppe>
 
       {/* --- Aufmerksamkeit ------------------------------------------------ */}
-      <Gruppe titel="Aufmerksamkeit">
+      <Gruppe titel={T('Aufmerksamkeit')}>
         <View style={styles.raster}>
           <Kennzahl
             wert={anteil(aufmerksamkeit.gelesen, aufmerksamkeit.paare)}
-            label="zu Ende gelesen"
+            label={T('zu Ende gelesen')}
           />
           <Kennzahl
             wert={anteil(aufmerksamkeit.geskippt, aufmerksamkeit.paare)}
-            label="weggewischt"
+            label={T('weggewischt')}
           />
           <Kennzahl
             wert={anteil(aufmerksamkeit.geliked, aufmerksamkeit.paare)}
-            label="geliked"
+            label={T('geliked')}
             ton="signal"
           />
           <Kennzahl
             wert={sekunden(aufmerksamkeit.verweildauer_median_ms)}
-            label="Median je Karte"
+            label={T('Median je Karte')}
           />
         </View>
         <Text style={styles.fuss}>{zahl(aufmerksamkeit.paare)} gesehene Karten insgesamt</Text>
       </Gruppe>
 
       {/* --- Was diese Person sieht ---------------------------------------- */}
-      <Gruppe titel="Feed">
+      <Gruppe titel={T('Feed')}>
         <View style={styles.raster}>
-          <Kennzahl wert={`${person.englisch_pct} %`} label="Englisch im Feed" />
-          <Kennzahl wert={person.sprache.toUpperCase()} label="Oberfläche" />
-          <Kennzahl wert={person.region ?? person.land ?? '–'} label="Region" />
-          <Kennzahl wert={person.tagesziel} label="Tagesziel" />
+          <Kennzahl wert={`${person.englisch_pct} %`} label={T('Englisch im Feed')} />
+          <Kennzahl wert={person.sprache.toUpperCase()} label={T('Oberfläche')} />
+          <Kennzahl wert={person.region ?? person.land ?? '–'} label={T('Region')} />
+          <Kennzahl wert={person.tagesziel} label={T('Tagesziel')} />
         </View>
 
         <Text style={styles.unter}>Interessen</Text>
@@ -295,7 +296,7 @@ function PersonDetail({ p }: { p: AdminPerson }) {
           </View>
         ))}
 
-        <Text style={styles.unter}>Letzte 100 gesehene Karten</Text>
+        <Text style={styles.unter}>{T('Letzte 100 gesehene Karten')}</Text>
         {sicht.letzte_100.map((k) => (
           <View key={k.id} style={{ gap: 2, paddingBottom: 4 }}>
             <Zeile
@@ -306,18 +307,16 @@ function PersonDetail({ p }: { p: AdminPerson }) {
           </View>
         ))}
         {/* Absichtlich keine Kartentitel - siehe Kopf und Migration 0068. */}
-        <Text style={styles.fuss}>
-          Verteilung, keine Leseliste. Welche Karten das waren, steht hier bewusst nicht.
-        </Text>
+        <Text style={styles.fuss}>{T('Verteilung, keine Leseliste. Welche Karten das waren, steht hier bewusst nicht.')}</Text>
       </Gruppe>
 
       {/* --- Sozial -------------------------------------------------------- */}
-      <Gruppe titel="Sozial">
+      <Gruppe titel={T('Sozial')}>
         <View style={styles.raster}>
-          <Kennzahl wert={sozial.follower} label="Follower" />
-          <Kennzahl wert={sozial.folgt} label="folgt" />
-          <Kennzahl wert={sozial.reposts} label="Empfehlungen" />
-          <Kennzahl wert={sozial.kommentare} label="Kommentare" />
+          <Kennzahl wert={sozial.follower} label={T('Follower')} />
+          <Kennzahl wert={sozial.folgt} label={T('folgt')} />
+          <Kennzahl wert={sozial.reposts} label={T('Empfehlungen')} />
+          <Kennzahl wert={sozial.kommentare} label={T('Kommentare')} />
         </View>
         <Text style={styles.fuss}>
           Rangliste {person.rangliste ? 'sichtbar' : 'ausgeblendet'} · Jahrgang{' '}

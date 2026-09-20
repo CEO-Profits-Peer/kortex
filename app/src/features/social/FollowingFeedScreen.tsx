@@ -14,6 +14,7 @@ import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { FollowingItem } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -76,7 +77,7 @@ export function FollowingFeedScreen() {
       {/* Kopfzeile ausserhalb der Liste - sie bleibt stehen und
           klappt beim Scrollen zusammen. */}
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Von deinen Leuten" subtitle="Empfehlungen der Personen, denen du folgst. Likes bleiben privat." scrollY={scrollY} />
+        <ScreenHeader title={T('Von deinen Leuten')} subtitle={T('Empfehlungen der Personen, denen du folgst. Likes bleiben privat.')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -106,7 +107,7 @@ export function FollowingFeedScreen() {
               {error ??
                 'Noch nichts hier. Folge jemandem über die Suche — tipp einen Namen mit @ ein.'}
             </Text>
-            <Button label="Zur Suche" variant="ghost" onPress={() => router.push('/search')} />
+            <Button label={T('Zur Suche')} variant="ghost" onPress={() => router.push('/search')} />
           </View>
         ) : (
           <View style={styles.list}>

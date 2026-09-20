@@ -12,6 +12,7 @@ import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CommentAnswer, CommentQuestion } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { flaeche, goldVerlauf, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -69,15 +70,15 @@ function Entry({
             {item.display_name}
           </Text>
           <Text style={styles.when}>{timeAgo(item.at)}</Text>
-          {frage ? <Text style={styles.marke}>Frage</Text> : null}
-          {item.beste ? <Text style={[styles.marke, styles.markeBeste]}>Beste Antwort</Text> : null}
+          {frage ? <Text style={styles.marke}>{T('Frage')}</Text> : null}
+          {item.beste ? <Text style={[styles.marke, styles.markeBeste]}>{T('Beste Antwort')}</Text> : null}
         </View>
         <ErwaehnungsText text={item.body} style={styles.body} />
 
         <View style={styles.entryActions}>
           {onReply ? (
             <Pressable onPress={onReply} hitSlop={8}>
-              <Text style={styles.action}>Antworten</Text>
+              <Text style={styles.action}>{T('Antworten')}</Text>
             </Pressable>
           ) : null}
           {onBeste ? (
@@ -90,7 +91,7 @@ function Entry({
 
           {item.is_mine ? (
             <Pressable onPress={() => onDelete(item.id)} hitSlop={8}>
-              <Text style={styles.action}>Löschen</Text>
+              <Text style={styles.action}>{T('Löschen')}</Text>
             </Pressable>
           ) : menu ? (
             <Pressable onPress={() => onReport(item.id)} hitSlop={8}>
@@ -186,10 +187,10 @@ export function CommentSheet({
     haptics.warning();
     try {
       await api.reportComment(id);
-      setNote('Gemeldet. Danke - wir schauen es uns an.');
+      setNote(T('Gemeldet. Danke - wir schauen es uns an.'));
       await load();
     } catch {
-      setNote('Melden hat nicht geklappt.');
+      setNote(T('Melden hat nicht geklappt.'));
     }
   };
 
@@ -209,7 +210,7 @@ export function CommentSheet({
       await api.deleteComment(id);
       await load();
     } catch {
-      setNote('Löschen hat nicht geklappt.');
+      setNote(T('Löschen hat nicht geklappt.'));
     }
   };
 
@@ -226,7 +227,7 @@ export function CommentSheet({
 
           <View style={styles.head}>
             <View style={styles.headText}>
-              <Text style={styles.title}>Kommentare</Text>
+              <Text style={styles.title}>{T('Kommentare')}</Text>
               <Text style={styles.subtitle} numberOfLines={1}>
                 {cardTitle}
               </Text>
@@ -245,10 +246,7 @@ export function CommentSheet({
             {items === null ? (
               <Laden color={color.ink.low} />
             ) : items.length === 0 ? (
-              <Text style={styles.empty}>
-                Noch keine Kommentare. Wenn dir etwas auffällt oder unklar
-                ist, bist du wahrscheinlich nicht allein.
-              </Text>
+              <Text style={styles.empty}>{T('Noch keine Kommentare. Wenn dir etwas auffällt oder unklar ist, bist du wahrscheinlich nicht allein.')}</Text>
             ) : (
               items.map((q, i) => (
                 <Appear key={q.id} delay={Math.min(i, 6) * 40} style={styles.thread}>
@@ -333,9 +331,7 @@ export function CommentSheet({
             </Pressable>
           </View>
 
-          <Text style={styles.rules}>
-            Sei fair. Keine Links, keine Kontaktdaten. Mit @name erwähnst du jemanden.
-          </Text>
+          <Text style={styles.rules}>{T('Sei fair. Keine Links, keine Kontaktdaten. Mit @name erwähnst du jemanden.')}</Text>
         </View>
       </KeyboardAvoidingView>
     </Modal>

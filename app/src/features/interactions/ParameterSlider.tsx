@@ -6,6 +6,7 @@ import { Slider } from '@/components/Slider';
 import { color, space, type } from '@/theme/tokens';
 
 import { evaluate } from './formula';
+import { T } from '@/lib/sprache';
 
 /**
  * Template "parameter_slider" - Regler bewegen, Kurve reagiert live.
@@ -193,7 +194,7 @@ export function ParameterSlider({
         format={fmt}
       />
       {!armed ? (
-        <Text style={styles.armHint}>Gleich kannst du den Regler bewegen …</Text>
+        <Text style={styles.armHint}>{T('Gleich kannst du den Regler bewegen …')}</Text>
       ) : null}
 
       {cp ? (

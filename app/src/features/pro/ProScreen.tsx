@@ -13,6 +13,7 @@ import { BordeauxMuster, SechseckLinse } from '@/components/Sechseck';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 import { bisText, useIchPro } from '@/lib/pro';
+import { T } from '@/lib/sprache';
 import { ZWEI, facette, flaeche, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -116,7 +117,7 @@ export function ProScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="PRO" titleInBarOnly scrollY={scrollY} onBack={() => router.back()} />
+        <ScreenHeader title={T('PRO')} titleInBarOnly scrollY={scrollY} onBack={() => router.back()} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -157,15 +158,13 @@ export function ProScreen() {
           </View>
         ))}
 
-        <Text style={styles.versprechen}>
-          Lernen, Wiederholen und XP bleiben immer kostenlos. Punkte in der Rangliste kann man nicht kaufen.
-        </Text>
+        <Text style={styles.versprechen}>{T('Lernen, Wiederholen und XP bleiben immer kostenlos. Punkte in der Rangliste kann man nicht kaufen.')}</Text>
 
         {stand.pro ? null : (
           <>
             <Button label={vorgemerkt ? 'Vorgemerkt' : 'Vormerken'} onPress={vormerken} variant={vorgemerkt ? 'ghost' : 'primary'} />
             <Pressable onPress={() => router.push('/settings')} hitSlop={8} style={styles.zurueck}>
-              <Text style={styles.zurueckText}>Code einlösen</Text>
+              <Text style={styles.zurueckText}>{T('Code einlösen')}</Text>
             </Pressable>
           </>
         )}

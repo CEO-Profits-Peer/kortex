@@ -14,6 +14,7 @@ import { personName } from '@/lib/name';
 import { api } from '@/lib/supabase';
 import type { LeaderboardRow } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { color, gewaehlt, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -67,7 +68,7 @@ export function LeaderboardScreen() {
       {/* Die Kopfzeile liegt AUSSERHALB der Liste: sie muss stehen
           bleiben, um beim Scrollen zusammenklappen zu koennen. */}
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Rangliste" scrollY={scrollY} />
+        <ScreenHeader title={T('Rangliste')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -90,7 +91,7 @@ export function LeaderboardScreen() {
         >
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.ligenTitel}>Private Ligen</Text>
-            <Text style={styles.ligenUnter}>Wochen-Rangliste nur mit deinen Leuten</Text>
+            <Text style={styles.ligenUnter}>{T('Wochen-Rangliste nur mit deinen Leuten')}</Text>
           </View>
           <Icon name="chevron" size={14} color={color.ink.low} />
         </Pressable>
@@ -112,10 +113,7 @@ export function LeaderboardScreen() {
           ))}
         </View>
 
-        <Text style={styles.note}>
-          Gewertet wird <Text style={{ color: color.signal.mastery }}>Mastery</Text> — nur
-          gelöste Aufgaben und Wiederholungen. Gelesene Grids zählen hier nicht.
-        </Text>
+        <Text style={styles.note}>{T('Gewertet wird')}<Text style={{ color: color.signal.mastery }}>{T('Mastery')}</Text>{T('— nur gelöste Aufgaben und Wiederholungen. Gelesene Grids zählen hier nicht.')}</Text>
 
         {rows === null ? (
           <View style={styles.center}>
@@ -170,10 +168,7 @@ export function LeaderboardScreen() {
         )}
 
         {rows && rows.length > 0 && !me ? (
-          <Text style={styles.empty}>
-            Du erscheinst nicht in dieser Liste. In den Einstellungen lässt sich
-            das umschalten.
-          </Text>
+          <Text style={styles.empty}>{T('Du erscheinst nicht in dieser Liste. In den Einstellungen lässt sich das umschalten.')}</Text>
         ) : null}
       </ScrollView>
     </GridBackground>

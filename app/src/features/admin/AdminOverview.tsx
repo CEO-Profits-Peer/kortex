@@ -18,6 +18,7 @@ import {
   zahl,
 } from './parts';
 import type { AdminData } from './types';
+import { T } from '@/lib/sprache';
 
 /**
  * Die Uebersicht - was man morgens ansieht.
@@ -43,16 +44,16 @@ export function AdminOverview({ data }: { data: AdminData }) {
       <View style={styles.kopf}>
         <Gross
           wert={nutzung.aktiv_15min}
-          label="gerade da"
+          label={T('gerade da')}
           ton={nutzung.aktiv_15min > 0 ? 'signal' : 'still'}
           fuss="15 min"
         />
         <View style={styles.kopfLinie} />
-        <Gross wert={nutzung.aktiv_24h} label="heute aktiv" fuss={`${nutzung.konten} Konten`} />
+        <Gross wert={nutzung.aktiv_24h} label={T('heute aktiv')} fuss={`${nutzung.konten} Konten`} />
         <View style={styles.kopfLinie} />
         <Gross
           wert={betrieb.karten_24h}
-          label="neue Karten"
+          label={T('neue Karten')}
           ton={betrieb.karten_24h > 0 ? 'gut' : 'warnung'}
           fuss={`${betrieb.karten_7t} in 7 Tagen`}
         />
@@ -60,23 +61,23 @@ export function AdminOverview({ data }: { data: AdminData }) {
 
       {/* --- Betrieb ------------------------------------------------------- */}
       <Gruppe
-        titel="Betrieb"
+        titel={T('Betrieb')}
         rechts={
           betrieb.quellen_mit_fehler.length > 0 ? (
             <Marke text={`${betrieb.quellen_mit_fehler.length} Fehler`} ton="warnung" />
           ) : (
-            <Marke text="ruhig" ton="gut" />
+            <Marke text={T('ruhig')} ton="gut" />
           )
         }
       >
         <View style={styles.raster}>
-          <Kennzahl wert={betrieb.quellen_aktiv} label="aktive Quellen" />
+          <Kennzahl wert={betrieb.quellen_aktiv} label={T('aktive Quellen')} />
           <Kennzahl
             wert={betrieb.wartet_auf_freigabe}
-            label="wartet auf Freigabe"
+            label={T('wartet auf Freigabe')}
             ton={betrieb.wartet_auf_freigabe > 0 ? 'warnung' : 'still'}
           />
-          <Kennzahl wert={bytes(betrieb.datenbank_bytes)} label="Datenbank" />
+          <Kennzahl wert={bytes(betrieb.datenbank_bytes)} label={T('Datenbank')} />
           <Kennzahl
             wert={seit(betrieb.quelle_am_laengsten_still?.zuletzt)}
             label={betrieb.quelle_am_laengsten_still?.id ?? 'still'}
@@ -93,18 +94,18 @@ export function AdminOverview({ data }: { data: AdminData }) {
       </Gruppe>
 
       {/* --- Bestand ------------------------------------------------------- */}
-      <Gruppe titel="Bestand">
+      <Gruppe titel={T('Bestand')}>
         <View style={styles.raster}>
-          <Kennzahl wert={zahl(bestand.freigegeben)} label="freigegeben" />
+          <Kennzahl wert={zahl(bestand.freigegeben)} label={T('freigegeben')} />
           <Kennzahl
             wert={anteil(bestand.erklaerkarten, bestand.freigegeben)}
-            label="Erklärkarten"
+            label={T('Erklärkarten')}
             ton="signal"
           />
-          <Kennzahl wert={zahl(bestand.abgelehnt)} label="abgelehnt" />
+          <Kennzahl wert={zahl(bestand.abgelehnt)} label={T('abgelehnt')} />
           <Kennzahl
             wert={bestand.kategorien_leer.length}
-            label="Kategorien leer"
+            label={T('Kategorien leer')}
             ton={bestand.kategorien_leer.length > 0 ? 'warnung' : 'gut'}
           />
         </View>
@@ -133,11 +134,11 @@ export function AdminOverview({ data }: { data: AdminData }) {
       </Gruppe>
 
       {/* --- Nutzung ------------------------------------------------------- */}
-      <Gruppe titel="Nutzung">
+      <Gruppe titel={T('Nutzung')}>
         <View style={styles.raster}>
-          <Kennzahl wert={nutzung.aktiv_24h} label="24 Stunden" />
-          <Kennzahl wert={nutzung.aktiv_7t} label="7 Tage" />
-          <Kennzahl wert={nutzung.aktiv_30t} label="30 Tage" />
+          <Kennzahl wert={nutzung.aktiv_24h} label={T('24 Stunden')} />
+          <Kennzahl wert={nutzung.aktiv_7t} label={T('7 Tage')} />
+          <Kennzahl wert={nutzung.aktiv_30t} label={T('30 Tage')} />
           <Kennzahl
             wert={nutzung.konten_neu_7t}
             label="neue Konten (7 T)"
@@ -167,11 +168,11 @@ export function AdminOverview({ data }: { data: AdminData }) {
       </Gruppe>
 
       {/* --- Aufmerksamkeit ------------------------------------------------- */}
-      <Gruppe titel="Aufmerksamkeit">
+      <Gruppe titel={T('Aufmerksamkeit')}>
         <View style={styles.raster}>
           <Kennzahl
             wert={anteil(aufmerksamkeit.gelesen, aufmerksamkeit.paare)}
-            label="zu Ende gelesen"
+            label={T('zu Ende gelesen')}
             ton={
               aufmerksamkeit.gelesen / Math.max(1, aufmerksamkeit.paare) < 0.3
                 ? 'warnung'
@@ -180,16 +181,16 @@ export function AdminOverview({ data }: { data: AdminData }) {
           />
           <Kennzahl
             wert={anteil(aufmerksamkeit.geskippt, aufmerksamkeit.paare)}
-            label="weggewischt"
+            label={T('weggewischt')}
           />
           <Kennzahl
             wert={anteil(aufmerksamkeit.geliked, aufmerksamkeit.paare)}
-            label="geliked"
+            label={T('geliked')}
             ton="signal"
           />
           <Kennzahl
             wert={sekunden(aufmerksamkeit.verweildauer_median_ms)}
-            label="Median je Karte"
+            label={T('Median je Karte')}
           />
         </View>
         <Balken
@@ -203,7 +204,7 @@ export function AdminOverview({ data }: { data: AdminData }) {
       </Gruppe>
 
       {/* --- Inhalt --------------------------------------------------------- */}
-      <Gruppe titel="Was gelesen wird">
+      <Gruppe titel={T('Was gelesen wird')}>
         {inhalt.beliebt.length > 0 ? (
           <View>
             {inhalt.beliebt.map((k) => (
@@ -217,12 +218,12 @@ export function AdminOverview({ data }: { data: AdminData }) {
             ))}
           </View>
         ) : (
-          <Text style={styles.fuss}>Noch kein einziger Like. Zu früh für diese Liste.</Text>
+          <Text style={styles.fuss}>{T('Noch kein einziger Like. Zu früh für diese Liste.')}</Text>
         )}
 
         {inhalt.weggewischt.length > 0 ? (
           <>
-            <Text style={styles.unter}>Am häufigsten weggewischt</Text>
+            <Text style={styles.unter}>{T('Am häufigsten weggewischt')}</Text>
             {inhalt.weggewischt.map((k) => (
               <Zeile key={k.titel} links={k.titel} unter={k.kategorie} rechts={`${k.anzahl}×`} />
             ))}

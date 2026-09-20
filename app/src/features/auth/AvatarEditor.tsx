@@ -24,6 +24,7 @@ import {
 import { Icon } from '@/components/Icon';
 import { ProMarke } from '@/components/ProSperre';
 import { haptics } from '@/lib/haptics';
+import { T } from '@/lib/sprache';
 import { KANTE, ZWEI, flaeche, sechseckRegel, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -171,7 +172,7 @@ export function AvatarEditor({
               <WabenArt design={design} size={g} />
             </View>
           ))}
-          <Text style={styles.kleinText}>So sehen es andere</Text>
+          <Text style={styles.kleinText}>{T('So sehen es andere')}</Text>
         </View>
       </View>
 

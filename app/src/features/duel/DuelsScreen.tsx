@@ -12,6 +12,7 @@ import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { DuelListEntry } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { color, gewaehlt, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -62,8 +63,8 @@ export function DuelsScreen() {
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
         <ScreenHeader
-          title="Duelle"
-          eyebrow="fünf karten, eine minute"
+          title={T('Duelle')}
+          eyebrow={T('fünf karten, eine minute')}
           scrollY={scrollY}
           onBack={() => router.back()}
         />
@@ -119,11 +120,7 @@ export function DuelsScreen() {
           </View>
         )}
 
-        <Text style={styles.regeln}>
-          Beide bekommen dieselben fünf Karten und dieselbe Minute, danach dieselben
-          fünf Fragen mit 20 Sekunden je Frage. Die Uhr läuft auf dem Server. Wer
-          verliert, verliert nichts.
-        </Text>
+        <Text style={styles.regeln}>{T('Beide bekommen dieselben fünf Karten und dieselbe Minute, danach dieselben fünf Fragen mit 20 Sekunden je Frage. Die Uhr läuft auf dem Server. Wer verliert, verliert nichts.')}</Text>
       </ScrollView>
     </GridBackground>
   );

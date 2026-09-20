@@ -42,6 +42,7 @@ import { shareCard } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { ContentItem, Source } from '@/lib/types.db';
 import { istNetzfehler } from '@/lib/online';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 type Props = {
@@ -680,7 +681,7 @@ function NotizKnopf({ id, farbe }: { id: string; farbe: string }) {
           <TextInput
             value={entwurf}
             onChangeText={setEntwurf}
-            placeholder="Dein Stichwort zu dieser Karte"
+            placeholder={T('Dein Stichwort zu dieser Karte')}
             placeholderTextColor={color.ink.low}
             maxLength={280}
             multiline

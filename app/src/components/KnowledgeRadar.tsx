@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
 
 import type { RadarSlice } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, space, type } from '@/theme/tokens';
 
 /**
@@ -27,9 +28,7 @@ export function KnowledgeRadar({ data }: { data: RadarSlice[] }) {
   if (axes.length < 3) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>
-          Der Radar füllt sich, sobald du Fragen beantwortest.
-        </Text>
+        <Text style={styles.emptyText}>{T('Der Radar füllt sich, sobald du Fragen beantwortest.')}</Text>
       </View>
     );
   }

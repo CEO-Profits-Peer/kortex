@@ -14,6 +14,7 @@ import { haptics } from '@/lib/haptics';
 import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import type { ContentItem, StapelDaten } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -94,7 +95,7 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
       onPress={() => router.back()}
       hitSlop={12}
       style={[styles.zurueck, { top: insets.top + space.md }]}
-      accessibilityLabel="Zurück"
+      accessibilityLabel={T('Zurück')}
     >
       <Icon name="back" size={18} color={color.ink.high} />
       <Text style={styles.zurueckText}>
@@ -131,7 +132,7 @@ export function StapelScreen({ postId, start = 0 }: { postId: string; start?: nu
         style={[styles.zurueck, styles.export, { top: insets.top + space.md }]}
         accessibilityRole="button"
       >
-        <Text style={styles.zurueckText}>Export</Text>
+        <Text style={styles.zurueckText}>{T('Export')}</Text>
       </Pressable>
       {wahl ? (
         <View style={[styles.wahl, { top: insets.top + space.md + 40 }]}>

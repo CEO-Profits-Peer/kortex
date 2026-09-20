@@ -20,6 +20,7 @@ import { haptics } from '@/lib/haptics';
 import { beiWiederOnline } from '@/lib/online';
 import { api } from '@/lib/supabase';
 import type { CourseSummary, Post, PostArt } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette, flaeche, sechseckRegel } from '@/theme/design';
@@ -185,7 +186,7 @@ export function StudioScreen() {
           />
         }
       >
-        <Text style={styles.pageTitle}>Studio</Text>
+        <Text style={styles.pageTitle}>{T('Studio')}</Text>
 
         <View style={styles.umschalter}>
           {(['erstellen', 'lernen'] as const).map((a) => (
@@ -235,7 +236,7 @@ export function StudioScreen() {
             {/* --- Entwürfe --------------------------------------------------- */}
             {entwuerfe.length > 0 ? (
               <View style={styles.abschnittBlock}>
-                <Abschnitt titel="Entwürfe" zahl={entwuerfe.length} />
+                <Abschnitt titel={T('Entwürfe')} zahl={entwuerfe.length} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reihe} style={styles.bleed}>
                   {entwuerfe.map((e) => {
                     const d = (e.daten ?? {}) as { karten?: string[] };
@@ -259,7 +260,7 @@ export function StudioScreen() {
                               void entwurfLoeschen(e.id);
                             }}
                             hitSlop={10}
-                            accessibilityLabel="Entwurf löschen"
+                            accessibilityLabel={T('Entwurf löschen')}
                           >
                             <Icon name="close" size={13} color={color.ink.low} />
                           </Pressable>
@@ -278,7 +279,7 @@ export function StudioScreen() {
             {/* --- Geplant (0097) ------------------------------------------------ */}
             {geplante.length > 0 ? (
               <View style={styles.abschnittBlock}>
-                <Abschnitt titel="Geplant" zahl={geplante.length} />
+                <Abschnitt titel={T('Geplant')} zahl={geplante.length} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reihe} style={styles.bleed}>
                   {geplante.map((g) => (
                     <View key={g.id} style={styles.entwurf}>
@@ -291,7 +292,7 @@ export function StudioScreen() {
                             void api.geplantLoeschen(g.id).catch(() => undefined);
                           }}
                           hitSlop={10}
-                          accessibilityLabel="Geplanten Beitrag zurückziehen"
+                          accessibilityLabel={T('Geplanten Beitrag zurückziehen')}
                         >
                           <Icon name="close" size={13} color={color.ink.low} />
                         </Pressable>
@@ -311,13 +312,13 @@ export function StudioScreen() {
             {/* --- Von dir ------------------------------------------------------ */}
             <View style={styles.abschnittBlock}>
               <Abschnitt
-                titel="Von dir"
+                titel={T('Von dir')}
                 rechts={meine && meine.length > 0 ? { text: 'Alle', onPress: () => router.push('/profile') } : undefined}
               />
               {meine === null ? (
                 <Laden color={color.ink.low} />
               ) : meine.length === 0 ? (
-                <Text style={styles.leer}>Noch nichts erstellt. Oben geht's los.</Text>
+                <Text style={styles.leer}>{T("Noch nichts erstellt. Oben geht's los.")}</Text>
               ) : (
                 <View style={styles.liste}>
                   {meine.map((p) => (
@@ -344,7 +345,7 @@ export function StudioScreen() {
 
             {/* --- LAB -------------------------------------------------------------- */}
             <View style={styles.abschnittBlock} onLayout={(e) => (labY.current = e.nativeEvent.layout.y)}>
-              <Abschnitt titel="LAB" />
+              <Abschnitt titel={T('LAB')} />
               <Text style={styles.labHinweis}>Einstellen, ausprobieren, Ergebnis teilen.</Text>
               <View style={styles.labRaster}>
                 {WERKZEUGE.map((w) => (
@@ -379,7 +380,7 @@ export function StudioScreen() {
             <View style={styles.kacheln}>
               <Kachel
                 icon="refresh"
-                label="Wiederholen"
+                label={T('Wiederholen')}
                 zahl={faellig}
                 unter={faellig > 0 ? 'fällig' : 'nichts fällig'}
                 ton={faellig > 0 ? color.signal.mastery : undefined}
@@ -388,7 +389,7 @@ export function StudioScreen() {
               {/* 0110: Pruefungsmodus. Duelle stehen seit 19.09. im Profil. */}
               <Kachel
                 icon="clock"
-                label="Prüfungen"
+                label={T('Prüfungen')}
                 zahl={pruefungen}
                 unter={pruefungen > 0 ? 'geplant' : 'Tag X planen'}
                 onPress={() => router.push('/pruefung')}
@@ -403,8 +404,8 @@ export function StudioScreen() {
               }}
               style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.labTitel}>Anhören</Text>
-              <Text style={styles.labKurz}>Karten wie einen Podcast – für Bus, Laufen, Abwasch</Text>
+              <Text style={styles.labTitel}>{T('Anhören')}</Text>
+              <Text style={styles.labKurz}>{T('Karten wie einen Podcast – für Bus, Laufen, Abwasch')}</Text>
             </Pressable>
 
             {/* 0115: offene Fragen zu gelesenen Karten. */}
@@ -418,8 +419,8 @@ export function StudioScreen() {
               }}
               style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.labTitel}>Lernpartner</Text>
-              <Text style={styles.labKurz}>Zu zweit ein Wochenziel – ihr seht, wie weit der andere ist</Text>
+              <Text style={styles.labTitel}>{T('Lernpartner')}</Text>
+              <Text style={styles.labKurz}>{T('Zu zweit ein Wochenziel – ihr seht, wie weit der andere ist')}</Text>
             </Pressable>
 
             {/* 0111: Themen wuenschen. */}
@@ -430,8 +431,8 @@ export function StudioScreen() {
               }}
               style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.labTitel}>Themenwünsche</Text>
-              <Text style={styles.labKurz}>Ein Thema fehlt? Wünsch es dir – oft Gewünschtes wird zur Kartenserie</Text>
+              <Text style={styles.labTitel}>{T('Themenwünsche')}</Text>
+              <Text style={styles.labKurz}>{T('Ein Thema fehlt? Wünsch es dir – oft Gewünschtes wird zur Kartenserie')}</Text>
             </Pressable>
 
             {/* 0106: gemeinsam fuer die Schularbeit sammeln. */}
@@ -442,17 +443,17 @@ export function StudioScreen() {
               }}
               style={({ pressed }) => [styles.lab, { width: '100%' }, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.labTitel}>Gruppen-Stapel</Text>
-              <Text style={styles.labKurz}>Mit der Klasse Karten für eine Schularbeit sammeln</Text>
+              <Text style={styles.labTitel}>{T('Gruppen-Stapel')}</Text>
+              <Text style={styles.labKurz}>{T('Mit der Klasse Karten für eine Schularbeit sammeln')}</Text>
             </Pressable>
 
             <DailyBanner />
 
             {/* 0112: Lernpfade - Kurse in einer Reihenfolge. */}
-            <Abschnitt titel="Lernpfade" rechts={{ text: 'Alle', onPress: () => router.push('/lernpfade') }} />
+            <Abschnitt titel={T('Lernpfade')} rechts={{ text: 'Alle', onPress: () => router.push('/lernpfade') }} />
             <LernpfadLeiste />
 
-            <Abschnitt titel="Kurse" zahl={courses?.length} />
+            <Abschnitt titel={T('Kurse')} zahl={courses?.length} />
 
             {/* Suche und Kategorien ueber den Kursen - "fuer die Zukunft
                 geruestet": die Pipeline baut zwei Kurse am Tag, und eine
@@ -465,13 +466,13 @@ export function StudioScreen() {
                   <TextInput
                     value={suche}
                     onChangeText={setSuche}
-                    placeholder="Kurse durchsuchen"
+                    placeholder={T('Kurse durchsuchen')}
                     placeholderTextColor={color.ink.low}
                     style={styles.sucheEingabe}
                     returnKeyType="search"
                   />
                   {suche ? (
-                    <Pressable onPress={() => setSuche('')} hitSlop={10} accessibilityLabel="Suche leeren">
+                    <Pressable onPress={() => setSuche('')} hitSlop={10} accessibilityLabel={T('Suche leeren')}>
                       <Icon name="close" size={14} color={color.ink.low} />
                     </Pressable>
                   ) : null}
@@ -561,18 +562,15 @@ export function StudioScreen() {
               })
             )}
 
-            <Text style={styles.footnote}>
-              Neue Kurse baut die Pipeline zweimal am Tag aus Wikipedia-Artikeln – jede Lektion wird gegen den
-              Artikel geprüft wie jede Karte im Feed.
-            </Text>
+            <Text style={styles.footnote}>{T('Neue Kurse baut die Pipeline zweimal am Tag aus Wikipedia-Artikeln – jede Lektion wird gegen den Artikel geprüft wie jede Karte im Feed.')}</Text>
           </>
         )}
       </ScrollView>
       {hinweis.zeigen ? (
         <TabHint
           icon="plus"
-          titel="Studio"
-          text="Erstellen: Beiträge, Umfragen, Quiz, Stapel und das LAB – mit deinen Entwürfen. Lernen: Wiederholung, Duelle, Tagesfrage und Kurse."
+          titel={T('Studio')}
+          text={T('Erstellen: Beiträge, Umfragen, Quiz, Stapel und das LAB – mit deinen Entwürfen. Lernen: Wiederholung, Duelle, Tagesfrage und Kurse.')}
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />

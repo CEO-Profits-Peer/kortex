@@ -6,6 +6,7 @@ import { haptics } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import { OFFLINE_TEXT } from '@/lib/fehler';
 import { istNetzfehler } from '@/lib/online';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -181,7 +182,7 @@ export function EmailAuthForm({
         <TextInput
           value={email}
           onChangeText={setEmail}
-          placeholder="E-Mail"
+          placeholder={T('E-Mail')}
           placeholderTextColor={color.ink.low}
           style={styles.input}
           autoCapitalize="none"
@@ -219,9 +220,7 @@ export function EmailAuthForm({
 
       {mode === 'signin' ? (
         <Pressable onPress={sendLink} disabled={busy} hitSlop={8}>
-          <Text style={styles.linkAction}>
-            Kein Passwort? Anmeldelink an diese Adresse schicken
-          </Text>
+          <Text style={styles.linkAction}>{T('Kein Passwort? Anmeldelink an diese Adresse schicken')}</Text>
         </Pressable>
       ) : null}
 

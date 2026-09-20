@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnline } from '@/lib/online';
 import { usePrefs } from '@/lib/prefs';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -73,9 +74,7 @@ export function OfflineBanner() {
             {/* Ein Satz, der auf JEDEM Bildschirm stimmt. Die erste Fassung
                 sagte "geladene Karten gehen weiter" - auf dem Startbildschirm,
                 wo es noch keine einzige Karte gibt. */}
-            <Text style={styles.unter}>
-              Was schon geladen ist, bleibt lesbar. Der Rest kommt von selbst zurück.
-            </Text>
+            <Text style={styles.unter}>{T('Was schon geladen ist, bleibt lesbar. Der Rest kommt von selbst zurück.')}</Text>
           </View>
         )}
       </Animated.View>

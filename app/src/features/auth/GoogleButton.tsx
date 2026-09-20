@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Laden } from '@/components/Laden';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { signInWithGoogle } from './googleSignIn';
@@ -41,7 +42,7 @@ function GoogleMark({ size = 18 }: { size?: number }) {
 }
 
 export function GoogleButton({
-  label = 'Weiter mit Google',
+  label = T('Weiter mit Google'),
   onDone,
   /**
    * Anmelden statt anhaengen. Wird gesetzt, wenn die Rueckkehr von Google

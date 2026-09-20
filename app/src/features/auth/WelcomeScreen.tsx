@@ -17,6 +17,7 @@ import { fehlerText } from '@/lib/fehler';
 import { offeneEinladung } from '@/lib/invite';
 import { api } from '@/lib/supabase';
 import type { InvitePreview } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -105,7 +106,7 @@ export function WelcomeScreen() {
           {oauthError ? <Text style={styles.oauthError}>{oauthError.message}</Text> : null}
           {signin ? (
             <>
-              <GoogleButton label="Anmelden mit Google" forceNew />
+              <GoogleButton label={T('Anmelden mit Google')} forceNew />
               <View style={styles.orRow}>
                 <View style={styles.orLine} />
                 <Text style={styles.orText}>oder</Text>
@@ -127,7 +128,7 @@ export function WelcomeScreen() {
             {busy ? (
               <Laden color={color.bg} />
             ) : (
-              <Text style={styles.ctaLabel}>Los geht's</Text>
+              <Text style={styles.ctaLabel}>{T("Los geht's")}</Text>
             )}
           </Pressable>
 
@@ -139,13 +140,10 @@ export function WelcomeScreen() {
           <GoogleButton />
 
           <Pressable onPress={() => setSignin(true)} hitSlop={8}>
-            <Text style={styles.switchMode}>Ich habe schon ein Konto</Text>
+            <Text style={styles.switchMode}>{T('Ich habe schon ein Konto')}</Text>
           </Pressable>
 
-          <Text style={styles.legal}>
-            Es wird ein anonymes Konto angelegt — keine E-Mail, kein Passwort.
-            Du kannst es später jederzeit sichern.
-          </Text>
+          <Text style={styles.legal}>{T('Es wird ein anonymes Konto angelegt — keine E-Mail, kein Passwort. Du kannst es später jederzeit sichern.')}</Text>
           </>
           )}
         </View>

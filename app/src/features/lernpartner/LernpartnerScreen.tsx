@@ -12,6 +12,7 @@ import { Slider } from '@/components/Slider';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api, type Lernpartner } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -53,7 +54,7 @@ export function LernpartnerScreen() {
       await api.lpAnfragen(name.trim(), ziel);
       haptics.success();
       setName('');
-      zeige('Angefragt – sobald die Person annimmt, geht es los.');
+      zeige(T('Angefragt – sobald die Person annimmt, geht es los.'));
       await laden();
     } catch (e) {
       zeige(fehlerText(e, 'Anfragen ging nicht'), true);
@@ -69,7 +70,7 @@ export function LernpartnerScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Lernpartner" eyebrow="zu zweit" scrollY={scrollY} />
+        <ScreenHeader title={T('Lernpartner')} eyebrow={T('zu zweit')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -80,10 +81,7 @@ export function LernpartnerScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Verabredet ein Wochenziel und seht, wie weit der andere ist. Ihr seht nur die Zahl der gelesenen Karten – nicht
-          welche.
-        </Text>
+        <Text style={styles.intro}>{T('Verabredet ein Wochenziel und seht, wie weit der andere ist. Ihr seht nur die Zahl der gelesenen Karten – nicht welche.')}</Text>
 
         {liste === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
 
@@ -94,14 +92,14 @@ export function LernpartnerScreen() {
             <View style={styles.knoepfe}>
               <View style={{ flex: 1 }}>
                 <Button
-                  label="Nein"
+                  label={T('Nein')}
                   variant="ghost"
                   onPress={() => void api.lpAntworten(l.id, false).then(laden).catch((e) => zeige(fehlerText(e, 'Ging nicht'), true))}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
-                  label="Ja"
+                  label={T('Ja')}
                   onPress={() =>
                     void api
                       .lpAntworten(l.id, true)
@@ -127,13 +125,13 @@ export function LernpartnerScreen() {
               {l.partner.name} · {l.ziel} pro Woche · wartet
             </Text>
             <Pressable onPress={() => void api.lpBeenden(l.id).then(laden)} hitSlop={8}>
-              <Text style={styles.leise}>Zurückziehen</Text>
+              <Text style={styles.leise}>{T('Zurückziehen')}</Text>
             </Pressable>
           </View>
         ))}
 
         <View style={styles.karte}>
-          <Text style={styles.abschnitt}>Jemanden fragen</Text>
+          <Text style={styles.abschnitt}>{T('Jemanden fragen')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
@@ -145,11 +143,11 @@ export function LernpartnerScreen() {
             style={styles.eingabe}
           />
           <View style={styles.zeileZwischen}>
-            <Text style={styles.abschnitt}>Ziel</Text>
+            <Text style={styles.abschnitt}>{T('Ziel')}</Text>
             <Text style={styles.wert}>{ziel} Karten pro Woche</Text>
           </View>
           <Slider min={5} max={150} step={5} value={ziel} onChange={setZiel} tint={color.signal.primary} />
-          <Button label="Anfragen" onPress={() => void anfragen()} disabled={name.trim().length < 2} busy={busy} />
+          <Button label={T('Anfragen')} onPress={() => void anfragen()} disabled={name.trim().length < 2} busy={busy} />
         </View>
 
         {notiz ? (
@@ -221,7 +219,7 @@ function PartnerKarte({
           </Text>
         ) : null}
       </View>
-      <Balken label="Du" wert={l.ich ?? 0} ziel={l.ziel} farbe={color.signal.primary} />
+      <Balken label={T('Du')} wert={l.ich ?? 0} ziel={l.ziel} farbe={color.signal.primary} />
       <Balken label={l.partner.name} wert={l.er ?? 0} ziel={l.ziel} farbe={color.akzent} />
       {zielOffen ? (
         <View style={{ gap: space.xs }}>
@@ -232,7 +230,7 @@ function PartnerKarte({
       <View style={styles.knoepfe}>
         <View style={{ flex: 1 }}>
           <Button
-            label="Ziel"
+            label={T('Ziel')}
             variant="ghost"
             onPress={() => {
               if (zielOffen && ziel !== l.ziel) {
@@ -246,7 +244,7 @@ function PartnerKarte({
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Button label="Stupsen" onPress={() => void stupsen()} />
+          <Button label={T('Stupsen')} onPress={() => void stupsen()} />
         </View>
       </View>
       <Pressable onPress={() => void api.lpBeenden(l.id).then(neu)} hitSlop={6} style={{ alignSelf: 'flex-end' }}>

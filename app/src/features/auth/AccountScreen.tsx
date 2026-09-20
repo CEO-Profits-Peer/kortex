@@ -18,6 +18,7 @@ import { takeOAuthError } from '@/lib/oauthReturn';
 import { api, supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -106,7 +107,7 @@ export function AccountScreen() {
       {/* Die Kopfzeile liegt AUSSERHALB der Liste: sie muss stehen
           bleiben, um beim Scrollen zusammenklappen zu koennen. */}
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Konto" eyebrow="anmeldung & daten" scrollY={scrollY} />
+        <ScreenHeader title={T('Konto')} eyebrow={T('anmeldung & daten')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -143,17 +144,17 @@ export function AccountScreen() {
           <TextInput
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="Optional"
+            placeholder={T('Optional')}
             placeholderTextColor={color.ink.low}
             style={styles.input}
             maxLength={40}
           />
 
-          <Text style={styles.label}>Über dich</Text>
+          <Text style={styles.label}>{T('Über dich')}</Text>
           <TextInput
             value={bio}
             onChangeText={setBio}
-            placeholder="Ein Satz. Optional."
+            placeholder={T('Ein Satz. Optional.')}
             placeholderTextColor={color.ink.low}
             style={[styles.input, styles.inputTall]}
             multiline
@@ -161,7 +162,7 @@ export function AccountScreen() {
           />
           <Text style={styles.counter}>{bio.length} / 160</Text>
 
-          <Button label="Speichern" busy={busy} onPress={saveText} />
+          <Button label={T('Speichern')} busy={busy} onPress={saveText} />
         </View>
 
         {/* --- E-Mail ----------------------------------------------------- */}
@@ -174,10 +175,7 @@ export function AccountScreen() {
             <>
               <View style={styles.warning}>
                 <Icon name="lock" size={16} color={color.signal.warn} />
-                <Text style={styles.warningText}>
-                  Dein Konto lebt nur auf diesem Gerät. Geht das Handy verloren
-                  oder löschst du die App, sind XP, Streak und Wiederholungen weg.
-                </Text>
+                <Text style={styles.warningText}>{T('Dein Konto lebt nur auf diesem Gerät. Geht das Handy verloren oder löschst du die App, sind XP, Streak und Wiederholungen weg.')}</Text>
               </View>
               <EmailAuthForm mode="upgrade" onDone={() => void load()} />
             </>
@@ -200,7 +198,7 @@ export function AccountScreen() {
                 />
               ) : (
                 <Pressable onPress={() => setSetPassword(true)} hitSlop={6}>
-                  <Text style={styles.link}>Passwort setzen oder ändern</Text>
+                  <Text style={styles.link}>{T('Passwort setzen oder ändern')}</Text>
                 </Pressable>
               )}
             </>

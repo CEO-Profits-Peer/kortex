@@ -15,6 +15,7 @@ import { notizenLaden, useNotiz } from '@/lib/notizen';
 import { api } from '@/lib/supabase';
 import type { DueReview, ReviewUeberblick } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -137,7 +138,7 @@ export function ReviewScreen() {
           <ScreenHeader title={pruefung ? 'Für die Prüfung' : 'Wiederholen'} titleInBarOnly />
         </View>
         <ScrollView contentContainerStyle={styles.leer}>
-          <Text style={styles.emptyTitle}>Gerade nichts fällig</Text>
+          <Text style={styles.emptyTitle}>{T('Gerade nichts fällig')}</Text>
           {error ? <Text style={styles.emptyBody}>{error}</Text> : null}
 
           <View style={styles.stand}>
@@ -154,24 +155,19 @@ export function ReviewScreen() {
             ) : null}
           </View>
 
-          <Text style={styles.wozuTitel}>Wozu das gut ist</Text>
+          <Text style={styles.wozuTitel}>{T('Wozu das gut ist')}</Text>
           <Text style={styles.wozu}>
             Was du nur einmal liest, ist nach einer Woche zum größten Teil weg. Deshalb kommen
             Quizfragen, die du richtig beantwortet hast, nach 1, 3, 7 und mehr Tagen zurück – genau
             dann, wenn du sie fast vergessen hättest. So bleibt es hängen.
           </Text>
-          <Text style={styles.wozu}>
-            Jede richtige Wiederholung bringt 15 XP und 15 Mastery – mehr als jede andere Aufgabe.
-          </Text>
-          <Text style={styles.wozuTitel}>Wie neue Fragen dazukommen</Text>
-          <Text style={styles.wozu}>
-            Im Feed kommt nach 15 gelesenen Karten eine kurze Fragerunde. Was du dort richtig hast,
-            landet hier.
-          </Text>
+          <Text style={styles.wozu}>{T('Jede richtige Wiederholung bringt 15 XP und 15 Mastery – mehr als jede andere Aufgabe.')}</Text>
+          <Text style={styles.wozuTitel}>{T('Wie neue Fragen dazukommen')}</Text>
+          <Text style={styles.wozu}>{T('Im Feed kommt nach 15 gelesenen Karten eine kurze Fragerunde. Was du dort richtig hast, landet hier.')}</Text>
 
           <View style={styles.knoepfe}>
-            <Button label="Zum Feed" onPress={() => router.navigate('/')} />
-            <Button label="Zurück" variant="ghost" onPress={() => router.back()} />
+            <Button label={T('Zum Feed')} onPress={() => router.navigate('/')} />
+            <Button label={T('Zurück')} variant="ghost" onPress={() => router.back()} />
           </View>
         </ScrollView>
       </GridBackground>
@@ -193,11 +189,8 @@ export function ReviewScreen() {
           <Text style={[styles.gain, { color: color.signal.mastery }]}>
             +{gained.xp} XP · +{gained.xp} Mastery
           </Text>
-          <Text style={styles.emptyBody}>
-            Was du hier richtig hattest, kommt erst in einigen Tagen wieder. Was
-            nicht, schon morgen.
-          </Text>
-          <Button label="Zum Feed" onPress={() => router.back()} />
+          <Text style={styles.emptyBody}>{T('Was du hier richtig hattest, kommt erst in einigen Tagen wieder. Was nicht, schon morgen.')}</Text>
+          <Button label={T('Zum Feed')} onPress={() => router.back()} />
         </View>
       </GridBackground>
     );

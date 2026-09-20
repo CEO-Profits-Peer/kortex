@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
 import type { ContentItem } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -111,7 +112,7 @@ export function PersonFeedScreen({
         onPress={() => router.back()}
         hitSlop={12}
         style={[styles.back, { top: insets.top + space.md }]}
-        accessibilityLabel="Zurück"
+        accessibilityLabel={T('Zurück')}
       >
         <Icon name="back" size={18} color={color.ink.high} />
         {handle ? <Text style={styles.backText}>@{handle}</Text> : null}

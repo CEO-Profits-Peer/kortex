@@ -12,6 +12,7 @@ import { haptics } from '@/lib/haptics';
 import { sharePost } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { HomePerson, Post, PostCard } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -152,11 +153,11 @@ export function Aktionen({
 }) {
   return (
     <View style={styles.aktionen}>
-      <Knopf icon={ichLike ? 'like-filled' : 'like'} text={likes > 0 ? String(likes) : ''} an={ichLike} onPress={onLike} label="Gefällt mir" />
-      <Knopf icon="comment" text={kommentare > 0 ? String(kommentare) : ''} onPress={onKommentar} label="Kommentieren" />
-      <Knopf icon="refresh" text={repostAn ? 'geteilt' : ''} an={repostAn} onPress={onRepost} label="Reposten" />
+      <Knopf icon={ichLike ? 'like-filled' : 'like'} text={likes > 0 ? String(likes) : ''} an={ichLike} onPress={onLike} label={T('Gefällt mir')} />
+      <Knopf icon="comment" text={kommentare > 0 ? String(kommentare) : ''} onPress={onKommentar} label={T('Kommentieren')} />
+      <Knopf icon="refresh" text={repostAn ? 'geteilt' : ''} an={repostAn} onPress={onRepost} label={T('Reposten')} />
       <View style={{ flex: 1 }} />
-      <Knopf icon="share" onPress={onTeilen} label="Teilen" />
+      <Knopf icon="share" onPress={onTeilen} label={T('Teilen')} />
     </View>
   );
 }

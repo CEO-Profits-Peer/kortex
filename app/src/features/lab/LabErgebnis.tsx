@@ -8,6 +8,7 @@ import { Hochzaehlen } from '@/components/Hochzaehlen';
 import { haptics } from '@/lib/haptics';
 import { useImBild } from '@/lib/imBild';
 import { getPrefs } from '@/lib/prefs';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette, flaeche } from '@/theme/design';
@@ -47,8 +48,8 @@ export function LabErgebnis({
   if (!w || !e) {
     return (
       <View style={styles.karte}>
-        <Text style={styles.meta}>LAB</Text>
-        <Text style={styles.satz}>Dieses Ergebnis lässt sich nicht mehr darstellen.</Text>
+        <Text style={styles.meta}>{T('LAB')}</Text>
+        <Text style={styles.satz}>{T('Dieses Ergebnis lässt sich nicht mehr darstellen.')}</Text>
       </View>
     );
   }
@@ -107,7 +108,7 @@ export function LabErgebnis({
           hitSlop={6}
           style={styles.link}
         >
-          <Text style={[styles.linkText, { color: w.farbe }]}>Ausprobieren</Text>
+          <Text style={[styles.linkText, { color: w.farbe }]}>{T('Ausprobieren')}</Text>
         </Pressable>
       ) : null}
     </View>

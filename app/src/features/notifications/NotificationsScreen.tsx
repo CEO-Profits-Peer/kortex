@@ -13,6 +13,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { AppNotification } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { ZWEI, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -69,7 +70,7 @@ export function NotificationsScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Benachrichtigungen" titleInBarOnly scrollY={scrollY} />
+        <ScreenHeader title={T('Benachrichtigungen')} titleInBarOnly scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}

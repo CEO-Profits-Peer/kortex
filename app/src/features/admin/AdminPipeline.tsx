@@ -5,6 +5,7 @@ import { color, space, type } from '@/theme/tokens';
 
 import { Gross, Gruppe, Marke, Verlauf, Zeile, seit, zahl, type Ton } from './parts';
 import type { AdminRun, AdminRuns } from './types';
+import { T } from '@/lib/sprache';
 
 /**
  * Die Pipeline - warum an einem Tag 22 Karten kommen und am naechsten 157.
@@ -97,26 +98,26 @@ export function AdminPipeline({ data }: { data: AdminRuns }) {
       <View style={styles.kopf}>
         <Gross
           wert={heute?.karten_db ?? 0}
-          label="Karten heute"
+          label={T('Karten heute')}
           ton={(heute?.karten_db ?? 0) > 0 ? 'gut' : 'warnung'}
           fuss="UTC-Tag"
         />
         <View style={styles.kopfLinie} />
         <Gross
           wert={`${heute?.geplant ?? 0}/${erwartet}`}
-          label="geplante Läufe"
+          label={T('geplante Läufe')}
           ton={(heute?.geplant ?? 0) < erwartet ? 'warnung' : 'gut'}
           fuss="bisher heute"
         />
         <View style={styles.kopfLinie} />
         <Gross
           wert={data.laeufe[0] ? seit(data.laeufe[0].gestartet_at) : '—'}
-          label="letzter Lauf"
+          label={T('letzter Lauf')}
           fuss={data.laeufe[0] ? AUSLOESER[data.laeufe[0].ausloeser] ?? data.laeufe[0].ausloeser : undefined}
         />
       </View>
 
-      <Gruppe titel="14 Tage">
+      <Gruppe titel={T('14 Tage')}>
         <Verlauf tage={[...data.tage].reverse().map((t) => ({ tag: t.tag, anzahl: t.karten_db }))} />
         <View>
           {data.tage.map((t) => {
@@ -137,17 +138,12 @@ export function AdminPipeline({ data }: { data: AdminRuns }) {
             );
           })}
         </View>
-        <Text style={styles.fuss}>
-          Karten aus der Datenbank gezählt, nicht aus den Bilanzen – für Tage vor 0074 gibt es
-          keine Bilanz, und ein abgeschossener Lauf kann geschrieben haben, ohne es zu melden.
-        </Text>
+        <Text style={styles.fuss}>{T('Karten aus der Datenbank gezählt, nicht aus den Bilanzen – für Tage vor 0074 gibt es keine Bilanz, und ein abgeschossener Lauf kann geschrieben haben, ohne es zu melden.')}</Text>
       </Gruppe>
 
-      <Gruppe titel="Durchgänge">
+      <Gruppe titel={T('Durchgänge')}>
         {gruppen.length === 0 ? (
-          <Text style={styles.fuss}>
-            Noch keine Bilanz. Ab dem nächsten Lauf schreibt jedes Skript hier mit.
-          </Text>
+          <Text style={styles.fuss}>{T('Noch keine Bilanz. Ab dem nächsten Lauf schreibt jedes Skript hier mit.')}</Text>
         ) : (
           gruppen.map((g) => {
             const erster = g[0];
@@ -157,7 +153,7 @@ export function AdminPipeline({ data }: { data: AdminRuns }) {
                 <View style={styles.durchgangKopf}>
                   <Text style={styles.durchgangZeit}>{uhrzeit(erster.gestartet_at)}</Text>
                   <Marke text={AUSLOESER[erster.ausloeser] ?? erster.ausloeser} />
-                  {erster.trockenlauf ? <Marke text="Trockenlauf" /> : null}
+                  {erster.trockenlauf ? <Marke text={T('Trockenlauf')} /> : null}
                   <View style={{ flex: 1 }} />
                   <Text style={styles.durchgangKarten}>{karten} Karten</Text>
                 </View>

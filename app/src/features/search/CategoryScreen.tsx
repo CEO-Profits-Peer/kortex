@@ -16,6 +16,7 @@ import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
 import type { CategoryDetail } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
@@ -198,28 +199,22 @@ export function CategoryScreen({ categoryId }: { categoryId: string }) {
                 ? ` von ${detail.mastery_for_next} Mastery bis Level ${detail.level + 1}`
                 : ' Mastery · Maximallevel erreicht'}
             </Text>
-            <Text style={styles.progressHint}>
-              Mastery kommt nur aus gelösten Aufgaben und Wiederholungen — Lesen
-              allein bringt hier nichts.
-            </Text>
+            <Text style={styles.progressHint}>{T('Mastery kommt nur aus gelösten Aufgaben und Wiederholungen — Lesen allein bringt hier nichts.')}</Text>
           </View>
         ) : (
           <View style={styles.progressBox}>
-            <Text style={styles.progressHint}>
-              News-Kategorie. Kein Level: Nachrichten haben Tiefe, keine
-              Schwierigkeitsstufe.
-            </Text>
+            <Text style={styles.progressHint}>{T('News-Kategorie. Kein Level: Nachrichten haben Tiefe, keine Schwierigkeitsstufe.')}</Text>
           </View>
         )}
 
         <View style={styles.stats}>
           <View style={styles.statCol}>
             <Text style={styles.statValue}>{detail.cards_read}</Text>
-            <Text style={styles.statLabel}>gelesen</Text>
+            <Text style={styles.statLabel}>{T('gelesen')}</Text>
           </View>
           <View style={styles.statCol}>
             <Text style={styles.statValue}>{detail.cards_total}</Text>
-            <Text style={styles.statLabel}>verfügbar</Text>
+            <Text style={styles.statLabel}>{T('verfügbar')}</Text>
           </View>
           <View style={styles.statCol}>
             <Text style={[styles.statValue, { color: accent }]}>
@@ -258,9 +253,7 @@ export function CategoryScreen({ categoryId }: { categoryId: string }) {
             variant="ghost"
             onPress={toggleFollow}
           />
-          <Text style={styles.followHint}>
-            Gefolgte Kategorien tauchen häufiger im Haupt-Feed auf.
-          </Text>
+          <Text style={styles.followHint}>{T('Gefolgte Kategorien tauchen häufiger im Haupt-Feed auf.')}</Text>
         </View>
       </ScrollView>
     </GridBackground>

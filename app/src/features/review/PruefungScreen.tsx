@@ -14,6 +14,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api, type Pruefung } from '@/lib/supabase';
 import type { Category } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
@@ -56,7 +57,7 @@ export function PruefungScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Prüfungen" eyebrow="lernen" scrollY={scrollY} />
+        <ScreenHeader title={T('Prüfungen')} eyebrow={T('lernen')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -67,9 +68,7 @@ export function PruefungScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Sag, wann und worüber – die App verteilt, was noch fehlt, auf die Tage bis dahin.
-        </Text>
+        <Text style={styles.intro}>{T('Sag, wann und worüber – die App verteilt, was noch fehlt, auf die Tage bis dahin.')}</Text>
 
         {liste === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
         {liste?.map((p) => (
@@ -85,11 +84,11 @@ export function PruefungScreen() {
             }}
           />
         ) : (
-          <Button label="Neu" variant="ghost" onPress={() => setNeu(true)} />
+          <Button label={T('Neu')} variant="ghost" onPress={() => setNeu(true)} />
         )}
         {notiz ? <Text style={styles.klein}>{notiz}</Text> : null}
         <Pressable onPress={() => router.push('/wuensche')} hitSlop={6} style={{ alignSelf: 'center' }}>
-          <Text style={styles.klein}>Thema fehlt? Wünsch es dir →</Text>
+          <Text style={styles.klein}>{T('Thema fehlt? Wünsch es dir →')}</Text>
         </Pressable>
       </ScrollView>
     </GridBackground>
@@ -152,14 +151,14 @@ function PruefungKarte({ p, themen, neu }: { p: Pruefung; themen: Category[]; ne
       </View>
       <View style={styles.knoepfe}>
         <View style={{ flex: 1 }}>
-          <Button label="Lernen" variant="ghost" onPress={() => router.push(`/category/${encodeURIComponent(p.kategorien[0])}`)} />
+          <Button label={T('Lernen')} variant="ghost" onPress={() => router.push(`/category/${encodeURIComponent(p.kategorien[0])}`)} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button label="Wiederholen" onPress={() => router.push(`/review?pruefung=${encodeURIComponent(p.id)}`)} />
+          <Button label={T('Wiederholen')} onPress={() => router.push(`/review?pruefung=${encodeURIComponent(p.id)}`)} />
         </View>
       </View>
       <Pressable onPress={() => void api.pruefungLoeschen(p.id).then(neu)} hitSlop={6} style={{ alignSelf: 'flex-end' }}>
-        <Text style={styles.loeschen}>Löschen</Text>
+        <Text style={styles.loeschen}>{T('Löschen')}</Text>
       </Pressable>
     </View>
   );
@@ -193,11 +192,11 @@ function NeuePruefung({ themen, fertig }: { themen: Category[]; fertig: () => Pr
 
   return (
     <View style={styles.karte}>
-      <Text style={styles.abschnitt}>Neue Prüfung</Text>
+      <Text style={styles.abschnitt}>{T('Neue Prüfung')}</Text>
       <TextInput
         value={titel}
         onChangeText={setTitel}
-        placeholder="z. B. Bio-Schularbeit"
+        placeholder={T('z. B. Bio-Schularbeit')}
         placeholderTextColor={color.ink.low}
         maxLength={60}
         style={styles.eingabe}
@@ -211,7 +210,7 @@ function NeuePruefung({ themen, fertig }: { themen: Category[]; fertig: () => Pr
         </View>
         <Slider min={1} max={90} value={tage} onChange={setTage} tint={color.signal.primary} />
       </View>
-      <Text style={styles.abschnitt}>Worüber</Text>
+      <Text style={styles.abschnitt}>{T('Worüber')}</Text>
       <View style={styles.chips}>
         {wurzeln.map((t) => {
           const an = gewaehlt.includes(t.id);
@@ -233,7 +232,7 @@ function NeuePruefung({ themen, fertig }: { themen: Category[]; fertig: () => Pr
         })}
       </View>
       {fehler ? <Text style={[styles.klein, { color: color.signal.error }]}>{fehler}</Text> : null}
-      <Button label="Anlegen" onPress={() => void anlegen()} disabled={titel.trim().length < 2 || gewaehlt.length === 0} busy={busy} />
+      <Button label={T('Anlegen')} onPress={() => void anlegen()} disabled={titel.trim().length < 2 || gewaehlt.length === 0} busy={busy} />
     </View>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { analytics } from '@/lib/analytics';
 import { BRAND } from '@/lib/brand';
+import { T } from '@/lib/sprache';
 import { color, space, type } from '@/theme/tokens';
 
 /**
@@ -56,11 +57,7 @@ export function EnoughForToday({
           <Text style={styles.number}>{cardsRead}</Text>
           <Text style={styles.label}>{BRAND.unit.many} heute gelesen</Text>
 
-          <Text style={styles.body}>
-            Das reicht für heute. Was davon hängen geblieben ist, fragen wir
-            dich in den nächsten Tagen — genau dann entsteht der Unterschied
-            zwischen Gelesenem und Gewusstem.
-          </Text>
+          <Text style={styles.body}>{T('Das reicht für heute. Was davon hängen geblieben ist, fragen wir dich in den nächsten Tagen — genau dann entsteht der Unterschied zwischen Gelesenem und Gewusstem.')}</Text>
 
           {reviewsDue > 0 ? (
             <View style={styles.reviewHint}>
@@ -72,8 +69,8 @@ export function EnoughForToday({
         </View>
 
         <View style={styles.actions}>
-          <Button label="Für heute reicht's" onPress={stop} />
-          <Button label="Trotzdem weiterlesen" variant="quiet" onPress={keepGoing} />
+          <Button label={T("Für heute reicht's")} onPress={stop} />
+          <Button label={T('Trotzdem weiterlesen')} variant="quiet" onPress={keepGoing} />
         </View>
       </View>
     </GridBackground>

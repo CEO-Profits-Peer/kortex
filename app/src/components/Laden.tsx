@@ -12,6 +12,7 @@ import Animated, {
 import Svg, { Polygon } from 'react-native-svg';
 
 import { getPrefs } from '@/lib/prefs';
+import { T } from '@/lib/sprache';
 import { sechseckPunkte } from '@/theme/design';
 
 /**
@@ -73,7 +74,7 @@ function LadenBase({
     <View
       style={[{ width: b, height: h, alignSelf: 'center' }, style]}
       accessibilityRole="progressbar"
-      accessibilityLabel="Lädt"
+      accessibilityLabel={T('Lädt')}
     >
       <Svg width={b} height={h}>
         {ecken.map(([x, y], i) => {

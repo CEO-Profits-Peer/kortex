@@ -21,6 +21,7 @@ import { BordeauxMuster } from '@/components/Sechseck';
 import { haptics } from '@/lib/haptics';
 import { getPrefs, loadPrefs } from '@/lib/prefs';
 import { useIchPro } from '@/lib/pro';
+import { T } from '@/lib/sprache';
 import { sechseckPunkte } from '@/theme/design';
 import { color, space, type } from '@/theme/tokens';
 
@@ -238,8 +239,8 @@ function ProWillkommen({ onZu }: { onZu: () => void }) {
           {ruhig ? null : Array.from({ length: FUNKEN }, (_, i) => <Funke key={i} i={i} t={funken} />)}
         </View>
         <Animated.View style={[styles.titelBox, titelStil]}>
-          <Text style={styles.titel}>Willkommen bei PRO</Text>
-          <Text style={styles.unter}>Alles ist freigeschaltet.</Text>
+          <Text style={styles.titel}>{T('Willkommen bei PRO')}</Text>
+          <Text style={styles.unter}>{T('Alles ist freigeschaltet.')}</Text>
         </Animated.View>
       </Animated.View>
 
@@ -265,7 +266,7 @@ function ProWillkommen({ onZu }: { onZu: () => void }) {
                 </View>
                 <Text style={styles.karteText}>{k.text}</Text>
                 <Button
-                  label="Ausprobieren"
+                  label={T('Ausprobieren')}
                   variant="ghost"
                   onPress={() => {
                     schliessen();
@@ -281,7 +282,7 @@ function ProWillkommen({ onZu }: { onZu: () => void }) {
             ))}
           </View>
           <View style={{ paddingHorizontal: space.xl, alignSelf: 'stretch', maxWidth: 440, width: '100%' }}>
-            <Button label="Los" onPress={schliessen} />
+            <Button label={T('Los')} onPress={schliessen} />
           </View>
         </Animated.View>
       ) : null}

@@ -18,6 +18,7 @@ import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
 import type { CollectionEntry, Post, PostArt } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -153,7 +154,7 @@ export function ComposeScreen() {
       .then((d) => {
         if (!d.gesperrt) setOriginal(d.post);
       })
-      .catch(() => setNotiz('Den Beitrag gibt es nicht mehr.'));
+      .catch(() => setNotiz(T('Den Beitrag gibt es nicht mehr.')));
   }, [params.repost]);
 
   // Karten fuer den Stapel: aus Likes und Empfohlenem, erst wenn gebraucht.
@@ -369,7 +370,7 @@ export function ComposeScreen() {
     <GridBackground>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={[styles.leiste, { paddingTop: insets.top + space.sm }]}>
-          <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schließen">
+          <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={T('Schließen')}>
             <Icon name="close" size={20} color={color.ink.mid} />
           </Pressable>
           <Text style={styles.leisteTitel} numberOfLines={1}>
@@ -416,7 +417,7 @@ export function ComposeScreen() {
                 style={styles.mehrPro}
               >
                 <ProMarke klein />
-                <Text style={styles.mehrProText}>Länger</Text>
+                <Text style={styles.mehrProText}>{T('Länger')}</Text>
               </Pressable>
             ) : null}
             <Text style={styles.zaehler}>
@@ -457,7 +458,7 @@ export function ComposeScreen() {
                     <Pressable
                       onPress={() => antwortWeg(i)}
                       hitSlop={8}
-                      accessibilityLabel="Antwort entfernen"
+                      accessibilityLabel={T('Antwort entfernen')}
                     >
                       <Icon name="close" size={14} color={color.ink.low} />
                     </Pressable>
@@ -467,7 +468,7 @@ export function ComposeScreen() {
               {optionen.length < (art === 'quiz' ? GRENZEN.pro.quiz : GRENZEN.pro.umfrage) ? (
                 <Pressable onPress={antwortDazu} style={styles.dazu} hitSlop={6}>
                   <Icon name="plus" size={14} color={color.akzent} />
-                  <Text style={styles.dazuText}>Antwort</Text>
+                  <Text style={styles.dazuText}>{T('Antwort')}</Text>
                   {!pro && optionen.length >= (art === 'quiz' ? GRENZEN.frei.quiz : GRENZEN.frei.umfrage) ? (
                     <ProMarke klein />
                   ) : null}
@@ -484,13 +485,13 @@ export function ComposeScreen() {
                 <TextInput
                   value={kartenSuche}
                   onChangeText={setKartenSuche}
-                  placeholder="Alle Karten durchsuchen"
+                  placeholder={T('Alle Karten durchsuchen')}
                   placeholderTextColor={color.ink.low}
                   style={styles.sucheEingabe}
                   returnKeyType="search"
                 />
                 {kartenSuche ? (
-                  <Pressable onPress={() => setKartenSuche('')} hitSlop={10} accessibilityLabel="Suche leeren">
+                  <Pressable onPress={() => setKartenSuche('')} hitSlop={10} accessibilityLabel={T('Suche leeren')}>
                     <Icon name="close" size={14} color={color.ink.low} />
                   </Pressable>
                 ) : null}
@@ -528,7 +529,7 @@ export function ComposeScreen() {
                 </>
               ) : (
                 <>
-                  <Text style={styles.abschnitt}>Aus deinen Likes und Empfehlungen</Text>
+                  <Text style={styles.abschnitt}>{T('Aus deinen Likes und Empfehlungen')}</Text>
                   {auswahl === null ? (
                     <Laden color={color.ink.low} />
                   ) : auswahl.filter((k) => !karten.includes(k.content_id)).length === 0 ? (

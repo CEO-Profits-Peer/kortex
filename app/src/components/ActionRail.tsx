@@ -10,6 +10,7 @@ import Animated, {
 import { Icon, type IconName } from '@/components/Icon';
 import { SechseckLinse } from '@/components/Sechseck';
 import { haptics } from '@/lib/haptics';
+import { T } from '@/lib/sprache';
 import { LINSE_SYMBOL, ZWEI } from '@/theme/design';
 import { color, motion, radius, space, type } from '@/theme/tokens';
 
@@ -204,7 +205,7 @@ export function ActionRail({
         tint={tint}
         onPress={onComment}
       />
-      <RailButton icon="share" label="Teilen" tint={tint} onPress={onShare} />
+      <RailButton icon="share" label={T('Teilen')} tint={tint} onPress={onShare} />
     </View>
   );
 }

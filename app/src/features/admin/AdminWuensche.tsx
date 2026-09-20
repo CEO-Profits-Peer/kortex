@@ -7,6 +7,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api, type AdminWuensche as Daten } from '@/lib/supabase';
 import type { Category } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import { Gruppe, Marke, seit, type Ton } from './parts';
@@ -54,7 +55,7 @@ export function AdminWuensche({ pin }: { pin: () => string }) {
   return (
     <View style={{ gap: space.xl }}>
       <Gruppe titel={`Offen · ${daten.offen.length}`}>
-        {daten.offen.length === 0 ? <Text style={styles.leer}>Keine offenen Wünsche.</Text> : null}
+        {daten.offen.length === 0 ? <Text style={styles.leer}>{T('Keine offenen Wünsche.')}</Text> : null}
         {daten.offen.map((w) => {
           const key = `${w.language}:${w.norm}`;
           return (
@@ -90,8 +91,8 @@ export function AdminWuensche({ pin }: { pin: () => string }) {
         })}
       </Gruppe>
 
-      <Gruppe titel="Entschieden">
-        {daten.entschieden.length === 0 ? <Text style={styles.leer}>Noch nichts.</Text> : null}
+      <Gruppe titel={T('Entschieden')}>
+        {daten.entschieden.length === 0 ? <Text style={styles.leer}>{T('Noch nichts.')}</Text> : null}
         {daten.entschieden.map((f) => {
           const s = STATUS[f.status] ?? { text: f.status };
           return (
@@ -153,7 +154,7 @@ function Entscheiden({
 
   return (
     <View style={styles.form}>
-      <Text style={styles.label}>Name in der App</Text>
+      <Text style={styles.label}>{T('Name in der App')}</Text>
       <TextInput value={anzeige} onChangeText={setAnzeige} maxLength={80} style={styles.feld} />
       <Text style={styles.label}>Wikipedia-Suche</Text>
       <TextInput value={such} onChangeText={setSuch} maxLength={120} style={styles.feld} />
@@ -185,7 +186,7 @@ function Entscheiden({
       <TextInput
         value={grund}
         onChangeText={setGrund}
-        placeholder="z. B. Kommt, sobald die Quellen passen"
+        placeholder={T('z. B. Kommt, sobald die Quellen passen')}
         placeholderTextColor={color.ink.low}
         maxLength={200}
         style={styles.feld}
@@ -193,10 +194,10 @@ function Entscheiden({
       {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
       <View style={styles.knoepfe}>
         <View style={{ flex: 1 }}>
-          <Button label="Nein" variant="ghost" onPress={() => void los(false)} disabled={busy} />
+          <Button label={T('Nein')} variant="ghost" onPress={() => void los(false)} disabled={busy} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button label="Ja" onPress={() => void los(true)} disabled={!kat || such.trim().length < 2} busy={busy} />
+          <Button label={T('Ja')} onPress={() => void los(true)} disabled={!kat || such.trim().length < 2} busy={busy} />
         </View>
       </View>
     </View>

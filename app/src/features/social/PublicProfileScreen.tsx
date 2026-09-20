@@ -20,6 +20,7 @@ import { UserPosts } from '@/features/posts/UserPosts';
 import { FremdeAbzeichen } from '@/features/abzeichen/MonatsAbzeichen';
 import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { ZWEI } from '@/theme/design';
 import { color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 
@@ -150,9 +151,9 @@ export function PublicProfileScreen({
         <View style={styles.center}>
           {error ? (
             <>
-              <Text style={styles.errorTitle}>Nicht gefunden</Text>
+              <Text style={styles.errorTitle}>{T('Nicht gefunden')}</Text>
               <Text style={styles.errorBody}>@{handle}</Text>
-              <Button label="Zurück" variant="ghost" onPress={() => router.back()} />
+              <Button label={T('Zurück')} variant="ghost" onPress={() => router.back()} />
             </>
           ) : (
             <Laden color={color.signal.primary} />
@@ -228,7 +229,7 @@ export function PublicProfileScreen({
             hitSlop={6}
           >
             <Text style={styles.statValue}>{p.follower_count}</Text>
-            <Text style={styles.statLabel}>Folgen dir</Text>
+            <Text style={styles.statLabel}>{T('Folgen dir')}</Text>
           </Pressable>
           <Pressable
             onPress={() => router.push(`/people/${encodeURIComponent(p.handle)}?mode=following`)}
@@ -236,14 +237,14 @@ export function PublicProfileScreen({
             hitSlop={6}
           >
             <Text style={styles.statValue}>{p.following_count}</Text>
-            <Text style={styles.statLabel}>Folgt</Text>
+            <Text style={styles.statLabel}>{T('Folgt')}</Text>
           </Pressable>
           {p.mastery_total !== null ? (
             <View style={styles.statCol}>
               <Text style={[styles.statValue, { color: color.signal.mastery }]}>
                 {p.mastery_total}
               </Text>
-              <Text style={styles.statLabel}>Mastery</Text>
+              <Text style={styles.statLabel}>{T('Mastery')}</Text>
             </View>
           ) : null}
           {p.streak_current ? (
@@ -251,13 +252,13 @@ export function PublicProfileScreen({
               <Text style={[styles.statValue, { color: color.signal.warn }]}>
                 {p.streak_current}
               </Text>
-              <Text style={styles.statLabel}>Streak</Text>
+              <Text style={styles.statLabel}>{T('Streak')}</Text>
             </View>
           ) : null}
           {p.likes_bekommen ? (
             <View style={styles.statCol}>
               <Text style={[styles.statValue, { color: ZWEI ? color.ink.max : color.signal.primary }]}>{p.likes_bekommen}</Text>
-              <Text style={styles.statLabel}>Likes bekommen</Text>
+              <Text style={styles.statLabel}>{T('Likes bekommen')}</Text>
             </View>
           ) : null}
         </View>
@@ -288,7 +289,7 @@ export function PublicProfileScreen({
             {p.i_follow ? (
               <View style={{ flex: 1 }}>
                 <Button
-                  label="Duell"
+                  label={T('Duell')}
                   variant="ghost"
                   busy={duellBusy}
                   onPress={duellStarten}

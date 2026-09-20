@@ -12,6 +12,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { shareRueckblick } from '@/lib/share';
 import { api, type Jahresrueckblick } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -77,8 +78,8 @@ export function JahrScreen() {
       j.abzeichen.gold > 0 ? `${j.abzeichen.gold}× Gold` : null,
     ].filter(Boolean);
     const erg = await shareRueckblick(`${teile.join(' · ')}.`);
-    if (erg === 'copied') setNotiz('In die Zwischenablage kopiert');
-    else if (erg === 'failed') setNotiz('Teilen ging nicht');
+    if (erg === 'copied') setNotiz(T('In die Zwischenablage kopiert'));
+    else if (erg === 'failed') setNotiz(T('Teilen ging nicht'));
   };
 
   const abz = j ? j.abzeichen.gold + j.abzeichen.silber + j.abzeichen.bronze : 0;
@@ -86,7 +87,7 @@ export function JahrScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title={j ? `Dein ${j.jahr}` : 'Dein Jahr'} eyebrow="rückblick" scrollY={scrollY} />
+        <ScreenHeader title={j ? `Dein ${j.jahr}` : 'Dein Jahr'} eyebrow={T('rückblick')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -171,7 +172,7 @@ export function JahrScreen() {
               />
             ) : null}
 
-            <Button label="Teilen" onPress={() => void teilen()} />
+            <Button label={T('Teilen')} onPress={() => void teilen()} />
             {notiz ? <Text style={styles.leer}>{notiz}</Text> : null}
           </>
         ) : null}

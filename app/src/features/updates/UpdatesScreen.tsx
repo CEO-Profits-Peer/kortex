@@ -7,6 +7,7 @@ import Svg, { Defs, Line, LinearGradient, Pattern, Polygon, Rect, Stop } from 'r
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { UPDATES, type Gross, type Update } from '@/lib/updates';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -113,7 +114,7 @@ function GrosseKarte({ u, neu }: { u: Update; neu: boolean }) {
       <View style={styles.grossInhalt}>
         <View style={styles.metaZeile}>
           <Text style={styles.datum}>{datum(u.datum)}</Text>
-          {neu ? <Text style={styles.neu}>Neu</Text> : null}
+          {neu ? <Text style={styles.neu}>{T('Neu')}</Text> : null}
         </View>
         <Text style={styles.kurz}>{u.kurz}</Text>
         <Punkte punkte={u.punkte} farbe={hell} />
@@ -146,7 +147,7 @@ function KleineKarte({ u, neu, letzte }: { u: Update; neu: boolean; letzte: bool
         <View style={styles.metaZeile}>
           <Text style={styles.version}>{u.version}</Text>
           <Text style={styles.datum}>{datum(u.datum)}</Text>
-          {neu ? <Text style={styles.neu}>Neu</Text> : null}
+          {neu ? <Text style={styles.neu}>{T('Neu')}</Text> : null}
         </View>
         <Text style={styles.titel}>{u.titel}</Text>
         <Text style={styles.kurz}>{u.kurz}</Text>
@@ -162,7 +163,7 @@ export function UpdatesScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Updates" eyebrow="was neu ist" scrollY={scrollY} />
+        <ScreenHeader title={T('Updates')} eyebrow={T('was neu ist')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}

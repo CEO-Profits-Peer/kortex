@@ -9,6 +9,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { Icon } from '@/components/Icon';
 import { BRAND } from '@/lib/brand';
 import { usePrefs } from '@/lib/prefs';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -93,10 +94,8 @@ export function WhatsNew({ onDone }: { onDone: () => void }) {
         </View>
 
         <View style={styles.footer}>
-          <Button label="Weiter" onPress={onDone} />
-          <Text style={styles.note}>
-            Danke fürs Testen — jede Rückmeldung landet direkt in der nächsten Version.
-          </Text>
+          <Button label={T('Weiter')} onPress={onDone} />
+          <Text style={styles.note}>{T('Danke fürs Testen — jede Rückmeldung landet direkt in der nächsten Version.')}</Text>
         </View>
       </View>
     </GridBackground>

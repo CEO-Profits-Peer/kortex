@@ -34,6 +34,7 @@ import type {
   AdminPersonHit,
 } from '@/features/admin/types';
 import type { BodyBlock, ContentItem } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -411,9 +412,9 @@ export default function Atelier() {
       {reiter === 'kopfzeile' ? (
         <View style={styles.voll}>
           <ScreenHeader
-            title="Einstellungen"
-            eyebrow="konto & feed"
-            subtitle="Alles, was die App ueber dich weiss."
+            title={T('Einstellungen')}
+            eyebrow={T('konto & feed')}
+            subtitle={T('Alles, was die App ueber dich weiss.')}
             scrollY={scrollY}
             onBack={() => setReiter('karten')}
           />
@@ -477,7 +478,7 @@ export default function Atelier() {
             ))}
           </View>
 
-          <Text style={styles.werkTitel}>Monats-Abzeichen</Text>
+          <Text style={styles.werkTitel}>{T('Monats-Abzeichen')}</Text>
           <View style={[styles.gruppe, { alignItems: 'center', flexWrap: 'wrap' }]}>
             {['2026-01-01', '2026-03-01', '2026-06-01', '2026-08-01', '2026-09-01', '2026-12-01'].map((m, i) => (
               <Monatsmedaille key={m} monat={m} stufe={i % 4} groesse={56} />
@@ -508,7 +509,7 @@ export default function Atelier() {
             </ProfilKopf>
           ))}
 
-          <Text style={styles.werkTitel}>Meister-Rahmen</Text>
+          <Text style={styles.werkTitel}>{T('Meister-Rahmen')}</Text>
           <View style={[styles.gruppe, { alignItems: 'center' }]}>
             {['science', 'tech', 'finance', 'body', 'mind', 'world', 'local', 'life', 'history', 'culture', 'language'].map((r) => (
               <View key={r} style={{ gap: 4, alignItems: 'center' }}>
@@ -525,10 +526,10 @@ export default function Atelier() {
             <Laden size={96} />
           </View>
 
-          <Text style={styles.werkTitel}>PRO</Text>
+          <Text style={styles.werkTitel}>{T('PRO')}</Text>
           <ProBanner />
-          <Button label="Fenster" variant="ghost" onPress={() => zeigeProSperre('Mehr als zehn Karten im Stapel gibt es mit PRO – bis zu 50.')} />
-          <Button label="Willkommen" variant="ghost" onPress={zeigeProWillkommen} />
+          <Button label={T('Fenster')} variant="ghost" onPress={() => zeigeProSperre('Mehr als zehn Karten im Stapel gibt es mit PRO – bis zu 50.')} />
+          <Button label={T('Willkommen')} variant="ghost" onPress={zeigeProWillkommen} />
 
           <Text style={styles.werkTitel}>Feed-Leiste</Text>
           <View style={{ height: 330, alignSelf: 'flex-end', width: 80 }}>
@@ -577,9 +578,9 @@ export default function Atelier() {
         <ScrollView contentContainerStyle={styles.bahn}>
           <Text style={styles.werkTitel}>Tasten</Text>
           <View style={styles.gruppe}>
-            <Button label="Weiter" onPress={() => {}} />
-            <Button label="Ruhig" variant="quiet" onPress={() => {}} />
-            <Button label="Ghost" variant="ghost" onPress={() => {}} />
+            <Button label={T('Weiter')} onPress={() => {}} />
+            <Button label={T('Ruhig')} variant="quiet" onPress={() => {}} />
+            <Button label={T('Ghost')} variant="ghost" onPress={() => {}} />
           </View>
           <Text style={styles.werkTitel}>Kartenarten</Text>
           <View style={styles.gruppe}>
@@ -589,7 +590,7 @@ export default function Atelier() {
           </View>
           <Text style={styles.werkTitel}>Abschnittsmarke</Text>
           <View style={styles.gruppe2}>
-            <SectionTitle>Konto</SectionTitle>
+            <SectionTitle>{T('Konto')}</SectionTitle>
             <SectionTitle>Feed &amp; Sprache</SectionTitle>
           </View>
           <Text style={styles.werkTitel}>Schriftgrade</Text>

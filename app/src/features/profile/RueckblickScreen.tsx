@@ -17,6 +17,7 @@ import { STUFEN_NAMEN } from '@/lib/meisterwege';
 import { getPrefs } from '@/lib/prefs';
 import { shareRueckblick } from '@/lib/share';
 import { api, type Wochenrueckblick } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { ZWEI, facette } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -52,14 +53,14 @@ export function RueckblickScreen() {
       r.ligen[0] ? `Platz ${r.ligen[0].platz} von ${r.ligen[0].von} in „${r.ligen[0].name}“` : null,
     ].filter(Boolean);
     const erg = await shareRueckblick(`${teile.join(' · ')}.`);
-    if (erg === 'copied') setNotiz('In die Zwischenablage kopiert');
-    else if (erg === 'failed') setNotiz('Teilen ging nicht');
+    if (erg === 'copied') setNotiz(T('In die Zwischenablage kopiert'));
+    else if (erg === 'failed') setNotiz(T('Teilen ging nicht'));
   };
 
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Deine Woche" eyebrow="rückblick" scrollY={scrollY} />
+        <ScreenHeader title={T('Deine Woche')} eyebrow={T('rückblick')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -81,18 +82,18 @@ export function RueckblickScreen() {
               </Text>
               <View style={styles.gross}>
                 <Hochzaehlen text={String(r.gelesen)} style={styles.grossZahl} />
-                <Text style={styles.grossLabel}>Karten gelesen</Text>
+                <Text style={styles.grossLabel}>{T('Karten gelesen')}</Text>
               </View>
               <View style={styles.reihe}>
-                <Zahl wert={r.richtig} label="richtig" verz={200} />
-                <Zahl wert={r.xp} label="XP" verz={350} />
-                <Zahl wert={r.tage} label="Tage aktiv" verz={500} />
-                <Zahl wert={r.streak} label="Streak" verz={650} />
+                <Zahl wert={r.richtig} label={T('richtig')} verz={200} />
+                <Zahl wert={r.xp} label={T('XP')} verz={350} />
+                <Zahl wert={r.tage} label={T('Tage aktiv')} verz={500} />
+                <Zahl wert={r.streak} label={T('Streak')} verz={650} />
               </View>
 
               {r.meister.length > 0 ? (
                 <Animated.View entering={rein(800)} style={styles.abschnitt}>
-                  <Text style={styles.abschnittTitel}>Meisterwege</Text>
+                  <Text style={styles.abschnittTitel}>{T('Meisterwege')}</Text>
                   {r.meister.slice(0, 3).map((m) => (
                     <View key={m.id} style={styles.zeile}>
                       <Text style={styles.emoji}>{m.emoji ?? '•'}</Text>
@@ -109,7 +110,7 @@ export function RueckblickScreen() {
 
               {r.ligen.length > 0 ? (
                 <Animated.View entering={rein(1000)} style={styles.abschnitt}>
-                  <Text style={styles.abschnittTitel}>Ligen</Text>
+                  <Text style={styles.abschnittTitel}>{T('Ligen')}</Text>
                   {r.ligen.map((l) => (
                     <View key={l.name} style={styles.zeile}>
                       <Text style={[styles.platz, l.platz === 1 && { color: color.signal.primary }]}>{l.platz}.</Text>
@@ -124,13 +125,13 @@ export function RueckblickScreen() {
             </View>
 
             {r.gelesen === 0 ? (
-              <Text style={styles.leer}>Diese Woche ist noch leer – ein paar Karten, und hier steht mehr.</Text>
+              <Text style={styles.leer}>{T('Diese Woche ist noch leer – ein paar Karten, und hier steht mehr.')}</Text>
             ) : null}
 
-            <Button label="Teilen" onPress={() => void teilen()} />
+            <Button label={T('Teilen')} onPress={() => void teilen()} />
             {r.meister.length === 0 && r.ligen.length === 0 ? (
               <Pressable onPress={() => router.push('/ligen')} hitSlop={6}>
-                <Text style={styles.link}>Mit Freunden vergleichen: Ligen</Text>
+                <Text style={styles.link}>{T('Mit Freunden vergleichen: Ligen')}</Text>
               </Pressable>
             ) : null}
             {notiz ? <Text style={styles.leer}>{notiz}</Text> : null}

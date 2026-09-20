@@ -9,6 +9,7 @@ import { PostKarte } from '@/features/posts/PostParts';
 import { fehlerText } from '@/lib/fehler';
 import { api } from '@/lib/supabase';
 import type { Post } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, space, type } from '@/theme/tokens';
 
 /**
@@ -105,13 +106,11 @@ export function UserPosts({
   if (posts.length === 0) {
     return eigene ? (
       <View style={styles.leerEigen}>
-        <Text style={styles.leer}>
-          Noch keine Beiträge. Was du schreibst, sehen deine Follower in ihrem Home.
-        </Text>
-        <Button label="Ersten Beitrag schreiben" onPress={() => router.push('/compose')} />
+        <Text style={styles.leer}>{T('Noch keine Beiträge. Was du schreibst, sehen deine Follower in ihrem Home.')}</Text>
+        <Button label={T('Ersten Beitrag schreiben')} onPress={() => router.push('/compose')} />
       </View>
     ) : (
-      <Text style={styles.leer}>Noch keine Beiträge.</Text>
+      <Text style={styles.leer}>{T('Noch keine Beiträge.')}</Text>
     );
   }
 
@@ -126,7 +125,7 @@ export function UserPosts({
           {laedt ? (
             <Laden size="small" color={color.ink.low} />
           ) : (
-            <Text style={styles.mehrText}>Ältere laden</Text>
+            <Text style={styles.mehrText}>{T('Ältere laden')}</Text>
           )}
         </Pressable>
       ) : null}

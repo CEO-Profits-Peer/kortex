@@ -18,6 +18,7 @@ import { useSzenarien } from '@/lib/labSzenarien';
 import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import type { AnkerStand, ContentItem } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -58,7 +59,7 @@ export function LabScreen({ id }: { id: string }) {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title={w?.titel ?? 'LAB'} eyebrow="lab" scrollY={scrollY} />
+        <ScreenHeader title={w?.titel ?? 'LAB'} eyebrow={T('lab')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -70,7 +71,7 @@ export function LabScreen({ id }: { id: string }) {
         showsVerticalScrollIndicator={false}
       >
         {!w ? (
-          <Text style={styles.text}>Dieses Werkzeug gibt es nicht.</Text>
+          <Text style={styles.text}>{T('Dieses Werkzeug gibt es nicht.')}</Text>
         ) : (
           <>
             <Text style={[styles.kurz, { color: w.farbe }]}>{w.kurz}</Text>
@@ -149,14 +150,14 @@ function Ergebnis({ w, e, nochmal }: { w: Werkzeug; e: Eingaben | null; nochmal?
       <View style={styles.knoepfe}>
         {nochmal ? (
           <View style={{ flex: 1 }}>
-            <Button label="Nochmal" variant="ghost" onPress={nochmal} />
+            <Button label={T('Nochmal')} variant="ghost" onPress={nochmal} />
           </View>
         ) : null}
         <View style={{ flex: 1 }}>
-          <Button label="Merken" variant="ghost" disabled={!e || !gueltig} onPress={() => void merken()} />
+          <Button label={T('Merken')} variant="ghost" disabled={!e || !gueltig} onPress={() => void merken()} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button label="Teilen" accent={w.farbe} disabled={!e || !gueltig} onPress={() => e && teilen(w, e)} />
+          <Button label={T('Teilen')} accent={w.farbe} disabled={!e || !gueltig} onPress={() => e && teilen(w, e)} />
         </View>
       </View>
       {notiz ? <Text style={styles.hinweis}>{notiz}</Text> : null}
@@ -186,7 +187,7 @@ function Vergleich({ w, sz, aktuell }: { w: Werkzeug; sz: ReturnType<typeof useS
                 {r.satz}
               </Text>
             </View>
-            <Pressable onPress={() => void sz.entfernen(s.id)} hitSlop={8} accessibilityLabel="Entfernen">
+            <Pressable onPress={() => void sz.entfernen(s.id)} hitSlop={8} accessibilityLabel={T('Entfernen')}>
               <Icon name="cross" size={14} color={color.ink.low} />
             </Pressable>
           </View>
@@ -282,14 +283,14 @@ function TippFeld({
     <View style={{ gap: space.sm }}>
       <Pressable onPress={t.umschalten} style={styles.tippSchalter} accessibilityRole="switch" accessibilityState={{ checked: t.an }}>
         <View style={[styles.tippPunkt, t.an && { backgroundColor: w.farbe, borderColor: w.farbe }]} />
-        <Text style={styles.chipText}>Schätzen</Text>
+        <Text style={styles.chipText}>{T('Schätzen')}</Text>
       </Pressable>
       {t.an ? (
         <>
-          <Regler label="Dein Tipp" wert={fmt(t.tipp)}>
+          <Regler label={T('Dein Tipp')} wert={fmt(t.tipp)}>
             <Slider min={min} max={max} step={step} value={Math.min(max, Math.max(min, t.tipp))} onChange={t.setTipp} tint={w.farbe} />
           </Regler>
-          {!t.offen ? <Button label="Auflösen" accent={w.farbe} onPress={t.aufloesen} /> : null}
+          {!t.offen ? <Button label={T('Auflösen')} accent={w.farbe} onPress={t.aufloesen} /> : null}
         </>
       ) : null}
     </View>
@@ -309,16 +310,16 @@ function Zinseszins({ w }: { w: Werkzeug }) {
   return (
     <>
       <Flaeche>
-        <Regler label="Pro Monat" wert={eur(monatlich)} einheit="€">
+        <Regler label={T('Pro Monat')} wert={eur(monatlich)} einheit="€">
           <Slider min={0} max={500} step={10} value={monatlich} onChange={setMonatlich} tint={w.farbe} />
         </Regler>
-        <Regler label="Jahre" wert={String(jahre)}>
+        <Regler label={T('Jahre')} wert={String(jahre)}>
           <Slider min={1} max={60} value={jahre} onChange={setJahre} tint={w.farbe} />
         </Regler>
-        <Regler label="Rendite pro Jahr" wert={rendite.toLocaleString('de-AT')} einheit="%">
+        <Regler label={T('Rendite pro Jahr')} wert={rendite.toLocaleString('de-AT')} einheit="%">
           <Slider min={0} max={12} step={0.5} value={rendite} onChange={setRendite} tint={w.farbe} />
         </Regler>
-        <Regler label="Zum Start" wert={eur(start)} einheit="€">
+        <Regler label={T('Zum Start')} wert={eur(start)} einheit="€">
           <Slider min={0} max={10_000} step={100} value={start} onChange={setStart} tint={w.farbe} />
         </Regler>
       </Flaeche>
@@ -345,7 +346,7 @@ function Geburtstag({ w }: { w: Werkzeug }) {
           ]}
           onChange={setModus}
         />
-        <Regler label="Leute im Raum" wert={String(leute)}>
+        <Regler label={T('Leute im Raum')} wert={String(leute)}>
           <Slider min={2} max={modus === 'ich' ? 400 : 100} value={leute} onChange={setLeute} tint={w.farbe} />
         </Regler>
         <Text style={styles.hinweis}>
@@ -503,11 +504,8 @@ function Anker({ w }: { w: Werkzeug }) {
       <Flaeche>
         {schritt === 'rad' ? (
           <>
-            <Text style={styles.text}>
-              Erst dreht ein Rad eine Zahl. Dann kommt eine Schätzfrage. Am Ende siehst du, wie sehr die Zahl
-              vom Rad alle beeinflusst hat, die mitgemacht haben.
-            </Text>
-            <Button label="Drehen" accent={w.farbe} onPress={drehen} />
+            <Text style={styles.text}>{T('Erst dreht ein Rad eine Zahl. Dann kommt eine Schätzfrage. Am Ende siehst du, wie sehr die Zahl vom Rad alle beeinflusst hat, die mitgemacht haben.')}</Text>
+            <Button label={T('Drehen')} accent={w.farbe} onPress={drehen} />
           </>
         ) : null}
 
@@ -520,10 +518,10 @@ function Anker({ w }: { w: Werkzeug }) {
             </Text>
             <View style={styles.knoepfe}>
               <View style={{ flex: 1 }}>
-                <Button label="Weniger" variant="ghost" onPress={() => setSchritt('schaetzen')} />
+                <Button label={T('Weniger')} variant="ghost" onPress={() => setSchritt('schaetzen')} />
               </View>
               <View style={{ flex: 1 }}>
-                <Button label="Mehr" variant="ghost" onPress={() => setSchritt('schaetzen')} />
+                <Button label={T('Mehr')} variant="ghost" onPress={() => setSchritt('schaetzen')} />
               </View>
             </View>
           </>
@@ -532,10 +530,10 @@ function Anker({ w }: { w: Werkzeug }) {
         {schritt === 'schaetzen' ? (
           <>
             <Text style={styles.frage}>{ANKER_FRAGE}</Text>
-            <Regler label="Deine Schätzung" wert={String(schaetzung)} einheit="%">
+            <Regler label={T('Deine Schätzung')} wert={String(schaetzung)} einheit="%">
               <Slider min={0} max={100} value={schaetzung} onChange={setSchaetzung} tint={w.farbe} />
             </Regler>
-            <Button label="Abschicken" accent={w.farbe} busy={busy} onPress={() => void abschicken()} />
+            <Button label={T('Abschicken')} accent={w.farbe} busy={busy} onPress={() => void abschicken()} />
             {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
           </>
         ) : null}
@@ -604,10 +602,7 @@ function Schlaf({ w }: { w: Werkzeug }) {
           <Slider min={0} max={23} value={stunde} onChange={setStunde} tint={w.farbe} format={(n) => `${n} Uhr`} />
           <Slider min={0} max={55} step={5} value={minute} onChange={setMinute} tint={w.farbe} format={(n) => `:${String(n).padStart(2, '0')}`} />
         </Regler>
-        <Text style={styles.hinweis}>
-          Wer mitten in einem Schlafzyklus geweckt wird, fühlt sich oft gerädert. Das hier ist eine Faustregel,
-          keine Messung – dein eigener Rhythmus kann abweichen.
-        </Text>
+        <Text style={styles.hinweis}>{T('Wer mitten in einem Schlafzyklus geweckt wird, fühlt sich oft gerädert. Das hier ist eine Faustregel, keine Messung – dein eigener Rhythmus kann abweichen.')}</Text>
       </Flaeche>
       <Ergebnis w={w} e={{ stunde, minute, ...(modus === 'bett' ? { modus } : {}) }} />
     </>
@@ -684,7 +679,7 @@ function Lesetempo({ w }: { w: Werkzeug }) {
               dann „Fertig". Danach kommt eine Frage dazu.
             </Text>
             <Button
-              label="Los"
+              label={T('Los')}
               accent={w.farbe}
               onPress={() => {
                 start.current = performance.now();
@@ -699,7 +694,7 @@ function Lesetempo({ w }: { w: Werkzeug }) {
             <Text style={styles.leseTitel}>{karte.title}</Text>
             <Text style={styles.leseText}>{text}</Text>
             <Button
-              label="Fertig"
+              label={T('Fertig')}
               accent={w.farbe}
               onPress={() => {
                 setSekunden(Math.round((performance.now() - start.current) / 100) / 10);
@@ -762,9 +757,7 @@ function Licht({ w }: { w: Werkzeug }) {
             </Pressable>
           ))}
         </View>
-        <Text style={styles.hinweis}>
-          Nichts ist schneller als Licht. Trotzdem sieht man die Sonne immer so, wie sie vor ein paar Minuten war.
-        </Text>
+        <Text style={styles.hinweis}>{T('Nichts ist schneller als Licht. Trotzdem sieht man die Sonne immer so, wie sie vor ein paar Minuten war.')}</Text>
         <TippFeld
           w={w}
           t={t}
@@ -799,10 +792,10 @@ function Inflation({ w }: { w: Werkzeug }) {
           ]}
           onChange={setLand}
         />
-        <Regler label="Betrag" wert={betrag.toLocaleString('de-AT')} einheit={land === 'ca' ? '$' : '€'}>
+        <Regler label={T('Betrag')} wert={betrag.toLocaleString('de-AT')} einheit={land === 'ca' ? '$' : '€'}>
           <Slider min={10} max={1_000} step={10} value={betrag} onChange={setBetrag} tint={w.farbe} />
         </Regler>
-        <Regler label="Damals" wert={String(von)}>
+        <Regler label={T('Damals')} wert={String(von)}>
           <Slider
             min={VPI_ERSTES}
             max={VPI_LETZTES - 1}
@@ -814,13 +807,10 @@ function Inflation({ w }: { w: Werkzeug }) {
             tint={w.farbe}
           />
         </Regler>
-        <Regler label="Heute" wert={String(bis)}>
+        <Regler label={T('Heute')} wert={String(bis)}>
           <Slider min={VPI_ERSTES + 1} max={VPI_LETZTES} value={bis} onChange={(v) => setBis(Math.max(v, von + 1))} tint={w.farbe} />
         </Regler>
-        <Text style={styles.hinweis}>
-          Der Preisindex misst einen Warenkorb, keinen einzelnen Preis. Mieten oder Lebensmittel können schneller
-          gestiegen sein als der Schnitt.
-        </Text>
+        <Text style={styles.hinweis}>{T('Der Preisindex misst einen Warenkorb, keinen einzelnen Preis. Mieten oder Lebensmittel können schneller gestiegen sein als der Schnitt.')}</Text>
         <TippFeld
           w={w}
           t={t}
@@ -875,19 +865,19 @@ function Netto({ w }: { w: Werkzeug }) {
           onChange={setModus}
         />
         {modus === 'monat' && ca ? (
-          <Regler label="Brutto im Jahr" wert={jahr.toLocaleString('de-AT')} einheit="$">
+          <Regler label={T('Brutto im Jahr')} wert={jahr.toLocaleString('de-AT')} einheit="$">
             <Slider min={10_000} max={200_000} step={1_000} value={jahr} onChange={setJahr} tint={w.farbe} />
           </Regler>
         ) : modus === 'monat' ? (
-          <Regler label="Brutto im Monat" wert={brutto.toLocaleString('de-AT')} einheit="€">
+          <Regler label={T('Brutto im Monat')} wert={brutto.toLocaleString('de-AT')} einheit="€">
             <Slider min={300} max={8_000} step={50} value={brutto} onChange={setBrutto} tint={w.farbe} />
           </Regler>
         ) : (
           <>
-            <Regler label="Pro Stunde" wert={lohn.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit={ca ? '$' : '€'}>
+            <Regler label={T('Pro Stunde')} wert={lohn.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit={ca ? '$' : '€'}>
               <Slider min={5} max={60} step={0.5} value={lohn} onChange={setLohn} tint={w.farbe} />
             </Regler>
-            <Regler label="Stunden pro Woche" wert={String(stunden)}>
+            <Regler label={T('Stunden pro Woche')} wert={String(stunden)}>
               <Slider min={2} max={45} value={stunden} onChange={setStunden} tint={w.farbe} />
             </Regler>
           </>
@@ -923,7 +913,7 @@ function Co2({ w }: { w: Werkzeug }) {
   return (
     <>
       <Flaeche>
-        <Regler label="Strecke" wert={km.toLocaleString('de-AT')} einheit="km">
+        <Regler label={T('Strecke')} wert={km.toLocaleString('de-AT')} einheit="km">
           <Slider min={0} max={100} value={pos} onChange={setPos} tint={w.farbe} format={(p) => `${kmAus(p).toLocaleString('de-AT')} km`} />
         </Regler>
         <Umschalter
@@ -938,7 +928,7 @@ function Co2({ w }: { w: Werkzeug }) {
         <Text style={styles.reglerLabel}>Womit?</Text>
         <Umschalter w={w} wert={mittel} optionen={CO2_MITTEL.map((m) => ({ id: m.id, label: m.label }))} onChange={setMittel} />
         {auto ? (
-          <Regler label="Leute im Auto" wert={String(personen)}>
+          <Regler label={T('Leute im Auto')} wert={String(personen)}>
             <Slider min={1} max={5} value={personen} onChange={setPersonen} tint={w.farbe} />
           </Regler>
         ) : null}
@@ -979,7 +969,7 @@ function Kredit({ w }: { w: Werkzeug }) {
         <Regler label={modus === 'vertrag' ? 'Aufpreis pro Monat' : 'Rate pro Monat'} wert={eur(rate)} einheit="€">
           <Slider min={1} max={300} value={rate} onChange={setRate} tint={w.farbe} />
         </Regler>
-        <Regler label="Monate" wert={String(monate)}>
+        <Regler label={T('Monate')} wert={String(monate)}>
           <Slider min={3} max={60} value={monate} onChange={setMonate} tint={w.farbe} />
         </Regler>
         <Regler label={modus === 'vertrag' ? 'Einmalzahlung' : 'Anzahlung'} wert={eur(anzahlung)} einheit="€">
@@ -1005,16 +995,13 @@ function Miete({ w }: { w: Werkzeug }) {
   return (
     <>
       <Flaeche>
-        <Regler label="Wohnen pro Monat" wert={eur(miete)} einheit="€">
+        <Regler label={T('Wohnen pro Monat')} wert={eur(miete)} einheit="€">
           <Slider min={100} max={3_000} step={10} value={miete} onChange={setMiete} tint={w.farbe} />
         </Regler>
-        <Regler label="Einkommen netto" wert={eur(einkommen)} einheit="€">
+        <Regler label={T('Einkommen netto')} wert={eur(einkommen)} einheit="€">
           <Slider min={300} max={8_000} step={50} value={einkommen} onChange={setEinkommen} tint={w.farbe} />
         </Regler>
-        <Text style={styles.hinweis}>
-          Wohnen heißt hier alles: Miete, Betriebskosten, Strom, Gas, Heizung. Beim Einkommen zählt, was wirklich aufs
-          Konto kommt – das rechnet Brutto → Netto aus.
-        </Text>
+        <Text style={styles.hinweis}>{T('Wohnen heißt hier alles: Miete, Betriebskosten, Strom, Gas, Heizung. Beim Einkommen zählt, was wirklich aufs Konto kommt – das rechnet Brutto → Netto aus.')}</Text>
       </Flaeche>
       <Ergebnis w={w} e={{ miete, einkommen }} />
     </>
@@ -1041,7 +1028,7 @@ function Energie({ w }: { w: Werkzeug }) {
           ]}
           onChange={setModus}
         />
-        <Regler label="Alter" wert={String(alter)}>
+        <Regler label={T('Alter')} wert={String(alter)}>
           <Slider min={10} max={80} value={alter} onChange={setAlter} tint={w.farbe} />
         </Regler>
         <Umschalter
@@ -1056,14 +1043,11 @@ function Energie({ w }: { w: Werkzeug }) {
         <Text style={styles.reglerLabel}>Bewegung</Text>
         <Umschalter w={w} wert={aktivitaet} optionen={PAL.map((p) => ({ id: p.id as string, label: p.label }))} onChange={setAktivitaet} />
         {modus === 'snack' ? (
-          <Regler label="Snack laut Packung" wert={String(snack)} einheit="kcal">
+          <Regler label={T('Snack laut Packung')} wert={String(snack)} einheit="kcal">
             <Slider min={20} max={1_500} step={10} value={snack} onChange={setSnack} tint={w.farbe} />
           </Regler>
         ) : null}
-        <Text style={styles.hinweis}>
-          Wenig: meist sitzend. Mittel: sitzend mit etwas Gehen und Stehen. Viel: viel auf den Beinen oder regelmäßig
-          Sport. Die Richtwerte gehen von Normalgewicht aus.
-        </Text>
+        <Text style={styles.hinweis}>{T('Wenig: meist sitzend. Mittel: sitzend mit etwas Gehen und Stehen. Viel: viel auf den Beinen oder regelmäßig Sport. Die Richtwerte gehen von Normalgewicht aus.')}</Text>
       </Flaeche>
       <Ergebnis w={w} e={{ alter, geschlecht, aktivitaet, ...(modus === 'snack' ? { modus, snack } : {}) }} />
     </>

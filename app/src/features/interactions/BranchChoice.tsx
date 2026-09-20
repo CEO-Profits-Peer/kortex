@@ -4,6 +4,7 @@ import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 import { Button } from '@/components/Button';
 import { haptics } from '@/lib/haptics';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -96,7 +97,7 @@ export function BranchChoice({
       {current.is_terminal ? (
         <View style={styles.outcome}>
           <Text style={[styles.quality, { color: quality?.color }]}>{quality?.label}</Text>
-          <Button label="Anders entscheiden" variant="ghost" onPress={restart} />
+          <Button label={T('Anders entscheiden')} variant="ghost" onPress={restart} />
         </View>
       ) : (
         <View style={styles.choices}>

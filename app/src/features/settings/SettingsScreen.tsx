@@ -31,6 +31,7 @@ import { CodeEinloesen } from '@/features/pro/CodeEinloesen';
 import { zeigeProSperre } from '@/components/ProSperre';
 import { proNeuLaden, useIchPro } from '@/lib/pro';
 import { VERSION } from '@/lib/updates';
+import { T } from '@/lib/sprache';
 import { PROFIL_THEMES } from '@/features/pro/ProfilKopf';
 import {
   LINSE,
@@ -322,7 +323,7 @@ export function SettingsScreen() {
     try {
       const data = await api.exportMyData();
       await Clipboard.setStringAsync(JSON.stringify(data, null, 2));
-      setNote('Alle deine Daten liegen jetzt als JSON in der Zwischenablage.');
+      setNote(T('Alle deine Daten liegen jetzt als JSON in der Zwischenablage.'));
     } catch (e) {
       setNote(fehlerText(e, 'Export fehlgeschlagen'));
     } finally {
@@ -370,7 +371,7 @@ export function SettingsScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Einstellungen" eyebrow="konto & app" scrollY={scrollY} />
+        <ScreenHeader title={T('Einstellungen')} eyebrow={T('konto & app')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -400,17 +401,17 @@ export function SettingsScreen() {
               @{profile.handle}
             </Text>
           </View>
-          <Aktion text="Bearbeiten" />
+          <Aktion text={T('Bearbeiten')} />
         </Pressable>
 
         {/* --- Design ----------------------------------------------------------
             Oben, direkt unter dem Profil: solange zwei Designs verglichen
             werden, ist das der Schalter, den man am oeftesten sucht. */}
         {UMSCHALTBAR ? (
-          <Gruppe icon="mastery" titel="Design">
+          <Gruppe icon="mastery" titel={T('Design')}>
             <Zeile
               erste
-              label="Design 2.0"
+              label={T('Design 2.0')}
               hint={designLaedt ? 'Lädt neu …' : 'Bordeaux, Gold, Sechsecke. Gilt für dieses Gerät.'}
               rechts={
                 <Schalter
@@ -426,8 +427,8 @@ export function SettingsScreen() {
             />
             {ZWEI ? (
               <Zeile
-                label="Sechseck"
-                hint="Aktiver Tab und Feed-Leiste"
+                label={T('Sechseck')}
+                hint={T('Aktiver Tab und Feed-Leiste')}
                 unten={
                   <Auswahl
                     optionen={[
@@ -451,8 +452,8 @@ export function SettingsScreen() {
             ) : null}
             {ZWEI ? (
               <Zeile
-                label="Profilkopf"
-                hint="Sehen alle, die dein Profil öffnen"
+                label={T('Profilkopf')}
+                hint={T('Sehen alle, die dein Profil öffnen')}
                 unten={
                   <Auswahl
                     optionen={[{ wert: 'ohne', label: 'Ohne' }, ...PROFIL_THEMES.map((t) => ({ wert: t.id as string, label: t.label }))]}
@@ -474,7 +475,7 @@ export function SettingsScreen() {
             ) : null}
             {ZWEI && linse !== 'flach' ? (
               <Zeile
-                label="Stein bewegt sich"
+                label={T('Stein bewegt sich')}
                 hint={ichPro.pro ? 'Ein Lichtschein wandert über den aktiven Tab' : 'Mit PRO'}
                 rechts={
                   <Schalter
@@ -492,7 +493,7 @@ export function SettingsScreen() {
             ) : null}
             {ZWEI ? (
               <Zeile
-                label="Hintergrund"
+                label={T('Hintergrund')}
                 unten={
                   <Auswahl
                     optionen={[
@@ -519,29 +520,29 @@ export function SettingsScreen() {
         ) : null}
 
         {/* --- Konto -------------------------------------------------------- */}
-        <Gruppe icon="profile" titel="Konto">
+        <Gruppe icon="profile" titel={T('Konto')}>
           <Zeile
             erste
-            label="Öffentliches Profil"
-            hint="So sehen dich andere"
+            label={T('Öffentliches Profil')}
+            hint={T('So sehen dich andere')}
             onPress={() => router.push(`/u/${encodeURIComponent(profile.handle)}`)}
-            rechts={<Aktion text="Ansehen" />}
+            rechts={<Aktion text={T('Ansehen')} />}
           />
           <Zeile
-            label="Region"
-            hint="Lokale Themen und Rangliste"
+            label={T('Region')}
+            hint={T('Lokale Themen und Rangliste')}
             rechts={<Text style={styles.wert}>{region?.label ?? country?.label ?? '—'}</Text>}
           />
         </Gruppe>
 
         {/* --- Inhalte ------------------------------------------------------- */}
-        <Gruppe icon="sliders" titel="Inhalte">
+        <Gruppe icon="sliders" titel={T('Inhalte')}>
           {/* Die Sprache der OBERFLAECHE. Welche Karten kommen, entscheidet
               allein die Mischung darunter (get_feed liest feed_english_pct). */}
           <Zeile
             erste
-            label="App-Sprache"
-            hint="Noch nicht überall übersetzt"
+            label={T('App-Sprache')}
+            hint={T('Noch nicht überall übersetzt')}
             rechts={
               <Auswahl
                 optionen={SUPPORTED.map((l: Language) => ({ wert: l as string, label: l.toUpperCase() }))}
@@ -553,7 +554,7 @@ export function SettingsScreen() {
           {/* Fünf Stufen statt eines stufenlosen Reglers: "ein bisschen mehr
               Englisch" ist keine Absicht, die jemand hat. */}
           <Zeile
-            label="Sprache der Karten"
+            label={T('Sprache der Karten')}
             hint={LANGUAGE_STEPS.find((s) => s.pct === sprachStufe)?.hint}
             unten={
               <Auswahl
@@ -564,8 +565,8 @@ export function SettingsScreen() {
             }
           />
           <Zeile
-            label="Tagesziel"
-            hint="Danach bietet die App eine Pause an"
+            label={T('Tagesziel')}
+            hint={T('Danach bietet die App eine Pause an')}
             unten={
               <Auswahl
                 optionen={GOALS.map((g) => ({ wert: g, label: String(g) }))}
@@ -577,11 +578,11 @@ export function SettingsScreen() {
         </Gruppe>
 
         {/* --- Sichtbarkeit -------------------------------------------------- */}
-        <Gruppe icon="lock" titel="Sichtbarkeit">
+        <Gruppe icon="lock" titel={T('Sichtbarkeit')}>
           <Zeile
             erste
-            label="Beiträge öffentlich"
-            hint="Aus: nur Follower sehen sie, nicht in Explore"
+            label={T('Beiträge öffentlich')}
+            hint={T('Aus: nur Follower sehen sie, nicht in Explore')}
             rechts={
               // `!== false`: ohne Feld gilt der Standard der Datenbank, "an" (0084).
               <Schalter
@@ -591,8 +592,8 @@ export function SettingsScreen() {
             }
           />
           <Zeile
-            label="Reposts nur im Profil"
-            hint="Nicht im Home deiner Follower"
+            label={T('Reposts nur im Profil')}
+            hint={T('Nicht im Home deiner Follower')}
             rechts={
               <Schalter
                 wert={Boolean(profile.reposts_nur_profil)}
@@ -601,13 +602,13 @@ export function SettingsScreen() {
             }
           />
           <Zeile
-            label="Likes öffentlich"
-            hint="Aus: niemand sieht, was du likest"
+            label={T('Likes öffentlich')}
+            hint={T('Aus: niemand sieht, was du likest')}
             rechts={<Schalter wert={profile.likes_public} onChange={(v) => void patch({ likes_public: v })} />}
           />
           <Zeile
-            label="Rangliste"
-            hint="Aus: du erscheinst nicht, siehst aber alle"
+            label={T('Rangliste')}
+            hint={T('Aus: du erscheinst nicht, siehst aber alle')}
             rechts={
               <Schalter wert={profile.leaderboard_opt_in} onChange={(v) => void patch({ leaderboard_opt_in: v })} />
             }
@@ -615,11 +616,11 @@ export function SettingsScreen() {
         </Gruppe>
 
         {/* --- Home ------------------------------------------------------------ */}
-        <Gruppe icon="feed" titel="Home">
+        <Gruppe icon="feed" titel={T('Home')}>
           <Zeile
             erste
-            label="Keine Reposts"
-            hint="Nur, was deine Leute selbst schreiben"
+            label={T('Keine Reposts')}
+            hint={T('Nur, was deine Leute selbst schreiben')}
             rechts={
               <Schalter
                 wert={Boolean(profile.home_ohne_reposts)}
@@ -630,10 +631,10 @@ export function SettingsScreen() {
         </Gruppe>
 
         {/* --- Benachrichtigungen ---------------------------------------------- */}
-        <Gruppe icon="bell" titel="Benachrichtigungen">
+        <Gruppe icon="bell" titel={T('Benachrichtigungen')}>
           <Zeile
             erste
-            label="Push"
+            label={T('Push')}
             hint={pushError ?? PUSH_HINT[push]}
             rechts={
               push === 'unsupported' || push === 'needs-install' ? (
@@ -647,19 +648,19 @@ export function SettingsScreen() {
           />
           {push === 'on' ? (
             <Zeile
-              label="Soziales"
-              hint="Follower, Kommentare, Duelle"
+              label={T('Soziales')}
+              hint={T('Follower, Kommentare, Duelle')}
               rechts={<Schalter wert={profile.notify_social} onChange={(v) => void patch({ notify_social: v })} />}
             />
           ) : null}
           <Zeile
-            label="Wochenrückblick"
-            hint="Sonntagabend, wenn du gelernt hast"
+            label={T('Wochenrückblick')}
+            hint={T('Sonntagabend, wenn du gelernt hast')}
             rechts={<Schalter wert={profile.notify_rueckblick !== false} onChange={(v) => void patch({ notify_rueckblick: v })} />}
           />
           <Zeile
-            label="Wiederholungen"
-            hint="Erinnerung, wenn Fragen fällig sind"
+            label={T('Wiederholungen')}
+            hint={T('Erinnerung, wenn Fragen fällig sind')}
             rechts={
               <Schalter
                 wert={profile.notify_reviews}
@@ -669,8 +670,8 @@ export function SettingsScreen() {
             }
           />
           <Zeile
-            label="Streak"
-            hint="Erinnerung, bevor sie reißt"
+            label={T('Streak')}
+            hint={T('Erinnerung, bevor sie reißt')}
             rechts={
               <Schalter
                 wert={profile.notify_streak}
@@ -682,25 +683,25 @@ export function SettingsScreen() {
         </Gruppe>
 
         {/* --- Dieses Gerät ------------------------------------------------------ */}
-        <Gruppe icon="settings" titel="Dieses Gerät">
+        <Gruppe icon="settings" titel={T('Dieses Gerät')}>
           <Zeile
             erste
-            label="Vibration"
+            label={T('Vibration')}
             rechts={<Schalter wert={prefs.haptics} onChange={(v) => void setPref('haptics', v)} />}
           />
           <Zeile
-            label="Neue Animationen"
-            hint="Test: Zahlen zählen hoch, Bildschirme gleiten herein"
+            label={T('Neue Animationen')}
+            hint={T('Test: Zahlen zählen hoch, Bildschirme gleiten herein')}
             rechts={<Schalter wert={prefs.testAnimationen} onChange={(v) => void setPref('testAnimationen', v)} />}
           />
           <Zeile
-            label="Weniger Bewegung"
-            hint="Ruhigere Animationen"
+            label={T('Weniger Bewegung')}
+            hint={T('Ruhigere Animationen')}
             rechts={<Schalter wert={prefs.reduceMotion} onChange={(v) => void setPref('reduceMotion', v)} />}
           />
           <Zeile
-            label="Musik"
-            hint="Leise Fläche unter jeder Karte"
+            label={T('Musik')}
+            hint={T('Leise Fläche unter jeder Karte')}
             rechts={
               <Schalter
                 wert={prefs.musicEnabled}
@@ -712,8 +713,8 @@ export function SettingsScreen() {
             }
           />
           <Zeile
-            label="Töne"
-            hint="Kurze Klänge beim Tippen"
+            label={T('Töne')}
+            hint={T('Kurze Klänge beim Tippen')}
             rechts={
               <Schalter
                 wert={prefs.audioEnabled}
@@ -726,7 +727,7 @@ export function SettingsScreen() {
             }
           />
           <Zeile
-            label="Erklärungen"
+            label={T('Erklärungen')}
             hint={tutorialWieder ? 'Kommen beim nächsten Öffnen wieder' : 'Feed-Tutorial und Tab-Hinweise'}
             onPress={() => {
               void resetFeedTutorial();
@@ -739,10 +740,10 @@ export function SettingsScreen() {
         </Gruppe>
 
         {/* --- Vorlesen (PRO, 19.09.) ------------------------------------------------ */}
-        <Gruppe icon="listen" titel="Vorlesen">
+        <Gruppe icon="listen" titel={T('Vorlesen')}>
           <Zeile
             erste
-            label="Tempo"
+            label={T('Tempo')}
             hint={ichPro.pro ? 'Für Vorlesen und Erklärkarten' : 'Mit PRO wählbar'}
             unten={
               <Auswahl
@@ -794,38 +795,38 @@ export function SettingsScreen() {
         </Gruppe>
 
         {/* --- Daten ---------------------------------------------------------------- */}
-        <Gruppe icon="source" titel="Deine Daten">
+        <Gruppe icon="source" titel={T('Deine Daten')}>
           <Zeile
             erste
-            label="Daten exportieren"
+            label={T('Daten exportieren')}
             hint="Alles über dich als JSON (DSGVO Art. 15)"
             onPress={exportData}
-            rechts={<Aktion text="Export" />}
+            rechts={<Aktion text={T('Export')} />}
           />
           <Zeile
-            label="Konto löschen"
+            label={T('Konto löschen')}
             hint="Sofort und endgültig (DSGVO Art. 17)"
             onPress={confirmDelete}
             gefahr
-            rechts={<Aktion text="Löschen" gefahr />}
+            rechts={<Aktion text={T('Löschen')} gefahr />}
           />
         </Gruppe>
 
-        <Gruppe icon="news" titel="App">
+        <Gruppe icon="news" titel={T('App')}>
           <Zeile
             erste
-            label="Updates"
+            label={T('Updates')}
             hint={`Version ${VERSION} – was neu ist, von Anfang an`}
             onPress={() => router.push('/updates')}
-            rechts={<Aktion text="Ansehen" />}
+            rechts={<Aktion text={T('Ansehen')} />}
           />
         </Gruppe>
 
-        <Gruppe icon="mastery" titel="PRO">
+        <Gruppe icon="mastery" titel={T('PRO')}>
           <CodeEinloesen />
         </Gruppe>
 
-        <Button label="Abmelden" variant="ghost" busy={busy} onPress={() => void signOut()} />
+        <Button label={T('Abmelden')} variant="ghost" busy={busy} onPress={() => void signOut()} />
 
         <Text style={styles.fuss}>
           {BRAND.name} {VERSION} · Prototyp · Konto {profile.id.slice(0, 8)}

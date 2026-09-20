@@ -9,6 +9,7 @@ import { useActiveCardId } from '@/lib/activeCard';
 import { useContentState } from '@/lib/contentState';
 import { haptics } from '@/lib/haptics';
 import { usePrefs } from '@/lib/prefs';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -163,8 +164,8 @@ export function FeedTutorial({ onDone }: { onDone: () => void }) {
       >
         <View style={styles.kopf}>
           <Text style={styles.eyebrow}>{s.eyebrow}</Text>
-          <Pressable onPress={onDone} hitSlop={10} accessibilityLabel="Tutorial überspringen">
-            <Text style={styles.skip}>Überspringen</Text>
+          <Pressable onPress={onDone} hitSlop={10} accessibilityLabel={T('Tutorial überspringen')}>
+            <Text style={styles.skip}>{T('Überspringen')}</Text>
           </Pressable>
         </View>
 

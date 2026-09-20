@@ -191,7 +191,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <StatusBar style="light" />
-        <Gate />
+        {/* Der Schluessel haengt an der Sprache: wird sie umgestellt, baut
+            React den ganzen Baum neu auf. Damit greift die Uebersetzung
+            (lib/sprache.ts) ueberall sofort, ohne dass 88 Dateien einen
+            eigenen Haken dafuer brauchen. */}
+        <Gate key={i18n.language} />
         {/* Liegt ueber allem und faengt jede Belohnung ab, egal von welchem
             Bildschirm sie kommt. Siehe lib/rewards.ts. */}
         <RewardLayer />

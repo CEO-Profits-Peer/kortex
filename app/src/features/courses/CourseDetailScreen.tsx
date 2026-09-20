@@ -14,6 +14,7 @@ import { FeedScreen } from '@/features/feed/FeedScreen';
 import { api } from '@/lib/supabase';
 import type { CourseDetail } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
+import { T } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -176,11 +177,8 @@ export function CourseDetailScreen({ slug }: { slug: string }) {
           onPress={start}
         />
         {/* 19.09.: Audio-Modus - die Lektionen nacheinander anhoeren. */}
-        <Button label="Anhören" variant="ghost" onPress={() => router.push(`/hoeren?kurs=${encodeURIComponent(course.id)}`)} />
-        <Text style={styles.note}>
-          Lektionen zählen wie normale Karten: gelesen zählt, gelöste Aufgaben
-          geben Mastery, und die Fragen kommen später zur Wiederholung zurück.
-        </Text>
+        <Button label={T('Anhören')} variant="ghost" onPress={() => router.push(`/hoeren?kurs=${encodeURIComponent(course.id)}`)} />
+        <Text style={styles.note}>{T('Lektionen zählen wie normale Karten: gelesen zählt, gelöste Aufgaben geben Mastery, und die Fragen kommen später zur Wiederholung zurück.')}</Text>
       </ScrollView>
     </GridBackground>
   );

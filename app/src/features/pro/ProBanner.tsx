@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { BordeauxMuster, SechseckLinse } from '@/components/Sechseck';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
+import { T } from '@/lib/sprache';
 import { ZWEI, facette } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -26,7 +27,7 @@ export function ProBanner() {
       }}
       style={({ pressed }) => [styles.karte, pressed && { opacity: 0.88 }]}
       accessibilityRole="button"
-      accessibilityLabel="PRO werden"
+      accessibilityLabel={T('PRO werden')}
     >
       {ZWEI ? <BordeauxMuster /> : null}
       <View style={styles.zeichen}>
@@ -36,7 +37,7 @@ export function ProBanner() {
         </View>
       </View>
       <View style={styles.text}>
-        <Text style={styles.titel}>PRO werden</Text>
+        <Text style={styles.titel}>{T('PRO werden')}</Text>
         <Text style={styles.unter} numberOfLines={1}>
           Sammeln, Statistik, Ligen – bald
         </Text>

@@ -6,6 +6,7 @@ import { Appear } from '@/components/Appear';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette, sechseckRegel } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -71,7 +72,7 @@ export function DailyBanner() {
         </View>
 
         <View style={styles.body}>
-          <Text style={[styles.kicker, { color: tint }]}>Tagesaufgabe</Text>
+          <Text style={[styles.kicker, { color: tint }]}>{T('Tagesaufgabe')}</Text>
           <Text style={styles.title}>
             {open ? 'Fünf Fragen. Für alle dieselben.' : `${state.correct} von ${state.total} richtig`}
           </Text>

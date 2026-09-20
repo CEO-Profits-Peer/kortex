@@ -24,6 +24,7 @@ import {
 } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { flaeche, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -95,7 +96,7 @@ export function MeisterwegeScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Meisterwege" eyebrow="profil" scrollY={scrollY} />
+        <ScreenHeader title={T('Meisterwege')} eyebrow={T('profil')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -105,9 +106,7 @@ export function MeisterwegeScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Jedes Thema hat fünf Stufen. Du steigst nur durch richtige Antworten auf – kaufen lässt sich hier nichts.
-        </Text>
+        <Text style={styles.intro}>{T('Jedes Thema hat fünf Stufen. Du steigst nur durch richtige Antworten auf – kaufen lässt sich hier nichts.')}</Text>
 
         {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
         {!m && !fehler ? <Laden size="large" style={{ marginTop: space.xxl }} /> : null}
@@ -116,12 +115,12 @@ export function MeisterwegeScreen() {
           <>
             {/* --- Auswahl ------------------------------------------------------ */}
             <View style={styles.karte}>
-              <Text style={styles.abschnitt}>Rahmen</Text>
+              <Text style={styles.abschnitt}>{T('Rahmen')}</Text>
               {rahmenFrei.length === 0 ? (
-                <Text style={styles.leer}>Ab Stufe 2 in einem Thema bekommst du deinen ersten Rahmen.</Text>
+                <Text style={styles.leer}>{T('Ab Stufe 2 in einem Thema bekommst du deinen ersten Rahmen.')}</Text>
               ) : (
                 <View style={styles.reihe}>
-                  <Wahl an={!m.rahmen} onPress={() => void waehlen(null, m.namensfarbe)} label="Ohne">
+                  <Wahl an={!m.rahmen} onPress={() => void waehlen(null, m.namensfarbe)} label={T('Ohne')}>
                     <Avatar seed="v2-1000-0000000000000000000" size={40} />
                   </Wahl>
                   {rahmenFrei.map((b) => (
@@ -134,10 +133,10 @@ export function MeisterwegeScreen() {
 
               <Text style={[styles.abschnitt, { marginTop: space.md }]}>Namensfarbe</Text>
               {namenFrei.length === 0 ? (
-                <Text style={styles.leer}>Ab Stufe 3 färbt ein Thema deinen Namen in Beiträgen und im Profil.</Text>
+                <Text style={styles.leer}>{T('Ab Stufe 3 färbt ein Thema deinen Namen in Beiträgen und im Profil.')}</Text>
               ) : (
                 <View style={styles.reihe}>
-                  <Wahl an={!m.namensfarbe} onPress={() => void waehlen(m.rahmen, null)} label="Normal">
+                  <Wahl an={!m.namensfarbe} onPress={() => void waehlen(m.rahmen, null)} label={T('Normal')}>
                     <Text style={[styles.namensProbe, { color: color.ink.max }]}>Aa</Text>
                   </Wahl>
                   {namenFrei.map((b) => (
@@ -174,7 +173,7 @@ export function MeisterwegeScreen() {
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.klein}>Mit PRO gibt es denselben Rahmen zusätzlich in Gold – verdienen musst du ihn trotzdem selbst.</Text>
+                <Text style={styles.klein}>{T('Mit PRO gibt es denselben Rahmen zusätzlich in Gold – verdienen musst du ihn trotzdem selbst.')}</Text>
               </View>
             ) : null}
 

@@ -7,6 +7,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { bisText, proNeuLaden, schutzText, useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { KANTE, ZWEI } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -64,7 +65,7 @@ export function CodeEinloesen() {
 
       <View style={styles.trenner} />
 
-      <Text style={styles.label}>Code einlösen</Text>
+      <Text style={styles.label}>{T('Code einlösen')}</Text>
       <View style={styles.zeile}>
         <TextInput
           value={code}

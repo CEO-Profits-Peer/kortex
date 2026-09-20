@@ -11,6 +11,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api, type MeineWuensche, type WunschStatus } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -81,7 +82,7 @@ export function WuenscheScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Themenwünsche" eyebrow="lernen" scrollY={scrollY} />
+        <ScreenHeader title={T('Themenwünsche')} eyebrow={T('lernen')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -92,24 +93,21 @@ export function WuenscheScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Fehlt dir ein Thema? Wünsch es dir. Was oft gewünscht wird, bekommt eine kleine Kartenserie – und du eine
-          Nachricht, sobald sie da ist.
-        </Text>
+        <Text style={styles.intro}>{T('Fehlt dir ein Thema? Wünsch es dir. Was oft gewünscht wird, bekommt eine kleine Kartenserie – und du eine Nachricht, sobald sie da ist.')}</Text>
 
         <View style={styles.karte}>
           <View style={styles.zeile}>
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="z. B. Vulkane"
+              placeholder={T('z. B. Vulkane')}
               placeholderTextColor={color.ink.low}
               maxLength={80}
               onSubmitEditing={() => void wuenschen()}
               returnKeyType="send"
               style={styles.eingabe}
             />
-            <Button label="Wünschen" onPress={() => void wuenschen()} disabled={text.trim().length < 2} busy={busy} />
+            <Button label={T('Wünschen')} onPress={() => void wuenschen()} disabled={text.trim().length < 2} busy={busy} />
           </View>
           {notiz ? (
             <Text style={[styles.klein, notiz.fehler && { color: color.signal.error }]}>{notiz.text}</Text>
@@ -120,7 +118,7 @@ export function WuenscheScreen() {
 
         {daten && daten.meine.length > 0 ? (
           <View style={{ gap: space.sm }}>
-            <Text style={styles.abschnitt}>Deine Wünsche</Text>
+            <Text style={styles.abschnitt}>{T('Deine Wünsche')}</Text>
             {daten.meine.map((w) => {
               const s = STATUS[w.status] ?? STATUS.offen;
               const name = w.anzeige ?? w.text;
@@ -150,7 +148,7 @@ export function WuenscheScreen() {
                     <Pressable
                       hitSlop={8}
                       onPress={() => void api.wunschZuruecknehmen(w.id).then(laden)}
-                      accessibilityLabel="Wunsch zurücknehmen"
+                      accessibilityLabel={T('Wunsch zurücknehmen')}
                     >
                       <Text style={styles.weg}>×</Text>
                     </Pressable>
@@ -163,7 +161,7 @@ export function WuenscheScreen() {
 
         {daten && daten.bald.length > 0 ? (
           <View style={{ gap: space.sm }}>
-            <Text style={styles.abschnitt}>Aus Wünschen</Text>
+            <Text style={styles.abschnitt}>{T('Aus Wünschen')}</Text>
             <View style={styles.chips}>
               {daten.bald.map((b) => (
                 <Pressable

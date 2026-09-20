@@ -16,6 +16,7 @@ import { haptics } from '@/lib/haptics';
 import type { Liga } from '@/lib/ligen';
 import { proMeldung, useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -106,7 +107,7 @@ export function LigenScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Ligen" eyebrow="rangliste" scrollY={scrollY} />
+        <ScreenHeader title={T('Ligen')} eyebrow={T('rangliste')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -117,9 +118,7 @@ export function LigenScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Eine Rangliste nur mit deinen Leuten. Gezählt werden die XP dieser Woche – jeden Montag geht es von vorne los.
-        </Text>
+        <Text style={styles.intro}>{T('Eine Rangliste nur mit deinen Leuten. Gezählt werden die XP dieser Woche – jeden Montag geht es von vorne los.')}</Text>
 
         {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
         {ligen === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
@@ -153,7 +152,7 @@ export function LigenScreen() {
                 <Text style={styles.xp}>{z.xp} XP</Text>
               </Pressable>
             ))}
-            {l.tabelle.length < 2 ? <Text style={styles.klein}>Noch allein – schick den Code an deine Leute.</Text> : null}
+            {l.tabelle.length < 2 ? <Text style={styles.klein}>{T('Noch allein – schick den Code an deine Leute.')}</Text> : null}
             <Pressable
               onPress={() => {
                 haptics.light();
@@ -169,7 +168,7 @@ export function LigenScreen() {
 
         {/* --- Beitreten ----------------------------------------------------- */}
         <View style={styles.karte}>
-          <Text style={styles.abschnitt}>Beitreten</Text>
+          <Text style={styles.abschnitt}>{T('Beitreten')}</Text>
           <View style={styles.eingabeZeile}>
             <TextInput
               value={code}
@@ -182,9 +181,9 @@ export function LigenScreen() {
               style={styles.eingabe}
               onSubmitEditing={() => void beitreten()}
             />
-            <Button label="Beitreten" onPress={() => void beitreten()} disabled={code.trim().length < 6} busy={busy} />
+            <Button label={T('Beitreten')} onPress={() => void beitreten()} disabled={code.trim().length < 6} busy={busy} />
           </View>
-          <Text style={styles.klein}>Wer in einer Liga ist, sieht Name, Profilbild und Wochen-XP der anderen.</Text>
+          <Text style={styles.klein}>{T('Wer in einer Liga ist, sieht Name, Profilbild und Wochen-XP der anderen.')}</Text>
         </View>
 
         {/* --- Neue Liga (PRO) --------------------------------------------------- */}
@@ -194,13 +193,13 @@ export function LigenScreen() {
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="z. B. 4B oder Lerngruppe"
+              placeholder={T('z. B. 4B oder Lerngruppe')}
               placeholderTextColor={color.ink.low}
               maxLength={40}
               style={styles.eingabe}
               onSubmitEditing={() => void erstellen()}
             />
-            <Button label="Anlegen" variant="ghost" onPress={() => void erstellen()} disabled={pro.pro && name.trim().length < 2} />
+            <Button label={T('Anlegen')} variant="ghost" onPress={() => void erstellen()} disabled={pro.pro && name.trim().length < 2} />
           </View>
         </View>
 

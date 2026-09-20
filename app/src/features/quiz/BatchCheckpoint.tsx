@@ -13,6 +13,7 @@ import { Icon } from '@/components/Icon';
 import { BRAND } from '@/lib/brand';
 import { api } from '@/lib/supabase';
 import type { ContentItem, SubmitQuizResult } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, gewaehlt, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -151,7 +152,7 @@ export function BatchCheckpoint({
             />
             {questions.length > 0 ? (
               <Button
-                label="Weiterlesen"
+                label={T('Weiterlesen')}
                 variant="quiet"
                 onPress={() => {
                   analytics.checkpointSkipped();
@@ -159,9 +160,7 @@ export function BatchCheckpoint({
                 }}
               />
             ) : null}
-            <Text style={styles.note}>
-              Freiwillig. Überspringen kostet nur die XP, nicht den Lesefluss.
-            </Text>
+            <Text style={styles.note}>{T('Freiwillig. Überspringen kostet nur die XP, nicht den Lesefluss.')}</Text>
           </View>
         </View>
       </GridBackground>
@@ -179,7 +178,7 @@ export function BatchCheckpoint({
       <GridBackground>
         <View style={[styles.root, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
           <View style={styles.hero}>
-            <Text style={styles.eyebrow}>Ergebnis</Text>
+            <Text style={styles.eyebrow}>{T('Ergebnis')}</Text>
             <Text style={styles.bigNumber}>
               {correct}
               <Text style={styles.ofTotal}>/{answers.length}</Text>
@@ -192,15 +191,12 @@ export function BatchCheckpoint({
               </View>
               <View style={styles.gain}>
                 <Text style={[styles.gainValue, { color: color.signal.mastery }]}>+{mastery}</Text>
-                <Text style={styles.gainLabel}>Mastery</Text>
+                <Text style={styles.gainLabel}>{T('Mastery')}</Text>
               </View>
             </View>
 
             {mastery > 0 ? (
-              <Text style={styles.note}>
-                Diese Fragen kommen in ein bis drei Tagen noch einmal. Erst dann
-                zählt, was wirklich hängen geblieben ist.
-              </Text>
+              <Text style={styles.note}>{T('Diese Fragen kommen in ein bis drei Tagen noch einmal. Erst dann zählt, was wirklich hängen geblieben ist.')}</Text>
             ) : null}
           </View>
 
@@ -222,7 +218,7 @@ export function BatchCheckpoint({
             </View>
           ) : null}
 
-          <Button label="Weiterlesen" onPress={onContinue} />
+          <Button label={T('Weiterlesen')} onPress={onContinue} />
         </View>
       </GridBackground>
     );
@@ -305,7 +301,7 @@ export function BatchCheckpoint({
                   Karte selbst, also aus derselben Quelle, ohne Modellaufruf. */}
               {!result.correct && !nochmal ? (
                 <Pressable onPress={() => setNochmal(true)} hitSlop={8} style={styles.nochmalKnopf}>
-                  <Text style={styles.nochmalText}>Nochmal</Text>
+                  <Text style={styles.nochmalText}>{T('Nochmal')}</Text>
                 </Pressable>
               ) : null}
               {!result.correct && nochmal ? (

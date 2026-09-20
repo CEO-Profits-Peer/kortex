@@ -10,6 +10,7 @@ import Animated, {
 
 import { Icon } from '@/components/Icon';
 import { GRID_CELL, color, space, type } from '@/theme/tokens';
+import { T } from '@/lib/sprache';
 
 /**
  * Die Kopfzeile jeder Unterseite.
@@ -152,10 +153,10 @@ export function ScreenHeader({
           hitSlop={12}
           style={styles.back}
           accessibilityRole="button"
-          accessibilityLabel="Zurück"
+          accessibilityLabel={T('Zurück')}
         >
           <Icon name="back" size={15} color={color.ink.mid} />
-          <Text style={styles.backText}>zurück</Text>
+          <Text style={styles.backText}>{T('zurück')}</Text>
         </Pressable>
 
         {/* Der kleine Titel liegt MITTIG ueber der ganzen Leiste, nicht

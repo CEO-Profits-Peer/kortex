@@ -11,6 +11,7 @@ import { feedback } from '@/lib/feedback';
 import { haptics } from '@/lib/haptics';
 import { api, type LabTipps } from '@/lib/supabase';
 import type { AbstimmDaten, LabDaten, PostArt, PostDaten, StapelDaten } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -118,7 +119,7 @@ function SchaetzDuell({ postId, d, t, istMeins }: { postId: string; d: LabDaten;
     <View style={{ gap: space.sm }}>
       <LabErgebnis werkzeugId={d.werkzeug} eingaben={d.eingaben} mitLink />
       <View style={styles.duell}>
-        <Text style={styles.duellKopf}>WER LAG AM NÄCHSTEN</Text>
+        <Text style={styles.duellKopf}>{T('WER LAG AM NÄCHSTEN')}</Text>
         {alle.slice(0, 8).map((x, i) => (
           <View key={`${x.name}-${i}`} style={styles.duellZeile}>
             <Text style={[styles.duellPlatz, i === 0 && { color: color.signal.primary }]}>{i + 1}</Text>

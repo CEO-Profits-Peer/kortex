@@ -10,6 +10,7 @@ import { Laden } from '@/components/Laden';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { api, type Lernpfad, type LernpfadDetail, type LernpfadStation } from '@/lib/supabase';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
@@ -107,7 +108,7 @@ export function LernpfadeScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Lernpfade" eyebrow="lernen" scrollY={scrollY} />
+        <ScreenHeader title={T('Lernpfade')} eyebrow={T('lernen')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -117,7 +118,7 @@ export function LernpfadeScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>Mehrere Kurse in einer Reihenfolge – jeder baut auf dem davor auf.</Text>
+        <Text style={styles.intro}>{T('Mehrere Kurse in einer Reihenfolge – jeder baut auf dem davor auf.')}</Text>
         {pfade === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
         {pfade
           ?.slice()
@@ -166,7 +167,7 @@ export function LernpfadScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title={pfad?.titel ?? 'Lernpfad'} eyebrow="lernpfad" scrollY={scrollY} />
+        <ScreenHeader title={pfad?.titel ?? 'Lernpfad'} eyebrow={T('lernpfad')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -177,7 +178,7 @@ export function LernpfadScreen() {
         showsVerticalScrollIndicator={false}
       >
         {pfad === undefined ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
-        {pfad === null ? <Text style={styles.intro}>Diesen Lernpfad gibt es nicht.</Text> : null}
+        {pfad === null ? <Text style={styles.intro}>{T('Diesen Lernpfad gibt es nicht.')}</Text> : null}
         {pfad ? (
           <>
             <Text style={styles.intro}>{pfad.beschreibung}</Text>

@@ -16,6 +16,7 @@ import { haptics } from '@/lib/haptics';
 import { proMeldung } from '@/lib/pro';
 import { api, type GruppenStapel, type Klassenstand } from '@/lib/supabase';
 import type { SearchHit } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -89,7 +90,7 @@ export function GruppenStapelScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Gruppen-Stapel" eyebrow="studio" scrollY={scrollY} />
+        <ScreenHeader title={T('Gruppen-Stapel')} eyebrow={T('studio')} scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -100,10 +101,7 @@ export function GruppenStapelScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Sammelt gemeinsam die Karten für eine Schularbeit oder ein Thema. Jede und jeder in der Gruppe kann Karten
-          dazulegen.
-        </Text>
+        <Text style={styles.intro}>{T('Sammelt gemeinsam die Karten für eine Schularbeit oder ein Thema. Jede und jeder in der Gruppe kann Karten dazulegen.')}</Text>
 
         {liste === null ? <Laden size="large" style={{ marginTop: space.xl }} /> : null}
 
@@ -119,7 +117,7 @@ export function GruppenStapelScreen() {
         ))}
 
         <View style={styles.karte}>
-          <Text style={styles.abschnitt}>Beitreten</Text>
+          <Text style={styles.abschnitt}>{T('Beitreten')}</Text>
           <View style={styles.eingabeZeile}>
             <TextInput
               value={code}
@@ -131,23 +129,23 @@ export function GruppenStapelScreen() {
               style={styles.eingabe}
               onSubmitEditing={() => void beitreten()}
             />
-            <Button label="Beitreten" onPress={() => void beitreten()} disabled={code.trim().length < 6} />
+            <Button label={T('Beitreten')} onPress={() => void beitreten()} disabled={code.trim().length < 6} />
           </View>
         </View>
 
         <View style={styles.karte}>
-          <Text style={styles.abschnitt}>Neuer Gruppen-Stapel</Text>
+          <Text style={styles.abschnitt}>{T('Neuer Gruppen-Stapel')}</Text>
           <View style={styles.eingabeZeile}>
             <TextInput
               value={titel}
               onChangeText={setTitel}
-              placeholder="z. B. Bio-Schularbeit Zelle"
+              placeholder={T('z. B. Bio-Schularbeit Zelle')}
               placeholderTextColor={color.ink.low}
               maxLength={60}
               style={styles.eingabe}
               onSubmitEditing={() => void anlegen()}
             />
-            <Button label="Anlegen" variant="ghost" onPress={() => void anlegen()} disabled={titel.trim().length < 2} />
+            <Button label={T('Anlegen')} variant="ghost" onPress={() => void anlegen()} disabled={titel.trim().length < 2} />
           </View>
         </View>
 
@@ -204,7 +202,7 @@ function StapelKarte({
     try {
       await api.createPost({ body: s.titel, art: 'stapel', daten: { karten: s.karten.map((k) => k.content_id) } });
       haptics.success();
-      zeige('Gepostet – er steht jetzt in deinem Profil.');
+      zeige(T('Gepostet – er steht jetzt in deinem Profil.'));
     } catch (e) {
       const angebot = proMeldung(e);
       if (angebot) zeigeProSperre(angebot);
@@ -244,7 +242,7 @@ function StapelKarte({
                 </Text>
                 {k.von ? <Text style={styles.klein}>von {k.von}</Text> : null}
               </Pressable>
-              <Pressable onPress={() => void karte(k.content_id, false)} hitSlop={8} accessibilityLabel="Herausnehmen">
+              <Pressable onPress={() => void karte(k.content_id, false)} hitSlop={8} accessibilityLabel={T('Herausnehmen')}>
                 <Icon name="cross" size={14} color={color.ink.low} />
               </Pressable>
             </View>
@@ -255,7 +253,7 @@ function StapelKarte({
             <TextInput
               value={suche}
               onChangeText={setSuche}
-              placeholder="Karte suchen und dazulegen"
+              placeholder={T('Karte suchen und dazulegen')}
               placeholderTextColor={color.ink.low}
               style={[styles.eingabe, { backgroundColor: 'transparent', paddingHorizontal: 0 }]}
             />
@@ -280,22 +278,20 @@ function StapelKarte({
               style={styles.standKnopf}
             >
               <Icon name="chart" size={14} color={color.akzent} />
-              <Text style={styles.standKnopfText}>Überblick</Text>
+              <Text style={styles.standKnopfText}>{T('Überblick')}</Text>
             </Pressable>
           ) : null}
           {s.meiner && standZeigen ? (
             stand ? <KlassenUeberblick stand={stand} /> : <Laden />
           ) : null}
           {!s.meiner ? (
-            <Text style={styles.klein}>
-              Wer den Stapel angelegt hat, sieht anonym, wie gut die Gruppe die Karten kann – nie, wer was beantwortet hat.
-            </Text>
+            <Text style={styles.klein}>{T('Wer den Stapel angelegt hat, sieht anonym, wie gut die Gruppe die Karten kann – nie, wer was beantwortet hat.')}</Text>
           ) : null}
 
           <View style={styles.knoepfe}>
             {s.meiner && s.karten.length >= 2 ? (
               <View style={{ flex: 1 }}>
-                <Button label="Posten" onPress={() => void posten()} />
+                <Button label={T('Posten')} onPress={() => void posten()} />
               </View>
             ) : null}
             <Pressable

@@ -15,6 +15,7 @@ import { TabHint, useTabHint } from '@/components/TabHint';
 import { Icon } from '@/components/Icon';
 import { api } from '@/lib/supabase';
 import type { Category, SearchHit } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
@@ -248,9 +249,7 @@ export function SearchScreen() {
                               </Appear>
                             ))}
                             {kids.length === 0 ? (
-                              <Text style={styles.noKids}>
-                                Keine Unterkategorien — tipp oben auf „Alles aus".
-                              </Text>
+                              <Text style={styles.noKids}>{T('Keine Unterkategorien — tipp oben auf „Alles aus".')}</Text>
                             ) : null}
                           </View>
                         </Appear>
@@ -309,8 +308,8 @@ export function SearchScreen() {
       {hinweis.zeigen ? (
         <TabHint
           icon="search"
-          titel="Drei Arten zu suchen"
-          text="Ein Stichwort findet Karten. #Kategorie findet ein Thema, @name eine Person. Alles, was hier steht, kannst du sofort lesen."
+          titel={T('Drei Arten zu suchen')}
+          text={T('Ein Stichwort findet Karten. #Kategorie findet ein Thema, @name eine Person. Alles, was hier steht, kannst du sofort lesen.')}
           bottom={TAB_BAR_HEIGHT}
           onDone={hinweis.weg}
         />

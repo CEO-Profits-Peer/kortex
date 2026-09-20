@@ -13,6 +13,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
 import { api } from '@/lib/supabase';
 import type { Statistik } from '@/lib/types.db';
+import { T } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -175,7 +176,7 @@ export function StatistikScreen() {
     return (
       <GridBackground>
         <View style={{ paddingTop: insets.top }}>
-          <ScreenHeader title="Statistik" titleInBarOnly />
+          <ScreenHeader title={T('Statistik')} titleInBarOnly />
         </View>
         <View style={styles.center}>
           {fehler ? <Text style={styles.fehler}>{fehler}</Text> : <Laden color={color.signal.primary} />}
@@ -197,7 +198,7 @@ export function StatistikScreen() {
   return (
     <GridBackground>
       <View style={{ paddingTop: insets.top }}>
-        <ScreenHeader title="Statistik" titleInBarOnly scrollY={scrollY} />
+        <ScreenHeader title={T('Statistik')} titleInBarOnly scrollY={scrollY} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
@@ -207,7 +208,7 @@ export function StatistikScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.titel}>Deine Statistik</Text>
+        <Text style={styles.titel}>{T('Deine Statistik')}</Text>
         <Text style={styles.unter}>Dabei seit {datum(s.dabei_seit, true)}</Text>
 
         {/* 19.09.: der Wochenrueckblick hierher, statt als eigene Kachel. */}
@@ -216,8 +217,8 @@ export function StatistikScreen() {
           style={({ pressed }) => [styles.beitrag, { flexDirection: 'row', alignItems: 'center' }, pressed && { opacity: 0.8 }]}
         >
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.beitragText}>Deine Woche</Text>
-            <Text style={styles.beitragZahlen}>Karten, Meisterwege und Ligen – der Wochenrückblick</Text>
+            <Text style={styles.beitragText}>{T('Deine Woche')}</Text>
+            <Text style={styles.beitragZahlen}>{T('Karten, Meisterwege und Ligen – der Wochenrückblick')}</Text>
           </View>
           <Icon name="chevron" size={14} color={color.ink.low} />
         </Pressable>
@@ -228,19 +229,19 @@ export function StatistikScreen() {
           style={({ pressed }) => [styles.beitrag, { flexDirection: 'row', alignItems: 'center' }, pressed && { opacity: 0.8 }]}
         >
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.beitragText}>Dein Jahr</Text>
-            <Text style={styles.beitragZahlen}>Lerntage, Serien, Lieblingsthemen – der Jahresrückblick</Text>
+            <Text style={styles.beitragText}>{T('Dein Jahr')}</Text>
+            <Text style={styles.beitragZahlen}>{T('Lerntage, Serien, Lieblingsthemen – der Jahresrückblick')}</Text>
           </View>
           <Icon name="chevron" size={14} color={color.ink.low} />
         </Pressable>
 
         <View style={styles.reihe}>
-          <Zahl wert={s.sozial.follower} label="Follower" />
-          <Zahl wert={s.sozial.likes + s.sozial.kommentar_likes} label="Likes bekommen" farbe={color.signal.primary} />
-          <Zahl wert={s.sozial.beitraege} label="Beiträge" />
+          <Zahl wert={s.sozial.follower} label={T('Follower')} />
+          <Zahl wert={s.sozial.likes + s.sozial.kommentar_likes} label={T('Likes bekommen')} farbe={color.signal.primary} />
+          <Zahl wert={s.sozial.beitraege} label={T('Beiträge')} />
         </View>
 
-        <Abschnitt titel="Follower · 90 Tage">
+        <Abschnitt titel={T('Follower · 90 Tage')}>
           <Linie werte={verlauf.map((t) => t.follower)} />
           <View style={styles.achse}>
             <Text style={styles.klein}>{verlauf[0] ? datum(verlauf[0].tag) : ''}</Text>
@@ -256,9 +257,9 @@ export function StatistikScreen() {
           </Text>
         </Abschnitt>
 
-        <Abschnitt titel="Woher neue Follower kommen">
+        <Abschnitt titel={T('Woher neue Follower kommen')}>
           {quellenSumme === 0 ? (
-            <Text style={styles.leer}>Seit Beginn der Mitschrift noch kein neuer Follower.</Text>
+            <Text style={styles.leer}>{T('Seit Beginn der Mitschrift noch kein neuer Follower.')}</Text>
           ) : (
             quellen.map(([q, v]) => (
               <View key={q} style={styles.balkenZeile}>
@@ -272,9 +273,9 @@ export function StatistikScreen() {
           )}
         </Abschnitt>
 
-        <Abschnitt titel="Deine stärksten Beiträge">
+        <Abschnitt titel={T('Deine stärksten Beiträge')}>
           {s.top_beitraege.length === 0 ? (
-            <Text style={styles.leer}>Noch keine Beiträge.</Text>
+            <Text style={styles.leer}>{T('Noch keine Beiträge.')}</Text>
           ) : (
             s.top_beitraege.map((b) => (
               <Pressable
@@ -295,16 +296,16 @@ export function StatistikScreen() {
           )}
         </Abschnitt>
 
-        <Abschnitt titel="Reichweite">
+        <Abschnitt titel={T('Reichweite')}>
           {!s.reichweite || !s.reichweite.pro ? (
             <Pressable onPress={() => router.push('/pro')} style={({ pressed }) => [styles.beitrag, pressed && { opacity: 0.8 }]}>
-              <Text style={styles.beitragText}>Wie viele Leute deine Beiträge sehen – je Beitrag und über 30 Tage.</Text>
-              <Text style={styles.beitragZahlen}>Mit PRO · dazu eine Lern-Heatmap über zwölf Wochen</Text>
+              <Text style={styles.beitragText}>{T('Wie viele Leute deine Beiträge sehen – je Beitrag und über 30 Tage.')}</Text>
+              <Text style={styles.beitragZahlen}>{T('Mit PRO · dazu eine Lern-Heatmap über zwölf Wochen')}</Text>
             </Pressable>
           ) : (
             <>
               <View style={styles.reihe}>
-                <Zahl wert={s.reichweite.leute_30} label="Leute in 30 Tagen" farbe={color.signal.primary} />
+                <Zahl wert={s.reichweite.leute_30} label={T('Leute in 30 Tagen')} farbe={color.signal.primary} />
               </View>
               {s.reichweite.beitraege.length === 0 ? (
                 <Text style={styles.leer}>
@@ -332,26 +333,26 @@ export function StatistikScreen() {
           )}
         </Abschnitt>
 
-        <Abschnitt titel="Reaktionen">
+        <Abschnitt titel={T('Reaktionen')}>
           <View style={styles.reihe}>
-            <Zahl wert={s.sozial.kommentare} label="Kommentare" />
-            <Zahl wert={s.sozial.kommentar_likes} label="Kommentar-Likes" />
-            <Zahl wert={s.sozial.geteilt} label="geteilt" />
-            <Zahl wert={s.sozial.empfohlen} label="Karten empfohlen" />
+            <Zahl wert={s.sozial.kommentare} label={T('Kommentare')} />
+            <Zahl wert={s.sozial.kommentar_likes} label={T('Kommentar-Likes')} />
+            <Zahl wert={s.sozial.geteilt} label={T('geteilt')} />
+            <Zahl wert={s.sozial.empfohlen} label={T('Karten empfohlen')} />
           </View>
         </Abschnitt>
 
-        <Abschnitt titel="Lernen">
+        <Abschnitt titel={T('Lernen')}>
           <View style={styles.reihe}>
-            <Zahl wert={s.lernen.gesehen} label="Reels gesehen" />
-            <Zahl wert={s.lernen.gelesen} label="gelesen" farbe={color.signal.mastery} />
-            <Zahl wert={s.lernen.gelikt} label="gelikt" />
+            <Zahl wert={s.lernen.gesehen} label={T('Reels gesehen')} />
+            <Zahl wert={s.lernen.gelesen} label={T('gelesen')} farbe={color.signal.mastery} />
+            <Zahl wert={s.lernen.gelikt} label={T('gelikt')} />
           </View>
           <View style={styles.reihe}>
-            <Zahl wert={quizQuote} label="Quiz richtig" />
-            <Zahl wert={s.lernen.xp} label="XP" farbe={color.signal.primary} />
-            <Zahl wert={`${s.lernen.streak} / ${s.lernen.streak_best}`} label="Streak / beste" farbe={color.signal.warn} />
-            <Zahl wert={`${s.lernen.fokus_minuten}m`} label="Fokus" />
+            <Zahl wert={quizQuote} label={T('Quiz richtig')} />
+            <Zahl wert={s.lernen.xp} label={T('XP')} farbe={color.signal.primary} />
+            <Zahl wert={`${s.lernen.streak} / ${s.lernen.streak_best}`} label={T('Streak / beste')} farbe={color.signal.warn} />
+            <Zahl wert={`${s.lernen.fokus_minuten}m`} label={T('Fokus')} />
           </View>
           <Saeulen werte={s.gelesen_verlauf.map((t) => t.anzahl)} />
           <Text style={styles.klein}>Gelesen in den letzten 30 Tagen: {gelesen30}</Text>
