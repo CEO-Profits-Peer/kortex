@@ -389,6 +389,8 @@ export type RepostRef = {
 
 export type PublicProfile = {
   id: string;
+  /** 0124: selbst gewaehlte Rahmenfarbe (PRO). */
+  rahmen_farbe?: string | null;
   handle: string;
   display_name: string | null;
   bio: string | null;

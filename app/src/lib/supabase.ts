@@ -357,8 +357,16 @@ export const api = {
   },
 
   /** Rahmen und Namensfarbe setzen - der Server prueft, ob sie frei sind. */
-  async meisterWaehlen(rahmen: string | null, namensfarbe: string | null): Promise<void> {
-    const { error } = await supabase.rpc('meister_waehlen', { p_rahmen: rahmen, p_namensfarbe: namensfarbe });
+  async meisterWaehlen(
+    rahmen: string | null,
+    namensfarbe: string | null,
+    rahmenFarbe: string | null = null,
+  ): Promise<void> {
+    const { error } = await supabase.rpc('meister_waehlen', {
+      p_rahmen: rahmen,
+      p_namensfarbe: namensfarbe,
+      p_rahmen_farbe: rahmenFarbe,
+    });
     if (error) throw error;
   },
 

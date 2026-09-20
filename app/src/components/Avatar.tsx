@@ -222,6 +222,7 @@ function AvatarBase({
   size = 40,
   ring,
   rahmen,
+  rahmenFarbe,
 }: {
   seed: string;
   path?: string | null;
@@ -230,8 +231,10 @@ function AvatarBase({
   ring?: string;
   /** Meisterweg-Rahmen (0095), z.B. 'science' oder 'science-gold'. */
   rahmen?: string | null;
+  /** 0124: selbst gewaehlte Rahmenfarbe (PRO). */
+  rahmenFarbe?: string | null;
 }) {
-  const r = rahmenAussehen(rahmen);
+  const r = rahmenAussehen(rahmen, rahmenFarbe);
   const url = api.avatarUrl(path);
 
   return (

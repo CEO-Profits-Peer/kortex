@@ -44,6 +44,10 @@ export type Meisterwege = {
   saison?: Saison | null;
   rahmen: string | null;
   namensfarbe: string | null;
+  /** 0124: selbst gewaehlte Rahmenfarbe, die Palette und der PRO-Stand. */
+  rahmen_farbe?: string | null;
+  farben?: string[];
+  pro?: boolean;
   wege: Meisterweg[];
 };
 
@@ -81,6 +85,26 @@ const RAHMEN: Record<string, { farbe: string; stil: RahmenStil; ornament?: Ornam
   language: { farbe: '#5AD1C4', stil: 'voll', ornament: 'band' },
 };
 
+/**
+ * Die drei Rahmen, die zu PRO gehoeren (0124).
+ *
+ * Bewusst anders als die Meisterwege-Rahmen: eigene Farben, eigene
+ * Ornamente, kein Thema. Ein Meisterweg-Rahmen sagt "das habe ich
+ * gelernt", ein PRO-Rahmen sagt "das gefaellt mir" - die beiden duerfen
+ * nicht verwechselbar sein.
+ */
+const PRO_RAHMEN: Record<string, { farbe: string; stil: RahmenStil; titel: string; ornament: OrnamentArt }> = {
+  'pro-onyx': { farbe: '#C9D0D8', stil: 'doppelt', titel: 'Onyx', ornament: 'filigran' },
+  'pro-aurum': { farbe: '#D9B872', stil: 'voll', titel: 'Aurum', ornament: 'beschlag' },
+  'pro-prisma': { farbe: '#8FD3FF', stil: 'strich', titel: 'Prisma', ornament: 'siegel' },
+};
+
+export const PRO_RAHMEN_CODES = Object.keys(PRO_RAHMEN);
+
+export function proRahmenTitel(code: string): string | null {
+  return PRO_RAHMEN[code]?.titel ?? null;
+}
+
 /** Saison-Rahmen (0108): eigene Farbe, sonst wie die Meister-Rahmen gezeichnet. */
 const SAISON_RAHMEN: Record<string, { farbe: string; stil: RahmenStil; titel: string; ornament?: OrnamentArt }> = {
   herbst26: { farbe: '#D9803A', stil: 'lang', titel: 'Herbstlaub', ornament: 'ranke' },
@@ -92,16 +116,26 @@ export function saisonRahmenTitel(code: string): string | null {
   return r ? `${r.titel}${code.endsWith('-gold') ? ' Gold' : ''}` : null;
 }
 
-export function rahmenAussehen(code: string | null | undefined) {
+/**
+ * Wie der Rahmen aussieht. `farbe` ist die selbst gewaehlte Farbe (0124,
+ * PRO) und sticht die Themenfarbe - die Form bleibt, wie sie verdient wurde.
+ */
+export function rahmenAussehen(code: string | null | undefined, farbe?: string | null) {
   if (!code) return null;
   const gold = code.endsWith('-gold');
+  const mitFarbe = <T extends { farbe: string }>(r: T) => (farbe ? { ...r, farbe } : r);
+
+  if (code.startsWith('pro-')) {
+    const r = PRO_RAHMEN[gold ? code.slice(0, -5) : code];
+    return r ? mitFarbe({ farbe: r.farbe, stil: r.stil, ornament: r.ornament, gold }) : null;
+  }
   if (code.startsWith('saison-')) {
     const r = SAISON_RAHMEN[code.slice(7).replace(/-gold$/, '')];
-    return r ? { farbe: r.farbe, stil: r.stil, ornament: r.ornament, gold } : null;
+    return r ? mitFarbe({ farbe: r.farbe, stil: r.stil, ornament: r.ornament, gold }) : null;
   }
   const basis = RAHMEN[gold ? code.slice(0, -5) : code];
   if (!basis) return null;
-  return { ...basis, gold };
+  return mitFarbe({ ...basis, gold });
 }
 
 /** Namensfarbe nur, wenn sie aus der Palette kommt - sonst die normale Schrift. */

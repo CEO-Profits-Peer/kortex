@@ -14,14 +14,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { WABEN_FARBEN, WABEN_GRUENDE } from '@/lib/avatarWaben';
 import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
-import {
-  MEISTER_SCHWELLEN,
-  STUFEN_NAMEN,
-  saisonRahmenTitel,
-  type MeisterBelohnung,
-  type Meisterweg,
-  type Meisterwege,
-} from '@/lib/meisterwege';
+import { MEISTER_SCHWELLEN, PRO_RAHMEN_CODES, STUFEN_NAMEN, proRahmenTitel, saisonRahmenTitel, type MeisterBelohnung, type Meisterweg, type Meisterwege } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import { T, lokale } from '@/lib/sprache';
@@ -61,13 +54,13 @@ export function MeisterwegeScreen() {
     }, [laden]),
   );
 
-  const waehlen = async (rahmen: string | null, name: string | null) => {
+  const waehlen = async (rahmen: string | null, name: string | null, farbe?: string | null) => {
     if (!m) return;
     const alt = m;
-    setM({ ...m, rahmen, namensfarbe: name });
+    setM({ ...m, rahmen, namensfarbe: name, rahmen_farbe: farbe === undefined ? m.rahmen_farbe : farbe });
     haptics.select();
     try {
-      await api.meisterWaehlen(rahmen, name);
+      await api.meisterWaehlen(rahmen, name, (farbe === undefined ? m.rahmen_farbe : farbe) ?? null);
       setNotiz('Gespeichert');
       setTimeout(() => setNotiz(null), 1800);
     } catch (e) {
@@ -83,6 +76,24 @@ export function MeisterwegeScreen() {
     return alle.filter((b) => b.art === art && b.frei && !gesehen.has(b.wert) && gesehen.add(b.wert));
   };
   const rahmenFrei = eindeutig('rahmen');
+  // 0124: die drei PRO-Rahmen gehoeren zu PRO, nicht zu einem Thema -
+  // deshalb stehen sie in keinem Meisterweg und kommen hier dazu.
+  if (m?.pro) {
+    for (const code of PRO_RAHMEN_CODES) {
+      if (!rahmenFrei.some((x) => x.wert === code)) {
+        rahmenFrei.unshift({
+          id: code,
+          stufe: 0,
+          art: 'rahmen',
+          wert: code,
+          titel: proRahmenTitel(code) ?? code,
+          pro: true,
+          frei: true,
+          weg: m.wege[0],
+        });
+      }
+    }
+  }
   // 0108: Saison-Rahmen stehen nicht in den Wegen - verdient ist er, wenn
   // genug gelesen wurde; Gold zusaetzlich nur mit PRO (prueft der Server).
   const saison = m?.saison ?? null;
@@ -125,11 +136,40 @@ export function MeisterwegeScreen() {
                   </Wahl>
                   {rahmenFrei.map((b) => (
                     <Wahl key={b.id} an={m.rahmen === b.wert} onPress={() => void waehlen(b.wert, m.namensfarbe)} label={b.titel}>
-                      <Avatar seed="v2-1000-0000000000000000000" size={40} rahmen={b.wert} />
+                      <Avatar seed="v2-1000-0000000000000000000" size={40} rahmen={b.wert} rahmenFarbe={m.rahmen_farbe} />
                     </Wahl>
                   ))}
                 </View>
               )}
+
+              {/* 0124 (PRO): dieselbe Form, andere Farbe. */}
+              {m.rahmen ? (
+                <>
+                  <Text style={[styles.abschnitt, { marginTop: space.md }]}>{T('Farbe des Rahmens')}</Text>
+                  <View style={styles.farbreihe}>
+                    <Pressable
+                      onPress={() => void waehlen(m.rahmen, m.namensfarbe, null)}
+                      style={[styles.farbe, styles.farbeOhne, !m.rahmen_farbe && styles.farbeAn]}
+                    >
+                      <Text style={styles.farbeOhneText}>{T('Thema')}</Text>
+                    </Pressable>
+                    {(m.farben ?? []).map((f) => (
+                      <Pressable
+                        key={f}
+                        onPress={() => {
+                          if (!m.pro) {
+                            zeigeProSperre(T('Mit PRO wählst du die Farbe deines Rahmens.'));
+                            return;
+                          }
+                          void waehlen(m.rahmen, m.namensfarbe, f);
+                        }}
+                        style={[styles.farbe, { backgroundColor: f }, m.rahmen_farbe === f && styles.farbeAn]}
+                        accessibilityLabel={f}
+                      />
+                    ))}
+                  </View>
+                </>
+              ) : null}
 
               <Text style={[styles.abschnitt, { marginTop: space.md }]}>Namensfarbe</Text>
               {namenFrei.length === 0 ? (
@@ -316,6 +356,17 @@ function Belohnung({ b, pro }: { b: MeisterBelohnung; pro: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  farbreihe: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xs },
+  farbe: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: 'transparent' },
+  farbeAn: { borderColor: '#FFFFFF' },
+  farbeOhne: {
+    width: 'auto',
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: color.ink.faint,
+  },
+  farbeOhneText: { fontSize: 11, color: color.ink.mid },
   body: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: space.lg },
   intro: { ...type.body, fontSize: 14, lineHeight: 20, color: color.ink.mid },
   fehler: { ...type.body, fontSize: 14, color: color.signal.error },

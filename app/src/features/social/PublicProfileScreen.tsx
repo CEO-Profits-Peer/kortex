@@ -190,7 +190,7 @@ export function PublicProfileScreen({
             path={p.avatar_path}
             size={72}
             ring={p.is_me ? color.signal.primary : undefined}
-            rahmen={p.rahmen}
+            rahmen={p.rahmen} rahmenFarbe={p.rahmen_farbe}
           />
           <View style={styles.headText}>
             {/* Name gross, Handle klein: das Handle braucht man nur, um die

@@ -35,6 +35,7 @@ import type {
 } from '@/features/admin/types';
 import type { BodyBlock, ContentItem } from '@/lib/types.db';
 import { T } from '@/lib/sprache';
+import { PRO_RAHMEN_CODES, proRahmenTitel } from '@/lib/meisterwege';
 import { color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -474,6 +475,16 @@ export default function Atelier() {
                   />
                 </View>
                 <Text style={styles.werkKlein}>{o.titel}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.werkTitel}>PRO-Rahmen</Text>
+          <View style={[styles.gruppe, { alignItems: 'flex-end', flexWrap: 'wrap' }]}>
+            {PRO_RAHMEN_CODES.map((code) => (
+              <View key={code} style={{ alignItems: 'center', gap: 4 }}>
+                <Avatar seed={wabenKodieren(waben)} size={78} rahmen={code} />
+                <Text style={styles.werkKlein}>{proRahmenTitel(code)}</Text>
               </View>
             ))}
           </View>

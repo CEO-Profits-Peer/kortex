@@ -221,7 +221,7 @@ export function ProfileScreen() {
         <ProfilKopf theme={ichPro.profilTheme}>
         <View style={styles.head}>
           <Pressable onPress={() => router.push('/account')} hitSlop={6}>
-            <Avatar seed={social.avatar_seed} path={social.avatar_path} size={64} rahmen={meister?.rahmen} />
+            <Avatar seed={social.avatar_seed} path={social.avatar_path} size={64} rahmen={meister?.rahmen} rahmenFarbe={meister?.rahmen_farbe} />
           </Pressable>
 
           <View style={styles.identity}>
