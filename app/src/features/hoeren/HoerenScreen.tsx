@@ -10,6 +10,14 @@ import { Icon } from '@/components/Icon';
 import { Laden } from '@/components/Laden';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
+import {
+  bildschirmWach,
+  sessionBeenden,
+  sessionPausiert,
+  sessionStarten,
+  sessionTitel,
+  wachMoeglich,
+} from '@/lib/hoerSession';
 import { karteAlsStuecke, speakSentence, stopSpeech } from '@/lib/speech';
 import { api } from '@/lib/supabase';
 import type { ContentItem } from '@/lib/types.db';
@@ -38,7 +46,16 @@ export function HoerenScreen() {
   const [stueck, setStueck] = useState(0);
   const [spielt, setSpielt] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [wach, setWach] = useState(false);
   const abbrechen = useRef<(() => void) | null>(null);
+  // Die Steuerung vom Sperrbildschirm faellt in dieselben Funktionen wie
+  // die Knoepfe hier - ueber eine Ref, damit die Handler nicht bei jedem
+  // Kartenwechsel neu gesetzt werden muessen.
+  const steuern = useRef<{ start: () => void; halt: () => void; sprung: (d: number) => void }>({
+    start: () => undefined,
+    halt: () => undefined,
+    sprung: () => undefined,
+  });
 
   useEffect(() => {
     let weg = false;
@@ -58,6 +75,7 @@ export function HoerenScreen() {
       weg = true;
       abbrechen.current?.();
       stopSpeech();
+      sessionBeenden();
     };
   }, [kurs]);
 
@@ -69,6 +87,7 @@ export function HoerenScreen() {
     abbrechen.current = null;
     stopSpeech();
     setSpielt(false);
+    sessionPausiert(true);
   }, []);
 
   // Der Abspieler: solange `spielt`, das aktuelle Stueck sprechen und
@@ -120,6 +139,22 @@ export function HoerenScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spielt, karte, stueck, nr, karten]);
 
+  // Sperrbildschirm und Kopfhoerer-Knopf bedienen dieselben Wege.
+  useEffect(() => {
+    if (!karte) return;
+    if (spielt) {
+      sessionStarten({
+        titel: karte.title,
+        untertitel: kurs ? 'Kurs' : 'ElyCic',
+        onPlay: () => steuern.current.start(),
+        onPause: () => steuern.current.halt(),
+        onNext: () => steuern.current.sprung(1),
+        onPrev: () => steuern.current.sprung(-1),
+      });
+      sessionTitel(karte.title, kurs ? 'Kurs' : 'ElyCic');
+    }
+  }, [spielt, karte, kurs]);
+
   const springen = (d: number) => {
     if (!karten) return;
     haptics.select();
@@ -128,6 +163,13 @@ export function HoerenScreen() {
     stopSpeech();
     setNr(ziel);
     setStueck(0);
+  };
+
+  // Die Ref immer auf die aktuellen Funktionen zeigen lassen.
+  steuern.current = {
+    start: () => setSpielt(true),
+    halt: () => halt(),
+    sprung: (d: number) => springen(d),
   };
 
   const akzent = color.akzent;
@@ -213,6 +255,20 @@ export function HoerenScreen() {
               </Pressable>
             </View>
 
+            {wachMoeglich() ? (
+              <Pressable
+                onPress={() => {
+                  haptics.select();
+                  void bildschirmWach(!wach).then(setWach);
+                }}
+                style={[styles.schalter, wach && { borderColor: akzent }]}
+              >
+                <Text style={[styles.schalterText, wach && { color: akzent }]}>
+                  {wach ? '✓ Bildschirm bleibt an' : 'Bildschirm an lassen'}
+                </Text>
+              </Pressable>
+            ) : null}
+
             <Pressable onPress={() => router.push(`/reel/${encodeURIComponent(karte.id)}`)} style={styles.lesen}>
               <Icon name="knowledge" size={14} color={color.ink.mid} />
               <Text style={styles.lesenText}>Karte lesen – fürs Quiz und die XP</Text>
@@ -221,6 +277,10 @@ export function HoerenScreen() {
             <Text style={styles.leise}>
               Die Frage am Ende wird vorgelesen, die Antwort nicht – denk mit. Tempo und Stimme stellst du unter
               Einstellungen › Vorlesen ein.
+            </Text>
+            <Text style={styles.leise}>
+              In der Tasche: Steuerung liegt auf dem Sperrbildschirm. Manche Handys halten die Stimme trotzdem an,
+              wenn der Bildschirm ausgeht – dann hilft „Bildschirm an lassen“.
             </Text>
 
             <View style={{ gap: space.xs }}>
@@ -278,6 +338,15 @@ const styles = StyleSheet.create({
   steuerung: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xxl },
   klein: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   gross: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  schalter: {
+    alignSelf: 'center',
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  schalterText: { ...type.meta, fontSize: 11, color: color.ink.mid },
   lesen: { flexDirection: 'row', alignItems: 'center', gap: space.sm, alignSelf: 'center' },
   lesenText: { ...type.label, fontSize: 13, color: color.ink.mid },
   leise: { ...type.meta, fontSize: 11, lineHeight: 16, color: color.ink.low, textAlign: 'center' },

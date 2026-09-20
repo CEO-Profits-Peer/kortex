@@ -9,6 +9,7 @@ import { GridBackground } from '@/components/GridBackground';
 import { Laden } from '@/components/Laden';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
+import { proAktiv } from '@/lib/pro';
 import { api, type MonatsAbzeichen as Daten } from '@/lib/supabase';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
@@ -45,6 +46,9 @@ export function Monatsmedaille({ monat, stufe, groesse = 56 }: { monat: string; 
   const d = new Date(`${monat}T12:00:00`);
   const m = d.getMonth();
   const an = stufe > 0;
+  // PRO: eine goldene Aussenkante, wie bei den Meister-Rahmen (0095).
+  // Eine Zugabe fuers Aussehen - verdient wird das Abzeichen gleich.
+  const gold = an && proAktiv();
   const id = `m${monat.replace(/-/g, '')}${groesse}`;
   return (
     <View style={{ width: groesse, height: groesse, opacity: an ? 1 : 0.35 }}>
@@ -55,7 +59,10 @@ export function Monatsmedaille({ monat, stufe, groesse = 56 }: { monat: string; 
             <Stop offset="1" stopColor={an ? '#141218' : '#18181C'} />
           </LinearGradient>
         </Defs>
-        <Polygon points={punkte(groesse, 2)} fill={`url(#${id})`} stroke={RAND[stufe]} strokeWidth={stufe === 3 ? 3 : 2} />
+        {gold ? (
+          <Polygon points={punkte(groesse, 0.8)} fill="none" stroke="#D9B872" strokeWidth={1} strokeOpacity={0.85} />
+        ) : null}
+        <Polygon points={punkte(groesse, gold ? 3.4 : 2)} fill={`url(#${id})`} stroke={RAND[stufe]} strokeWidth={stufe === 3 ? 3 : 2} />
         {stufe >= 2 ? <Polygon points={punkte(groesse, 7)} fill="none" stroke={RAND[stufe]} strokeOpacity={0.45} strokeWidth={1} /> : null}
       </Svg>
       <View style={styles.medailleMitte}>
