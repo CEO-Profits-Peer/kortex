@@ -105,6 +105,9 @@ In den neuen Chat einfügen:
   - 12 Lokale Karten (0119): 122 regionale Themen, `content_items.region_code` über Evergreen
   - 13 Audio-Modus: `/hoeren` (Feed/Offline-Vorrat oder `?kurs=`), keine XP fürs Hören
   - Update-Historie `/updates` (lib/updates.ts, neue Pakete oben eintragen), Duelle ins Profil, Wiederholen + Prüfungen ins Studio
+- **Karten-UI-Remaster (entschieden 19.09.):** Die Knöpfe wandern in ein Drei-Punkte-Menü (Rechnen, Notiz, Melden, Quelle, „Auf Englisch ansehen“). **Teilen kommt NICHT ins Menü** – wird später besprochen.
+- **Übersetzungen laufen** (0121/0122, pipeline/uebersetzen.py, dreimal täglich vier Karten).
+- **Rahmen-Ornamente:** vier Vorschläge in `/atelier` → design (Ranke, Flechtband, Lorbeer, Beschlag). Noch nichts vergeben – erst nach Rückmeldung.
 - **Als Nächstes:** Karten in die andere Sprache übersetzen (Pipeline, nie dieselbe Karte doppelt für eine Person), dann Karten-UI-Remaster, dann volle englische Übersetzung. Offen: 8 „Fertig für heute“, 11 Karten vorschlagen.
 - **Noch offen:**
   - 8 „Fertig für heute“ – überlegt er noch.

@@ -25,6 +25,7 @@ import { zeigeProSperre } from '@/components/ProSperre';
 import { zeigeProWillkommen } from '@/features/pro/ProWillkommen';
 import { ProScreen } from '@/features/pro/ProScreen';
 import { Monatsmedaille } from '@/features/abzeichen/MonatsAbzeichen';
+import { ORNAMENTE, OrnamentRahmen } from '@/features/rahmen/Ornamente';
 import { type WabenDesign, wabenKodieren, wabenWuerfeln } from '@/lib/avatarWaben';
 import type {
   AdminCategory,
@@ -458,6 +459,24 @@ export default function Atelier() {
             <Avatar seed="alte-zufalls-id" size={40} ring={color.signal.primary} />
           </View>
 
+          <Text style={styles.werkTitel}>Rahmen-Vorschläge (Ornamente)</Text>
+          <View style={[styles.gruppe, { alignItems: 'flex-end', flexWrap: 'wrap' }]}>
+            {ORNAMENTE.map((o, i) => (
+              <View key={o.art} style={{ alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 78, height: 78 }}>
+                  <Avatar seed={wabenKodieren(waben)} size={78} />
+                  <OrnamentRahmen
+                    art={o.art}
+                    size={78}
+                    farbe={['#B78BFF', '#00F0FF', '#7CFF6B', '#FF9F45'][i % 4]}
+                    gold={i === 3}
+                  />
+                </View>
+                <Text style={styles.werkKlein}>{o.titel}</Text>
+              </View>
+            ))}
+          </View>
+
           <Text style={styles.werkTitel}>Monats-Abzeichen</Text>
           <View style={[styles.gruppe, { alignItems: 'center', flexWrap: 'wrap' }]}>
             {['2026-01-01', '2026-03-01', '2026-06-01', '2026-08-01', '2026-09-01', '2026-12-01'].map((m, i) => (
@@ -606,6 +625,7 @@ const styles = StyleSheet.create({
   langeBahn: { paddingHorizontal: space.xl, paddingBottom: space.xxxl },
   mitTitel: { gap: space.sm },
   werkTitel: { ...type.meta, color: color.ink.low },
+  werkKlein: { ...type.meta, fontSize: 9, color: color.ink.low },
   gruppe: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap', alignItems: 'center' },
   gruppe2: { gap: space.sm },
 
