@@ -133,6 +133,8 @@ export function ActionRail({
   onShare,
   onComment,
   onListen,
+  onMehr,
+  mehrOffen,
 }: {
   liked: boolean;
   /** Gesamtzahl der Likes, einschliesslich des eigenen. */
@@ -146,6 +148,12 @@ export function ActionRail({
   onRepost: () => void;
   onShare: () => void;
   onComment: () => void;
+  /**
+   * Die drei Punkte (20.09.). Alles, was nicht beim Lesen gebraucht wird,
+   * steht dahinter - Repost, Notiz, Quelle, Sprache.
+   */
+  onMehr?: () => void;
+  mehrOffen?: boolean;
   /**
    * Fehlt auf Erklaerkarten - und das ist kein Versehen.
    *
@@ -181,15 +189,9 @@ export function ActionRail({
         tint={tint}
         onPress={onLike}
       />
-      {/* Repost steht zwischen Like und Teilen: Like ist privat, Teilen
-          verlaesst die App, Repost ist das oeffentliche Signal dazwischen. */}
-      <RailButton
-        icon="refresh"
-        label={reposted ? 'empfohlen' : 'Repost'}
-        active={reposted}
-        tint={tint}
-        onPress={onRepost}
-      />
+      {/* 20.09.: Repost steht jetzt im Menue. Er ist das oeffentliche
+          Signal - aber keins, das man beim Lesen jeder Karte braucht, und
+          die Leiste traegt nur, was dabei gebraucht wird. */}
       {/**
         * Die Sprechblase steht dort, wo vorher die Lupe stand.
         *
@@ -206,6 +208,9 @@ export function ActionRail({
         onPress={onComment}
       />
       <RailButton icon="share" label={T('Teilen')} tint={tint} onPress={onShare} />
+      {onMehr ? (
+        <RailButton icon="mehr" label={T('Mehr')} active={mehrOffen} tint={tint} onPress={onMehr} />
+      ) : null}
     </View>
   );
 }

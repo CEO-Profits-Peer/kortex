@@ -33,7 +33,7 @@ export type IconName =
   | 'news' | 'knowledge' | 'interactive' | 'lesson'
   // Sonstiges
   | 'leaderboard' | 'lock' | 'plus' | 'sliders'
-  | 'listen' | 'listening' | 'comment' | 'bell' | 'chart';
+  | 'listen' | 'listening' | 'comment' | 'bell' | 'chart' | 'mehr';
 
 type Props = {
   name: IconName;
@@ -185,6 +185,14 @@ function IconBase({ name, size = 20, color: tint = color.ink.mid }: Props) {
       {name === 'plus' && <Path d="M12 5.5v13M5.5 12h13" {...s} />}
       {/* Verlauf: eine steigende Linie ueber einer Grundlinie. Bewusst anders
           als 'leaderboard' (Saeulen) - das eine ist Rangliste, das andere Zeit. */}
+      {/* Drei Punkte: alles, was nicht auf die Leiste passt. */}
+      {name === 'mehr' && (
+        <>
+          <Path d="M12 5.2v.1" {...s} strokeWidth={2.6} strokeLinecap="round" />
+          <Path d="M12 12v.1" {...s} strokeWidth={2.6} strokeLinecap="round" />
+          <Path d="M12 18.8v.1" {...s} strokeWidth={2.6} strokeLinecap="round" />
+        </>
+      )}
       {name === 'chart' && (
         <>
           <Path d="M4 19.5h16" {...s} />

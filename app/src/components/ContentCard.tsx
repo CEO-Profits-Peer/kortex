@@ -28,6 +28,7 @@ import { isKineticScript } from '@/features/kinetic/types';
 import { Icon } from '@/components/Icon';
 import { isHero, paginate } from '@/components/paginate';
 import { SourceBadge } from '@/components/SourceBadge';
+import { KartenMenue } from '@/components/KartenMenue';
 import { werkzeugFuerKarte } from '@/features/lab/rechnen';
 import { notizSpeichern, useNotiz } from '@/lib/notizen';
 import { Interaction, isInteractionBuilt } from '@/features/interactions';
@@ -35,7 +36,8 @@ import { reportSeenNow } from '@/features/feed/useDwellTracking';
 import { eventBuffer, track } from '@/lib/eventBuffer';
 import { haptics } from '@/lib/haptics';
 import { sound } from '@/lib/sound';
-import { onSpeechChange, speakingCardId, toggleSpeech } from '@/lib/speech';
+import { taktUmschalten, taktVorhanden } from '@/lib/kartenTakt';
+import { onSpeechChange, speakingCardId, stopSpeech, toggleSpeech } from '@/lib/speech';
 import { contentState, setContentState, useContentState } from '@/lib/contentState';
 import { usePrefs } from '@/lib/prefs';
 import { shareCard } from '@/lib/share';
@@ -133,6 +135,10 @@ function ContentCardBase({
    * Schliessen noch den alten Stand.
    */
   const [sheet, setSheet] = useState(false);
+  // 20.09.: das Menue hinter den drei Punkten und die Notiz, die daraus
+  // aufgeht. Beide liegen IN der Karte - sie halten nichts an.
+  const [menue, setMenue] = useState(false);
+  const [notizOffen, setNotizOffen] = useState(false);
   const [comments, setComments] = useState(item.comment_count ?? 0);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -268,6 +274,40 @@ function ContentCardBase({
       runOnJS(applyLike)(true);
       runOnJS(showBurst)();
     });
+
+  /**
+   * Ein Tipp: anhalten, noch einer: weiter (20.09.).
+   *
+   * Nur wenn ueberhaupt etwas laeuft - eine Erklaerkarte oder die Stimme.
+   * Sonst passiert nichts: ein Tipp, der aus dem Nichts zu sprechen
+   * anfaengt, ist eine Ueberraschung, keine Bedienung.
+   */
+  const tippen = useCallback(() => {
+    if (menue) {
+      setMenue(false);
+      return;
+    }
+    if (taktVorhanden(item.id)) {
+      haptics.light();
+      taktUmschalten(item.id);
+      return;
+    }
+    if (speakingCardId() === item.id) {
+      haptics.light();
+      stopSpeech();
+    }
+  }, [item.id, menue]);
+
+  const einTipp = Gesture.Tap()
+    .numberOfTaps(1)
+    .maxDuration(260)
+    .onEnd(() => {
+      runOnJS(tippen)();
+    });
+
+  // Erst der Doppeltipp, dann der einfache: sonst schluckt der einfache
+  // das Like, bevor der zweite Tipp ankommt.
+  const tippGesten = Gesture.Exclusive(doubleTap, einTipp);
 
   const burstStyle = useAnimatedStyle(() => ({
     opacity: burst.value,
@@ -458,7 +498,7 @@ function ContentCardBase({
         * auch: das Scrollen gehoert der Liste, der Doppeltipp gilt
         * ueberall, und wer wischt, hat eben nicht getippt.
         */}
-      <GestureDetector gesture={doubleTap} touchAction="pan-y">
+      <GestureDetector gesture={tippGesten} touchAction="pan-y">
         <View style={styles.stage}>
           {/* Das Blatt.
               *
@@ -540,7 +580,83 @@ function ContentCardBase({
               haptics.light();
               setSheet(true);
             }}
+            mehrOffen={menue}
+            onMehr={() => {
+              haptics.light();
+              setMenue((o) => !o);
+            }}
           />
+
+          {menue ? (
+            <KartenMenue
+              onClose={() => setMenue(false)}
+              eintraege={[
+                {
+                  id: 'repost',
+                  icon: 'refresh',
+                  label: reposted ? T('Empfohlen') : T('Empfehlen'),
+                  aktiv: reposted,
+                  onPress: () => {
+                    setMenue(false);
+                    void onRepost();
+                  },
+                },
+                {
+                  id: 'notiz',
+                  icon: 'lesson',
+                  label: T('Notiz'),
+                  onPress: () => {
+                    setMenue(false);
+                    setNotizOffen(true);
+                  },
+                },
+                ...(labWerkzeug
+                  ? [
+                      {
+                        id: 'rechnen',
+                        icon: 'sliders' as const,
+                        label: T('Selbst rechnen'),
+                        onPress: () => {
+                          setMenue(false);
+                          router.push(`/lab/${labWerkzeug.id}`);
+                        },
+                      },
+                    ]
+                  : []),
+                {
+                  id: 'hoeren',
+                  icon: 'listen',
+                  label: T('Ab hier anhören'),
+                  onPress: () => {
+                    setMenue(false);
+                    router.push('/hoeren');
+                  },
+                },
+                ...(item.uebersetzt_aus
+                  ? [
+                      {
+                        id: 'original',
+                        icon: 'source' as const,
+                        label: item.language === 'en' ? T('Auf Deutsch ansehen') : T('Auf Englisch ansehen'),
+                        onPress: () => {
+                          setMenue(false);
+                          router.push(`/reel/${encodeURIComponent(item.uebersetzt_aus!)}`);
+                        },
+                      },
+                    ]
+                  : []),
+                {
+                  id: 'kategorie',
+                  icon: 'courses',
+                  label: T('Zum Thema'),
+                  onPress: () => {
+                    setMenue(false);
+                    router.push(`/category/${encodeURIComponent(item.primary_category_id)}`);
+                  },
+                },
+              ]}
+            />
+          ) : null}
 
           <Animated.View style={[styles.burst, burstStyle]} pointerEvents="none">
             <Icon name="like-filled" size={BURST} color={accent} />
@@ -612,6 +728,20 @@ function ContentCardBase({
       <View style={styles.footer}>
         <View style={styles.footerLeft}>
           <SourceBadge contentId={item.id} sources={sources} />
+          {labWerkzeug ? (
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                router.push(`/lab/${labWerkzeug.id}`);
+              }}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`${labWerkzeug.titel} selbst rechnen`}
+              style={styles.labLink}
+            >
+              <Text style={[styles.labLinkText, { color: labWerkzeug.farbe }]}>{T('Rechnen')}</Text>
+            </Pressable>
+          ) : null}
           {/* 0121: Uebersetzte Karten sagen es. Die Quelle bleibt der
               Originalartikel - wer ihn oeffnet, liest ihn in seiner Sprache. */}
           {item.uebersetzt_aus ? (
@@ -629,23 +759,10 @@ function ContentCardBase({
             auf Wunsch - zwei kleine Knoepfe unter jeder Karte, die kaum
             jemand drueckt, sind Laerm. Die Ereignisart bleibt in der
             Datenbank, damit alte Auswertungen (Admin) weiter stimmen. */}
-        {/* 19.09.: passt ein LAB-Werkzeug zum Thema, darf man es gleich
-            selbst ausrechnen - von der Karte ins Werkzeug. */}
-        {labWerkzeug ? (
-          <Pressable
-            onPress={() => {
-              haptics.light();
-              router.push(`/lab/${labWerkzeug.id}`);
-            }}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={`${labWerkzeug.titel} selbst rechnen`}
-            style={styles.labLink}
-          >
-            <Text style={[styles.labLinkText, { color: labWerkzeug.farbe }]}>Rechnen</Text>
-          </Pressable>
-        ) : null}
-        <NotizKnopf id={item.id} farbe={accent} />
+        {/* 20.09.: "Rechnen" bleibt sichtbar, aber links unten bei der
+            Quelle - es gehoert zum Inhalt, nicht zur Bedienung. Es steht
+            ohnehin nur da, wo ein Werkzeug zum Thema passt. */}
+        <NotizFeld id={item.id} farbe={accent} offen={notizOffen} schliessen={() => setNotizOffen(false)} />
       </View>
     </Animated.View>
   );
@@ -656,26 +773,37 @@ function ContentCardBase({
  * Steht schon eine da, zeigt der Knopf ein Haekchen - der Text selbst kommt
  * beim Wiederholen wieder.
  */
-function NotizKnopf({ id, farbe }: { id: string; farbe: string }) {
+function NotizFeld({
+  id,
+  farbe,
+  offen,
+  schliessen,
+}: {
+  id: string;
+  farbe: string;
+  /** 20.09.: aufgemacht wird aus dem Menue, nicht mehr von einem Knopf im Fuss. */
+  offen: boolean;
+  schliessen: () => void;
+}) {
   const text = useNotiz(id);
-  const [offen, setOffen] = React.useState(false);
   const [entwurf, setEntwurf] = React.useState('');
   const [busy, setBusy] = React.useState(false);
+  const setOffen = (wert: boolean | ((o: boolean) => boolean)) => {
+    if (wert === false || (typeof wert === 'function' && !wert(offen))) schliessen();
+  };
+  React.useEffect(() => {
+    if (offen) setEntwurf(text);
+    // Nur beim Aufmachen: waehrend des Tippens darf der gespeicherte Text
+    // den Entwurf nicht ueberschreiben.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offen]);
   return (
     <>
-      <Pressable
-        onPress={() => {
-          haptics.light();
-          setEntwurf(text);
-          setOffen((o) => !o);
-        }}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={text ? 'Notiz ansehen' : 'Notiz schreiben'}
-        style={styles.labLink}
-      >
-        <Text style={[styles.labLinkText, { color: text ? farbe : color.ink.low }]}>{text ? 'Notiz ✓' : 'Notiz'}</Text>
-      </Pressable>
+      {text && !offen ? (
+        <Text style={[styles.labLinkText, { color: farbe }]} numberOfLines={1}>
+          {T('Notiz')} ✓
+        </Text>
+      ) : null}
       {offen ? (
         <View style={styles.notizFeld}>
           <TextInput

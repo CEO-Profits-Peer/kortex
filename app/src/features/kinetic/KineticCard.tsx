@@ -10,6 +10,7 @@ import Animated, {
 import { Icon } from '@/components/Icon';
 import { useIsActiveCard } from '@/lib/activeCard';
 import { getPrefs } from '@/lib/prefs';
+import { taktAnmelden } from '@/lib/kartenTakt';
 import { onSprechRuhe, speakSentence, stopSpeech } from '@/lib/speech';
 import type { ContentItem } from '@/lib/types.db';
 import { color, motion, radius, space, type } from '@/theme/tokens';
@@ -192,6 +193,11 @@ export function KineticCard({
     setPaused(false);
     setRound(0);
   }, [isActive, clearPending]);
+
+  // 20.09.: ein Tipp auf die Karte haelt an, der naechste laesst
+  // weiterlaufen. Die Geste liegt auf der Karte, der Takt hier - deshalb
+  // ueber den kleinen Kanal in lib/kartenTakt.
+  useEffect(() => taktAnmelden(item.id, () => setPaused((p) => !p)), [item.id]);
 
   // App im Hintergrund, Handy gesperrt: anhalten und ANGEHALTEN BLEIBEN.
   // Frueher lief die Schleife weiter und sprach beim Zurueckkommen sofort
