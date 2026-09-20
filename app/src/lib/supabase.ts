@@ -106,7 +106,16 @@ export type LernpfadDetail = Omit<Lernpfad, 'stationen' | 'bereit' | 'fertig' | 
 /** 0111: Themenwuensche. */
 export type WunschStatus = 'offen' | 'frei' | 'nein' | 'in_arbeit' | 'fertig';
 export type MeineWuensche = {
-  meine: { id: string; text: string; created_at: string; anzahl: number; status: WunschStatus; anzeige: string | null }[];
+  meine: {
+    id: string;
+    text: string;
+    created_at: string;
+    anzahl: number;
+    status: WunschStatus;
+    anzeige: string | null;
+    /** 0120: ein Satz zur Entscheidung, falls einer geschrieben wurde. */
+    grund: string | null;
+  }[];
   bald: { anzeige: string; status: WunschStatus; category_id: string | null }[];
 };
 export type AdminWuensche = {
@@ -585,7 +594,7 @@ export const api = {
 
   async adminWunschEntscheiden(
     pin: string,
-    w: { norm: string; language: string; ja: boolean; anzeige?: string; suchbegriff?: string; kategorie?: string },
+    w: { norm: string; language: string; ja: boolean; anzeige?: string; suchbegriff?: string; kategorie?: string; grund?: string },
   ): Promise<void> {
     const { error } = await supabase.rpc('admin_wunsch_entscheiden', {
       p_pin: pin,
@@ -595,6 +604,7 @@ export const api = {
       p_anzeige: w.anzeige ?? null,
       p_suchbegriff: w.suchbegriff ?? null,
       p_kategorie: w.kategorie ?? null,
+      p_grund: w.grund ?? null,
     });
     if (error) throw error;
   },

@@ -138,6 +138,12 @@ export function WuenscheScreen() {
                     <Text style={styles.klein}>
                       {w.anzahl > 1 ? `${w.anzahl} wollen das` : 'nur du bisher'}
                     </Text>
+                    {/* 0120: der Satz aus dem Kontrollzentrum. */}
+                    {w.grund ? (
+                      <Text style={styles.grund} numberOfLines={3}>
+                        {w.grund}
+                      </Text>
+                    ) : null}
                   </View>
                   <Text style={[styles.marke, { color: s.farbe, borderColor: s.farbe }]}>{s.text}</Text>
                   {w.status === 'offen' ? (
@@ -205,6 +211,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   klein: { ...type.meta, fontSize: 11, color: color.ink.low },
+  grund: { ...type.body, fontSize: 12, lineHeight: 17, color: color.ink.mid, marginTop: 2 },
   abschnitt: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1 },
   eintrag: {
     flexDirection: 'row',

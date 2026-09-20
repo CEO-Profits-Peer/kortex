@@ -126,10 +126,11 @@ function Entscheiden({
 }: {
   w: Daten['offen'][number];
   themen: Category[];
-  fertig: (ja: boolean, felder: { anzeige?: string; suchbegriff?: string; kategorie?: string }) => Promise<void>;
+  fertig: (ja: boolean, felder: { anzeige?: string; suchbegriff?: string; kategorie?: string; grund?: string }) => Promise<void>;
 }) {
   const [anzeige, setAnzeige] = useState(w.text);
   const [such, setSuch] = useState(w.text);
+  const [grund, setGrund] = useState('');
   const [wurzel, setWurzel] = useState<string | null>(null);
   const [kat, setKat] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -141,7 +142,7 @@ function Entscheiden({
     setBusy(true);
     setFehler(null);
     try {
-      await fertig(ja, ja ? { anzeige, suchbegriff: such, kategorie: kat ?? undefined } : {});
+      await fertig(ja, ja ? { anzeige, suchbegriff: such, kategorie: kat ?? undefined, grund } : { grund });
       haptics.success();
     } catch (e) {
       setFehler(fehlerText(e, 'Ging nicht'));
@@ -180,6 +181,15 @@ function Entscheiden({
           ))}
         </View>
       ) : null}
+      <Text style={styles.label}>Antwort an die Person (optional)</Text>
+      <TextInput
+        value={grund}
+        onChangeText={setGrund}
+        placeholder="z. B. Kommt, sobald die Quellen passen"
+        placeholderTextColor={color.ink.low}
+        maxLength={200}
+        style={styles.feld}
+      />
       {fehler ? <Text style={styles.fehler}>{fehler}</Text> : null}
       <View style={styles.knoepfe}>
         <View style={{ flex: 1 }}>
