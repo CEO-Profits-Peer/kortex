@@ -62,6 +62,8 @@ export type ContentItem = {
   primary_source_id: string | null;
   published_at: string | null;
   language: string;
+  /** 0121: Diese Karte ist die Uebersetzung jener - leer bei Originalen. */
+  uebersetzt_aus?: string | null;
   region_code: string | null;
   primary_category_id: string;
   category_ids: string[];

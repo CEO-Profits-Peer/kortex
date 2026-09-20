@@ -611,6 +611,13 @@ function ContentCardBase({
       <View style={styles.footer}>
         <View style={styles.footerLeft}>
           <SourceBadge contentId={item.id} sources={sources} />
+          {/* 0121: Uebersetzte Karten sagen es. Die Quelle bleibt der
+              Originalartikel - wer ihn oeffnet, liest ihn in seiner Sprache. */}
+          {item.uebersetzt_aus ? (
+            <Text style={styles.uebersetzt}>
+              {item.language === 'en' ? 'Übersetzt aus dem Deutschen' : 'Übersetzt aus dem Englischen'}
+            </Text>
+          ) : null}
           {shareNote ? (
             <Animated.Text entering={FadeIn} style={styles.shareNote}>
               {shareNote}
@@ -822,6 +829,7 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
   },
   footerLeft: { flex: 1, gap: 4 },
+  uebersetzt: { ...type.meta, fontSize: 9.5, color: color.ink.low },
   shareNote: { ...type.meta, color: color.akzent },
 });
 

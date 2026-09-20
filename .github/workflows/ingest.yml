@@ -345,6 +345,41 @@ jobs:
           fi
           python pipeline/courses.py 2>&1 | tee -a "$RUNNER_TEMP/kurse.log"
 
+      # --- Uebersetzungen ------------------------------------------------
+      #
+      # Eine Uebersetzung kostet EINEN Aufruf und macht aus einer geprueften
+      # Karte eine zweite in der anderen Sprache (Migration 0121). Billiger
+      # als jede neue Karte - deshalb laeuft sie zuletzt und nur mit dem,
+      # was uebrig ist: vier Karten je Lauf, und nur in den Laeufen um
+      # 03:17, 12:17 und 21:17 UTC, damit sie den Feed-Karten nicht das
+      # Tageskontingent wegnimmt.
+      - name: Uebersetzungen
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          MAX_RUN_MINUTES: "5"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
+          GEMINI_MODEL: gemini-3.5-flash
+          INGEST_LANGUAGES: de,en
+          MAX_GEMINI_CALLS_PER_RUN: "10"
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -o pipefail
+          stunde=$(date -u +%H)
+          if [ "$LAUF_AUSLOESER" = "schedule" ] || [ "$LAUF_AUSLOESER" = "zeitplan" ]; then
+            case "$stunde" in
+              03|04|12|13|21|22) ;;
+              *) echo "Uebersetzungen nur um 03:17, 12:17 und 21:17 UTC (jetzt $stunde Uhr)."; exit 0 ;;
+            esac
+          fi
+          python pipeline/uebersetzen.py --anzahl 4 2>&1 | tee -a "$RUNNER_TEMP/uebersetzen.log"
+
       # --- Erklaerkarten nachruesten -------------------------------------
       #
       # Der Anteil an Erklaerkarten ist eine Quote ueber den BESTAND. Jede
