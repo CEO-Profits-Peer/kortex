@@ -1,15 +1,20 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polygon } from 'react-native-svg';
 
+import { Button } from '@/components/Button';
 import { GridBackground } from '@/components/GridBackground';
 import { Laden } from '@/components/Laden';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { zeigeProSperre } from '@/components/ProSperre';
+import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
-import { api, type Lernpfad, type LernpfadDetail, type LernpfadStation } from '@/lib/supabase';
+import { proAktiv, proMeldung } from '@/lib/pro';
+import { api, type EigenerPfad, type Lernpfad, type LernpfadDetail, type LernpfadStation } from '@/lib/supabase';
+import type { CourseSummary } from '@/lib/types.db';
 import { T } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
@@ -59,9 +64,9 @@ function PfadKarte({ p, breit }: { p: Lernpfad; breit?: boolean }) {
       </View>
       <Text style={styles.klein} numberOfLines={1}>
         {fertig
-          ? 'Geschafft'
+          ? T('Geschafft')
           : p.bereit === 0
-            ? 'Entsteht gerade'
+            ? T('Entsteht gerade')
             : p.naechste
               ? `Weiter: ${p.naechste}`
               : `${p.bereit} von ${p.stationen} bereit`}
@@ -124,6 +129,10 @@ export function LernpfadeScreen() {
           ?.slice()
           .sort((a, b) => Number(b.bereit > 0) - Number(a.bereit > 0))
           .map((p) => <PfadKarte key={p.id} p={p} breit />)}
+
+        {/* 0123, PRO: der eigene Pfad. Steht unten - die kuratierten sind
+            der Regelfall, der eigene die Kür. */}
+        <EigenePfade />
       </ScrollView>
     </GridBackground>
   );
@@ -237,7 +246,7 @@ function Station({
         </Text>
         <Text style={[styles.klein, naechste && { color: akzent }]}>
           {!bereit
-            ? 'Entsteht gerade'
+            ? T('Entsteht gerade')
             : s.fertig
               ? 'Fertig'
               : naechste
@@ -251,10 +260,190 @@ function Station({
   );
 }
 
+
+/**
+ * Eigene Lernpfade (0123, PRO).
+ *
+ * Kurse in eine Reihenfolge bringen, die man selbst fuer richtig haelt.
+ * Der Fortschritt kommt aus denselben Zahlen wie ueberall: gelesene
+ * Lektionen je Kurs.
+ */
+function EigenePfade() {
+  const [pfade, setPfade] = useState<EigenerPfad[] | null>(null);
+  const [kurse, setKurse] = useState<CourseSummary[]>([]);
+  const [titel, setTitel] = useState('');
+  const [offen, setOffen] = useState<string | null>(null);
+  const [notiz, setNotiz] = useState<string | null>(null);
+
+  const laden = useCallback(async () => {
+    try {
+      setPfade(await api.meineEigenenPfade());
+    } catch {
+      setPfade([]);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void laden();
+      api.listCourses().then(setKurse).catch(() => setKurse([]));
+    }, [laden]),
+  );
+
+  const anlegen = async () => {
+    if (titel.trim().length < 2) return;
+    if (!proAktiv()) {
+      zeigeProSperre(T('Mit PRO stellst du dir eigene Lernpfade aus Kursen zusammen.'));
+      return;
+    }
+    try {
+      await api.pfadAnlegen(titel.trim());
+      haptics.success();
+      setTitel('');
+      await laden();
+    } catch (e) {
+      const angebot = proMeldung(e);
+      if (angebot) zeigeProSperre(angebot);
+      else setNotiz(fehlerText(e, T('Anlegen ging nicht')));
+    }
+  };
+
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text style={styles.abschnitt}>{T('Dein eigener Pfad')}</Text>
+
+      {pfade?.map((p) => (
+        <View key={p.id} style={[styles.karte, styles.karteBreit]}>
+          <View style={styles.zeileZwischen}>
+            <Text style={styles.karteTitel} numberOfLines={1}>
+              {p.titel}
+            </Text>
+            <Pressable onPress={() => void api.pfadLoeschen(p.id).then(laden)} hitSlop={8}>
+              <Text style={styles.klein}>{T('Löschen')}</Text>
+            </Pressable>
+          </View>
+
+          {p.kurse.length === 0 ? <Text style={styles.klein}>{T('Noch keine Kurse darin.')}</Text> : null}
+          {p.kurse.map((k, i) => (
+            <View key={k.course_id} style={styles.eigenZeile}>
+              <Text style={[styles.stationenZahl, { color: categoryAccent(k.accent) }]}>{k.position}</Text>
+              <Pressable onPress={() => router.push(`/course/${encodeURIComponent(k.slug)}`)} style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.eigenTitel} numberOfLines={1}>
+                  {k.title}
+                </Text>
+                <Text style={styles.klein}>{k.fertig ? T('Fertig') : `${k.gelesen}/${k.lessons}`}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void api.pfadSchieben(p.id, k.course_id, true).then(laden)}
+                disabled={i === 0}
+                hitSlop={8}
+                accessibilityLabel={T('Nach oben')}
+              >
+                <Text style={[styles.pfeil, i === 0 && { opacity: 0.3 }]}>↑</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void api.pfadSchieben(p.id, k.course_id, false).then(laden)}
+                disabled={i === p.kurse.length - 1}
+                hitSlop={8}
+                accessibilityLabel={T('Nach unten')}
+              >
+                <Text style={[styles.pfeil, i === p.kurse.length - 1 && { opacity: 0.3 }]}>↓</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void api.pfadKurs(p.id, k.course_id, false).then(laden)}
+                hitSlop={8}
+                accessibilityLabel={T('Herausnehmen')}
+              >
+                <Text style={styles.pfeil}>×</Text>
+              </Pressable>
+            </View>
+          ))}
+
+          <Pressable
+            onPress={() => {
+              haptics.select();
+              setOffen(offen === p.id ? null : p.id);
+            }}
+            style={styles.chip}
+          >
+            <Text style={styles.chipText}>{offen === p.id ? T('Schließen') : T('Kurs dazulegen')}</Text>
+          </Pressable>
+
+          {offen === p.id ? (
+            <View style={{ gap: 4, maxHeight: 260 }}>
+              <ScrollView nestedScrollEnabled>
+                {kurse
+                  .filter((c) => !p.kurse.some((k) => k.course_id === c.id))
+                  .map((c) => (
+                    <Pressable
+                      key={c.id}
+                      onPress={() =>
+                        void api
+                          .pfadKurs(p.id, c.id, true)
+                          .then(laden)
+                          .catch((e) => setNotiz(fehlerText(e, T('Ging nicht'))))
+                      }
+                      style={styles.wahl}
+                    >
+                      <Text style={styles.eigenTitel} numberOfLines={1}>
+                        {c.emoji ? `${c.emoji} ` : ''}
+                        {c.title}
+                      </Text>
+                    </Pressable>
+                  ))}
+              </ScrollView>
+            </View>
+          ) : null}
+        </View>
+      ))}
+
+      <View style={styles.zeile}>
+        <TextInput
+          value={titel}
+          onChangeText={setTitel}
+          placeholder={T('Name deines Pfads')}
+          placeholderTextColor={color.ink.low}
+          maxLength={60}
+          style={styles.eingabe}
+        />
+        <Button label={T('Anlegen')} variant="ghost" onPress={() => void anlegen()} disabled={titel.trim().length < 2} />
+      </View>
+      {notiz ? <Text style={styles.klein}>{notiz}</Text> : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   body: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: space.lg },
   intro: { ...type.body, fontSize: 14, lineHeight: 20, color: color.ink.mid },
   leiste: { gap: space.sm, paddingRight: space.xl },
+  zeile: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  zeileZwischen: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  eigenZeile: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 6 },
+  eigenTitel: { ...type.label, fontSize: 14, color: color.ink.high },
+  pfeil: { ...type.title, fontSize: 16, color: color.ink.mid, paddingHorizontal: 4 },
+  wahl: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.ink.faint },
+  chip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: space.md,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+  },
+  chipText: { ...type.meta, fontSize: 11, color: color.ink.mid },
+  abschnitt: { ...type.meta, color: color.ink.low, textTransform: 'uppercase', letterSpacing: 1 },
+  eingabe: {
+    ...type.body,
+    flex: 1,
+    minWidth: 0,
+    fontSize: 14,
+    color: color.ink.max,
+    paddingHorizontal: space.md,
+    paddingVertical: 9,
+    borderRadius: radius.md,
+    backgroundColor: color.bgSunken,
+  },
   karte: {
     gap: space.xs,
     padding: space.md,

@@ -57,6 +57,23 @@ export type MonatsAbzeichen = {
   monate: { monat: string; lerntage: number; stufe: number }[];
 };
 
+/** 0123: ein selbst gebauter Lernpfad (PRO). */
+export type EigenerPfad = {
+  id: string;
+  titel: string;
+  kurse: {
+    position: number;
+    course_id: string;
+    slug: string;
+    title: string;
+    accent: string | null;
+    emoji: string | null;
+    lessons: number;
+    gelesen: number;
+    fertig: boolean;
+  }[];
+};
+
 /** 0114: Lernpartner. ich/er/serie nur bei aktiven. */
 export type Lernpartner = {
   id: string;
@@ -516,6 +533,35 @@ export const api = {
     const { data, error } = await supabase.rpc('monats_abzeichen_von', { p_handle: handle });
     if (error) throw error;
     return (data ?? []) as { monat: string; stufe: number }[];
+  },
+
+  // --- Eigene Lernpfade (0123, PRO) ---------------------------------------
+
+  async meineEigenenPfade(): Promise<EigenerPfad[]> {
+    const { data, error } = await supabase.rpc('meine_eigenen_pfade');
+    if (error) throw error;
+    return (data ?? []) as EigenerPfad[];
+  },
+
+  async pfadAnlegen(titel: string): Promise<string> {
+    const { data, error } = await supabase.rpc('eigenen_pfad_anlegen', { p_titel: titel });
+    if (error) throw error;
+    return data as string;
+  },
+
+  async pfadKurs(pfad: string, kurs: string, rein: boolean): Promise<void> {
+    const { error } = await supabase.rpc('eigenen_pfad_kurs', { p_pfad: pfad, p_course: kurs, p_rein: rein });
+    if (error) throw error;
+  },
+
+  async pfadSchieben(pfad: string, kurs: string, hoch: boolean): Promise<void> {
+    const { error } = await supabase.rpc('eigenen_pfad_schieben', { p_pfad: pfad, p_course: kurs, p_hoch: hoch });
+    if (error) throw error;
+  },
+
+  async pfadLoeschen(pfad: string): Promise<void> {
+    const { error } = await supabase.rpc('eigenen_pfad_loeschen', { p_pfad: pfad });
+    if (error) throw error;
   },
 
   // --- Lernpartner (0114) ------------------------------------------------

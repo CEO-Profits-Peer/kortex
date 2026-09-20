@@ -15,6 +15,7 @@ import {
 } from '@/lib/avatarWaben';
 import { rahmenAussehen } from '@/lib/meisterwege';
 import { api } from '@/lib/supabase';
+import { OrnamentRahmen } from '@/features/rahmen/Ornamente';
 import { ZWEI, sechseckRegel, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius } from '@/theme/tokens';
 
@@ -267,7 +268,15 @@ function AvatarBase({
       ) : (
         <GeneratedAvatar seed={seed} size={size} />
       )}
-      {r ? <MeisterRahmen r={r} size={size} /> : null}
+      {r ? (
+        r.ornament ? (
+          // 19.09.: Ornamente statt Strichbild - ein verdienter Rahmen soll
+          // nach Auszeichnung aussehen, nicht nach Diagramm.
+          <OrnamentRahmen art={r.ornament} size={size} farbe={r.farbe} gold={r.gold} />
+        ) : (
+          <MeisterRahmen r={r} size={size} />
+        )
+      ) : null}
       {ZWEI && ring && !r ? (
         // Design 2.0: ein duenner warmgrauer Ring statt eines dicken goldenen.
         // Gold um jeden Menschen war zu laut - die Farbe des Aufrufers (meist

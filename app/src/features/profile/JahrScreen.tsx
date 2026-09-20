@@ -13,6 +13,9 @@ import { haptics } from '@/lib/haptics';
 import { shareRueckblick } from '@/lib/share';
 import { api, type Jahresrueckblick } from '@/lib/supabase';
 import { T, lokale } from '@/lib/sprache';
+import { jahresBildTeilen } from '@/lib/jahresbild';
+import { proAktiv } from '@/lib/pro';
+import { zeigeProSperre } from '@/components/ProSperre';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -63,6 +66,15 @@ export function JahrScreen() {
   const [j, setJ] = useState<Jahresrueckblick | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [notiz, setNotiz] = useState<string | null>(null);
+  const [bildLaeuft, setBildLaeuft] = useState(false);
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    api
+      .getMyProfile()
+      .then((p) => setName(p ? (p.display_name?.trim() || `@${p.handle}`) : ''))
+      .catch(() => setName(''));
+  }, []);
 
   useEffect(() => {
     api
@@ -176,6 +188,23 @@ export function JahrScreen() {
             ) : null}
 
             <Button label={T('Teilen')} onPress={() => void teilen()} />
+            {/* PRO: derselbe Rueckblick als Bild - ein Rueckblick wird
+                gezeigt, nicht vorgelesen. */}
+            <Button
+              label={T('Als Bild')}
+              variant="ghost"
+              busy={bildLaeuft}
+              onPress={() => {
+                if (!proAktiv()) {
+                  zeigeProSperre(T('Mit PRO bekommst du deinen Rückblick als fertiges Bild zum Teilen.'));
+                  return;
+                }
+                setBildLaeuft(true);
+                void jahresBildTeilen(j, name)
+                  .then((e) => setNotiz(e === 'nicht' ? T('Bild ging nicht') : e === 'geladen' ? T('Bild gespeichert') : null))
+                  .finally(() => setBildLaeuft(false));
+              }}
+            />
             {notiz ? <Text style={styles.leer}>{notiz}</Text> : null}
           </>
         ) : null}

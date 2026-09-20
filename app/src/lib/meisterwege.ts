@@ -52,6 +52,8 @@ export const MEISTER_SCHWELLEN = [50, 150, 400, 800, 1500] as const;
 
 export const STUFEN_NAMEN = ['', 'Neugierig', 'Kundig', 'Versiert', 'Meisterlich', 'Meister'] as const;
 
+import type { OrnamentArt } from '@/features/rahmen/Ornamente';
+
 type RahmenStil = 'voll' | 'doppelt' | 'strich' | 'punkt' | 'lang';
 
 /**
@@ -59,23 +61,29 @@ type RahmenStil = 'voll' | 'doppelt' | 'strich' | 'punkt' | 'lang';
  * dazu ein Strichbild, damit Themen mit aehnlicher Farbe unterscheidbar bleiben.
  * "-gold" (PRO): dieselbe Linie plus eine goldene Aussenkante.
  */
-const RAHMEN: Record<string, { farbe: string; stil: RahmenStil }> = {
-  science: { farbe: '#B78BFF', stil: 'doppelt' },
-  tech: { farbe: '#00F0FF', stil: 'strich' },
-  finance: { farbe: '#7CFF6B', stil: 'punkt' },
-  body: { farbe: '#FF9F45', stil: 'lang' },
-  mind: { farbe: '#FF6BA8', stil: 'doppelt' },
-  world: { farbe: '#E8E4DE', stil: 'strich' },
-  local: { farbe: '#FFD84D', stil: 'voll' },
-  life: { farbe: '#C8D94E', stil: 'punkt' },
-  history: { farbe: '#E3B889', stil: 'voll' },
-  culture: { farbe: '#FF7A6B', stil: 'lang' },
-  language: { farbe: '#5AD1C4', stil: 'voll' },
+const RAHMEN: Record<string, { farbe: string; stil: RahmenStil; ornament?: OrnamentArt }> = {
+  // Das Ornament passt zum Thema, nicht zur Farbe: Wissenschaft bekommt das
+  // Siegel (Praegung), Technik den Knoten (Konstruktion), Geld den Beschlag
+  // (Tresorecke), Koerper die Ranke (Wachstum), Kopf das Filigran
+  // (Feinarbeit), Welt das Flechtband (Verbindung), Regional die Krone
+  // (Wappen). Die Strichart bleibt als Rueckfall, falls ein Ornament
+  // einmal nicht gezeichnet werden kann.
+  science: { farbe: '#B78BFF', stil: 'doppelt', ornament: 'siegel' },
+  tech: { farbe: '#00F0FF', stil: 'strich', ornament: 'knoten' },
+  finance: { farbe: '#7CFF6B', stil: 'punkt', ornament: 'beschlag' },
+  body: { farbe: '#FF9F45', stil: 'lang', ornament: 'ranke' },
+  mind: { farbe: '#FF6BA8', stil: 'doppelt', ornament: 'filigran' },
+  world: { farbe: '#E8E4DE', stil: 'strich', ornament: 'band' },
+  local: { farbe: '#FFD84D', stil: 'voll', ornament: 'krone' },
+  life: { farbe: '#C8D94E', stil: 'punkt', ornament: 'ranke' },
+  history: { farbe: '#E3B889', stil: 'voll', ornament: 'beschlag' },
+  culture: { farbe: '#FF7A6B', stil: 'lang', ornament: 'filigran' },
+  language: { farbe: '#5AD1C4', stil: 'voll', ornament: 'band' },
 };
 
 /** Saison-Rahmen (0108): eigene Farbe, sonst wie die Meister-Rahmen gezeichnet. */
-const SAISON_RAHMEN: Record<string, { farbe: string; stil: RahmenStil; titel: string }> = {
-  herbst26: { farbe: '#D9803A', stil: 'lang', titel: 'Herbstlaub' },
+const SAISON_RAHMEN: Record<string, { farbe: string; stil: RahmenStil; titel: string; ornament?: OrnamentArt }> = {
+  herbst26: { farbe: '#D9803A', stil: 'lang', titel: 'Herbstlaub', ornament: 'ranke' },
 };
 
 export function saisonRahmenTitel(code: string): string | null {
@@ -89,7 +97,7 @@ export function rahmenAussehen(code: string | null | undefined) {
   const gold = code.endsWith('-gold');
   if (code.startsWith('saison-')) {
     const r = SAISON_RAHMEN[code.slice(7).replace(/-gold$/, '')];
-    return r ? { farbe: r.farbe, stil: r.stil, gold } : null;
+    return r ? { farbe: r.farbe, stil: r.stil, ornament: r.ornament, gold } : null;
   }
   const basis = RAHMEN[gold ? code.slice(0, -5) : code];
   if (!basis) return null;
