@@ -18,7 +18,7 @@ import {
   zahl,
 } from './parts';
 import type { AdminData } from './types';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 
 /**
  * Die Uebersicht - was man morgens ansieht.
@@ -235,7 +235,7 @@ export function AdminOverview({ data }: { data: AdminData }) {
         </Text>
       </Gruppe>
 
-      <Text style={styles.stand}>Stand {new Date(data.stand).toLocaleString('de-AT')}</Text>
+      <Text style={styles.stand}>Stand {new Date(data.stand).toLocaleString(lokale())}</Text>
     </View>
   );
 }

@@ -143,7 +143,7 @@ export function WuenscheScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Text style={[styles.marke, { color: s.farbe, borderColor: s.farbe }]}>{s.text}</Text>
+                  <Text style={[styles.marke, { color: s.farbe, borderColor: s.farbe }]}>{T(s.text)}</Text>
                   {w.status === 'offen' ? (
                     <Pressable
                       hitSlop={8}

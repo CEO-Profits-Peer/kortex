@@ -13,7 +13,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { fehlerText } from '@/lib/fehler';
 import { api } from '@/lib/supabase';
 import type { Statistik } from '@/lib/types.db';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -40,7 +40,7 @@ const QUELLE: Record<string, string> = {
 };
 
 function datum(iso: string, mitJahr = false) {
-  return new Date(iso).toLocaleDateString('de-AT', {
+  return new Date(iso).toLocaleDateString(lokale(), {
     day: '2-digit',
     month: '2-digit',
     ...(mitJahr ? { year: 'numeric' } : {}),
@@ -309,7 +309,7 @@ export function StatistikScreen() {
               </View>
               {s.reichweite.beitraege.length === 0 ? (
                 <Text style={styles.leer}>
-                  Noch keine Aufrufe gezählt. Gezählt wird{s.reichweite.seit ? ` seit ${new Date(s.reichweite.seit).toLocaleDateString('de-AT')}` : ' ab jetzt'}, wenn jemand deinen Beitrag im Home sieht.
+                  Noch keine Aufrufe gezählt. Gezählt wird{s.reichweite.seit ? ` seit ${new Date(s.reichweite.seit).toLocaleDateString(lokale())}` : ' ab jetzt'}, wenn jemand deinen Beitrag im Home sieht.
                 </Text>
               ) : (
                 s.reichweite.beitraege.map((b) => (

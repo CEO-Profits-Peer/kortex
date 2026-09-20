@@ -15,7 +15,7 @@ import { notizenLaden, useNotiz } from '@/lib/notizen';
 import { api } from '@/lib/supabase';
 import type { DueReview, ReviewUeberblick } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 import { flaeche } from '@/theme/design';
 
@@ -45,7 +45,7 @@ function wannNaechste(iso: string | null): string {
   const tage = Math.round(std / 24);
   if (tage <= 1) return 'morgen';
   if (tage < 7) return `in ${tage} Tagen`;
-  return `am ${d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })}`;
+  return `am ${d.toLocaleDateString(lokale(), { day: '2-digit', month: '2-digit' })}`;
 }
 
 export function ReviewScreen() {

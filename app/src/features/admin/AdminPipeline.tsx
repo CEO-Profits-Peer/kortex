@@ -5,7 +5,7 @@ import { color, space, type } from '@/theme/tokens';
 
 import { Gross, Gruppe, Marke, Verlauf, Zeile, seit, zahl, type Ton } from './parts';
 import type { AdminRun, AdminRuns } from './types';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 
 /**
  * Die Pipeline - warum an einem Tag 22 Karten kommen und am naechsten 157.
@@ -64,7 +64,7 @@ function erwartetHeute(jetzt = new Date()): number {
 
 function uhrzeit(iso: string): string {
   const d = new Date(iso);
-  return `${d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}`;
+  return `${d.toLocaleDateString(lokale(), { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString(lokale(), { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 /** Die drei Skripte eines Workflow-Laufs gehoeren zusammen. */
@@ -130,7 +130,7 @@ export function AdminPipeline({ data }: { data: AdminRuns }) {
             return (
               <Zeile
                 key={t.tag}
-                links={new Date(t.tag).toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                links={new Date(t.tag).toLocaleDateString(lokale(), { weekday: 'short', day: '2-digit', month: '2-digit' })}
                 unter={t.laeufe > 0 ? teile.join(' · ') : 'keine Bilanz'}
                 rechts={`${t.karten_db} Karten`}
                 ton={t.fehler > 0 ? 'warnung' : t.karten_db > 0 ? undefined : 'warnung'}
@@ -188,7 +188,7 @@ export function AdminPipeline({ data }: { data: AdminRuns }) {
         )}
       </Gruppe>
 
-      <Text style={styles.stand}>Stand {new Date(data.stand).toLocaleString('de-AT')}</Text>
+      <Text style={styles.stand}>Stand {new Date(data.stand).toLocaleString(lokale())}</Text>
     </View>
   );
 }

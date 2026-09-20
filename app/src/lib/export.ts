@@ -2,6 +2,7 @@ import { Platform, Share } from 'react-native';
 
 import { BRAND } from './brand';
 import type { BodyBlock, ContentItem } from './types.db';
+import { lokale } from '@/lib/sprache';
 
 /**
  * Stapel-Export (PRO, 19.09.): als Textdatei, die Anki direkt importiert.
@@ -116,7 +117,7 @@ export function stapelAlsPdf(fenster: Window, karten: ContentItem[], titel: stri
   @media print { body { margin: 12mm; } }
 </style></head><body>
 <h1>${html(titel)}</h1>
-<div class="kopf">${karten.length} Karten · ${new Date().toLocaleDateString('de-AT')} · ${html(BRAND.name)}</div>
+<div class="kopf">${karten.length} Karten · ${new Date().toLocaleDateString(lokale())} · ${html(BRAND.name)}</div>
 ${inhalt}
 <script>setTimeout(function(){ window.print(); }, 300);</script>
 </body></html>`);

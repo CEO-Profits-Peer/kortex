@@ -6,7 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { Icon } from '@/components/Icon';
 import { haptics } from '@/lib/haptics';
 import { fehlerText } from '@/lib/fehler';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { color, radius, space, type } from '@/theme/tokens';
 
 import {
@@ -197,7 +197,7 @@ function PersonDetail({ p }: { p: AdminPerson }) {
           </View>
           <Text style={styles.handle}>@{person.handle}</Text>
           <Text style={styles.meta}>
-            seit {new Date(person.seit).toLocaleDateString('de-AT')} · zuletzt{' '}
+            seit {new Date(person.seit).toLocaleDateString(lokale())} · zuletzt{' '}
             {seit(person.zuletzt)}
           </Text>
         </View>
@@ -325,7 +325,7 @@ function PersonDetail({ p }: { p: AdminPerson }) {
         </Text>
       </Gruppe>
 
-      <Text style={styles.stand}>Stand {new Date(p.stand).toLocaleString('de-AT')}</Text>
+      <Text style={styles.stand}>Stand {new Date(p.stand).toLocaleString(lokale())}</Text>
     </View>
   );
 }

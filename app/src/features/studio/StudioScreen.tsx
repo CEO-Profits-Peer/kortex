@@ -20,7 +20,7 @@ import { haptics } from '@/lib/haptics';
 import { beiWiederOnline } from '@/lib/online';
 import { api } from '@/lib/supabase';
 import type { CourseSummary, Post, PostArt } from '@/lib/types.db';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 import { BordeauxMuster } from '@/components/Sechseck';
 import { ZWEI, facette, flaeche, sechseckRegel } from '@/theme/design';
@@ -301,7 +301,7 @@ export function StudioScreen() {
                         {g.body.trim() || 'Ohne Text'}
                       </Text>
                       <Text style={styles.entwurfWann}>
-                        {new Date(g.at).toLocaleString('de-AT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(g.at).toLocaleString(lokale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </Text>
                     </View>
                   ))}

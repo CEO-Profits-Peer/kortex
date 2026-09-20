@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { color, radius, space, type } from '@/theme/tokens';
+import { lokale } from '@/lib/sprache';
 
 /**
  * Die Bausteine des Kontrollzentrums.
@@ -52,7 +53,7 @@ export function bytes(n: number): string {
  * Kategorie-Kennungen (finanzen.zinseszins), die ueberall danebenstehen.
  */
 export function zahl(n: number): string {
-  return n.toLocaleString('de-AT').replace(/\./g, ' ');
+  return n.toLocaleString(lokale()).replace(/\./g, ' ');
 }
 
 /** "vor 3 Tagen", "heute" - relativ, weil absolut hier niemand rechnen will. */
@@ -67,7 +68,7 @@ export function seit(iso: string | null | undefined): string {
   }
   if (tage === 1) return 'gestern';
   if (tage < 31) return `vor ${tage} Tagen`;
-  return new Date(iso).toLocaleDateString('de-AT');
+  return new Date(iso).toLocaleDateString(lokale());
 }
 
 // --- Bausteine ---------------------------------------------------------------

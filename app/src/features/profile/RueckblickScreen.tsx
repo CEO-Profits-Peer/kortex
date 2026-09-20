@@ -17,7 +17,7 @@ import { STUFEN_NAMEN } from '@/lib/meisterwege';
 import { getPrefs } from '@/lib/prefs';
 import { shareRueckblick } from '@/lib/share';
 import { api, type Wochenrueckblick } from '@/lib/supabase';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { ZWEI, facette } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -78,7 +78,7 @@ export function RueckblickScreen() {
             <View style={styles.karte}>
               {ZWEI ? <BordeauxMuster voll /> : null}
               <Text style={styles.kopf}>
-                {sonntag ? 'DIESE WOCHE' : 'DIESE WOCHE BISHER'} · AB {new Date(r.ab).toLocaleDateString('de-AT', { day: 'numeric', month: 'short' }).toUpperCase()}
+                {sonntag ? 'DIESE WOCHE' : 'DIESE WOCHE BISHER'} · AB {new Date(r.ab).toLocaleDateString(lokale(), { day: 'numeric', month: 'short' }).toUpperCase()}
               </Text>
               <View style={styles.gross}>
                 <Hochzaehlen text={String(r.gelesen)} style={styles.grossZahl} />

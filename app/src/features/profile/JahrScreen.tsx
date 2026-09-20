@@ -12,7 +12,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { shareRueckblick } from '@/lib/share';
 import { api, type Jahresrueckblick } from '@/lib/supabase';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -23,7 +23,10 @@ import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
  * Folienfarben sind fest (wie die Titelkarten der Update-Seite): der
  * Rueckblick soll wie ein eigenes Stueck aussehen, nicht wie eine Liste.
  */
-const MONATE = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+/** Monatsname aus dem System - sonst steht auf Englisch "Jänner". */
+function monatsname(m: number): string {
+  return new Date(2026, m - 1, 15).toLocaleDateString(lokale(), { month: 'long' });
+}
 const ZEIT: Record<string, { titel: string; text: string }> = {
   morgen: { titel: 'Früh dran', text: 'Am meisten gelernt hast du morgens.' },
   tag: { titel: 'Tagsüber', text: 'Deine Karten liest du am liebsten untertags.' },
@@ -104,12 +107,12 @@ export function JahrScreen() {
         ) : null}
         {j && j.gelesen > 0 ? (
           <>
-            <Folie farbe="#4E1626" oben={j.laufend ? 'Dein Jahr bisher' : 'Dein Jahr'}>
+            <Folie farbe="#4E1626" oben={T(j.laufend ? 'Dein Jahr bisher' : 'Dein Jahr')}>
               <Text style={styles.zahl}>{j.jahr}</Text>
               {j.erster_tag ? (
                 <Text style={styles.unten}>
                   Losgegangen am{' '}
-                  {new Date(`${j.erster_tag}T12:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}
+                  {new Date(`${j.erster_tag}T12:00:00`).toLocaleDateString(lokale(), { day: 'numeric', month: 'long' })}
                 </Text>
               ) : null}
             </Folie>
@@ -122,9 +125,9 @@ export function JahrScreen() {
               <Folie
                 farbe="#5C3A1E"
                 oben="Dein stärkster Monat"
-                unten={`${j.bester_monat.tage} Lerntage im ${MONATE[j.bester_monat.monat - 1]}`}
+                unten={`${j.bester_monat.tage} Lerntage im ${monatsname(j.bester_monat.monat)}`}
               >
-                <Text style={styles.wort}>{MONATE[j.bester_monat.monat - 1]}</Text>
+                <Text style={styles.wort}>{monatsname(j.bester_monat.monat)}</Text>
               </Folie>
             ) : null}
 
@@ -144,8 +147,8 @@ export function JahrScreen() {
             ) : null}
 
             {j.tageszeit && ZEIT[j.tageszeit] ? (
-              <Folie farbe="#14202B" oben="Dein Lerntyp" unten={ZEIT[j.tageszeit].text}>
-                <Text style={styles.wort}>{ZEIT[j.tageszeit].titel}</Text>
+              <Folie farbe="#14202B" oben="Dein Lerntyp" unten={T(ZEIT[j.tageszeit].text)}>
+                <Text style={styles.wort}>{T(ZEIT[j.tageszeit].titel)}</Text>
               </Folie>
             ) : null}
 

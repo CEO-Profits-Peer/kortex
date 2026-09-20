@@ -14,7 +14,7 @@ import { fehlerText } from '@/lib/fehler';
 import { haptics } from '@/lib/haptics';
 import { api, type Pruefung } from '@/lib/supabase';
 import type { Category } from '@/lib/types.db';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
@@ -137,7 +137,7 @@ function PruefungKarte({ p, themen, neu }: { p: Pruefung; themen: Category[]; ne
             {p.titel}
           </Text>
           <Text style={styles.klein} numberOfLines={1}>
-            {new Date(p.datum).toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' })} · {namen}
+            {new Date(p.datum).toLocaleDateString(lokale(), { weekday: 'long', day: 'numeric', month: 'long' })} · {namen}
           </Text>
           <Text style={styles.ziel}>
             {vorbei ? 'Vorbei – viel Glück gehabt?' : p.tage === 0 ? 'Heute! Nur noch kurz wiederholen.' : `Heute: ${Math.max(1, p.heute)} Karten oder Fragen`}
@@ -205,7 +205,7 @@ function NeuePruefung({ themen, fertig }: { themen: Category[]; fertig: () => Pr
         <View style={styles.zeileZwischen}>
           <Text style={styles.abschnitt}>Wann</Text>
           <Text style={styles.wert}>
-            {datum.toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' })} · in {tage} {tage === 1 ? 'Tag' : 'Tagen'}
+            {datum.toLocaleDateString(lokale(), { weekday: 'short', day: 'numeric', month: 'long' })} · in {tage} {tage === 1 ? 'Tag' : 'Tagen'}
           </Text>
         </View>
         <Slider min={1} max={90} value={tage} onChange={setTage} tint={color.signal.primary} />

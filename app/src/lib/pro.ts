@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { api } from '@/lib/supabase';
+import { lokale } from '@/lib/sprache';
 
 /**
  * PRO in der App: anzeigen und rechtzeitig fragen - NICHT entscheiden.
@@ -86,7 +87,7 @@ export function proMeldung(e: unknown): string | null {
 
 export function bisText(bis: string | null): string {
   if (!bis) return 'ohne Ablauf';
-  return `bis ${new Date(bis).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  return `bis ${new Date(bis).toLocaleDateString(lokale(), { day: 'numeric', month: 'long', year: 'numeric' })}`;
 }
 
 /**
@@ -98,5 +99,5 @@ export function schutzText(schutzAm: string | null): string {
   const wieder = new Date(`${schutzAm}T00:00:00`);
   wieder.setDate(wieder.getDate() + 7);
   if (wieder.getTime() <= Date.now()) return 'Streak-Schutz bereit';
-  return `Streak-Schutz genutzt – wieder bereit ab ${wieder.toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`;
+  return `Streak-Schutz genutzt – wieder bereit ab ${wieder.toLocaleDateString(lokale(), { day: 'numeric', month: 'long' })}`;
 }

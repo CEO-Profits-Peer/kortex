@@ -49,6 +49,16 @@ export function T(text: string, vars?: Vars): string {
 }
 
 /**
+ * Die Lokale fuer Datum und Zahlen.
+ *
+ * Steht ueberall dort, wo bisher 'de-AT' fest im Code stand: ein englischer
+ * Bildschirm mit "19. September" ist halb uebersetzt, und das sieht man.
+ */
+export function lokale(): string {
+  return (i18n.language || 'de').startsWith('en') ? 'en-GB' : 'de-AT';
+}
+
+/**
  * Wie viele Texte uebersetzt sind - fuer das Kontrollzentrum und fuer mich
  * selbst. Eine Uebersetzung, die zu 60 Prozent fertig ist, soll man sehen
  * koennen, ohne durch die App zu klicken.

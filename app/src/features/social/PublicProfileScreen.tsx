@@ -20,7 +20,7 @@ import { UserPosts } from '@/features/posts/UserPosts';
 import { FremdeAbzeichen } from '@/features/abzeichen/MonatsAbzeichen';
 import type { FolgenQuelle, PublicProfile, RepostRef } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { ZWEI } from '@/theme/design';
 import { color, gewaehlt, gewaehltText, radius, space, type } from '@/theme/tokens';
 
@@ -267,7 +267,7 @@ export function PublicProfileScreen({
             wissen will, bevor man jemandem folgt. */}
         {p.dabei_seit ? (
           <Text style={styles.dabei}>
-            Dabei seit {new Date(p.dabei_seit).toLocaleDateString('de-AT', { month: 'long', year: 'numeric' })}
+            Dabei seit {new Date(p.dabei_seit).toLocaleDateString(lokale(), { month: 'long', year: 'numeric' })}
             {p.beitraege ? ` · ${p.beitraege} ${p.beitraege === 1 ? 'Beitrag' : 'Beiträge'}` : ''}
           </Text>
         ) : null}

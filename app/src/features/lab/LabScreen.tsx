@@ -18,7 +18,7 @@ import { useSzenarien } from '@/lib/labSzenarien';
 import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
 import type { AnkerStand, ContentItem } from '@/lib/types.db';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -305,7 +305,7 @@ function Zinseszins({ w }: { w: Werkzeug }) {
   const [rendite, setRendite] = useState(7);
   const [jahre, setJahre] = useState(49);
   const e = { start, monatlich, rendite, jahre };
-  const eur = (n: number) => n.toLocaleString('de-AT');
+  const eur = (n: number) => n.toLocaleString(lokale());
 
   return (
     <>
@@ -316,7 +316,7 @@ function Zinseszins({ w }: { w: Werkzeug }) {
         <Regler label={T('Jahre')} wert={String(jahre)}>
           <Slider min={1} max={60} value={jahre} onChange={setJahre} tint={w.farbe} />
         </Regler>
-        <Regler label={T('Rendite pro Jahr')} wert={rendite.toLocaleString('de-AT')} einheit="%">
+        <Regler label={T('Rendite pro Jahr')} wert={rendite.toLocaleString(lokale())} einheit="%">
           <Slider min={0} max={12} step={0.5} value={rendite} onChange={setRendite} tint={w.farbe} />
         </Regler>
         <Regler label={T('Zum Start')} wert={eur(start)} einheit="€">
@@ -792,7 +792,7 @@ function Inflation({ w }: { w: Werkzeug }) {
           ]}
           onChange={setLand}
         />
-        <Regler label={T('Betrag')} wert={betrag.toLocaleString('de-AT')} einheit={land === 'ca' ? '$' : '€'}>
+        <Regler label={T('Betrag')} wert={betrag.toLocaleString(lokale())} einheit={land === 'ca' ? '$' : '€'}>
           <Slider min={10} max={1_000} step={10} value={betrag} onChange={setBetrag} tint={w.farbe} />
         </Regler>
         <Regler label={T('Damals')} wert={String(von)}>
@@ -817,7 +817,7 @@ function Inflation({ w }: { w: Werkzeug }) {
           min={betrag}
           max={betrag * 3}
           step={Math.max(1, betrag / 50)}
-          fmt={(n) => (land === 'ca' ? `$${Math.round(n).toLocaleString('de-AT')}` : `${Math.round(n).toLocaleString('de-AT')} €`)}
+          fmt={(n) => (land === 'ca' ? `$${Math.round(n).toLocaleString(lokale())}` : `${Math.round(n).toLocaleString(lokale())} €`)}
         />
       </Flaeche>
       {t.zeigen ? <Ergebnis w={w} e={{ betrag, von, bis, ...(land === 'ca' ? { land } : {}), ...t.extra }} /> : null}
@@ -865,16 +865,16 @@ function Netto({ w }: { w: Werkzeug }) {
           onChange={setModus}
         />
         {modus === 'monat' && ca ? (
-          <Regler label={T('Brutto im Jahr')} wert={jahr.toLocaleString('de-AT')} einheit="$">
+          <Regler label={T('Brutto im Jahr')} wert={jahr.toLocaleString(lokale())} einheit="$">
             <Slider min={10_000} max={200_000} step={1_000} value={jahr} onChange={setJahr} tint={w.farbe} />
           </Regler>
         ) : modus === 'monat' ? (
-          <Regler label={T('Brutto im Monat')} wert={brutto.toLocaleString('de-AT')} einheit="€">
+          <Regler label={T('Brutto im Monat')} wert={brutto.toLocaleString(lokale())} einheit="€">
             <Slider min={300} max={8_000} step={50} value={brutto} onChange={setBrutto} tint={w.farbe} />
           </Regler>
         ) : (
           <>
-            <Regler label={T('Pro Stunde')} wert={lohn.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit={ca ? '$' : '€'}>
+            <Regler label={T('Pro Stunde')} wert={lohn.toLocaleString(lokale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} einheit={ca ? '$' : '€'}>
               <Slider min={5} max={60} step={0.5} value={lohn} onChange={setLohn} tint={w.farbe} />
             </Regler>
             <Regler label={T('Stunden pro Woche')} wert={String(stunden)}>
@@ -913,8 +913,8 @@ function Co2({ w }: { w: Werkzeug }) {
   return (
     <>
       <Flaeche>
-        <Regler label={T('Strecke')} wert={km.toLocaleString('de-AT')} einheit="km">
-          <Slider min={0} max={100} value={pos} onChange={setPos} tint={w.farbe} format={(p) => `${kmAus(p).toLocaleString('de-AT')} km`} />
+        <Regler label={T('Strecke')} wert={km.toLocaleString(lokale())} einheit="km">
+          <Slider min={0} max={100} value={pos} onChange={setPos} tint={w.farbe} format={(p) => `${kmAus(p).toLocaleString(lokale())} km`} />
         </Regler>
         <Umschalter
           w={w}
@@ -950,7 +950,7 @@ function Kredit({ w }: { w: Werkzeug }) {
   const [anzahlung, setAnzahlung] = useState(0);
   const [rate, setRate] = useState(38);
   const [monate, setMonate] = useState(24);
-  const eur = (n: number) => n.toLocaleString('de-AT');
+  const eur = (n: number) => n.toLocaleString(lokale());
   return (
     <>
       <Flaeche>
@@ -991,7 +991,7 @@ function Kredit({ w }: { w: Werkzeug }) {
 function Miete({ w }: { w: Werkzeug }) {
   const [miete, setMiete] = useState(700);
   const [einkommen, setEinkommen] = useState(2_000);
-  const eur = (n: number) => n.toLocaleString('de-AT');
+  const eur = (n: number) => n.toLocaleString(lokale());
   return (
     <>
       <Flaeche>

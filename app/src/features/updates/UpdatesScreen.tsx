@@ -7,7 +7,7 @@ import Svg, { Defs, Line, LinearGradient, Pattern, Polygon, Rect, Stop } from 'r
 import { GridBackground } from '@/components/GridBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { UPDATES, type Gross, type Update } from '@/lib/updates';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -25,7 +25,7 @@ const BORDEAUX_TIEF = '#2A0B15';
 const BLAU = '#0E1A2B';
 
 function datum(iso: string) {
-  return new Date(`${iso}T12:00:00`).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' });
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(lokale(), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function Sechseck({ x, y, r, farbe, breite = 1.5, fuellung = 'none' }: { x: number; y: number; r: number; farbe: string; breite?: number; fuellung?: string }) {
@@ -108,15 +108,15 @@ function GrosseKarte({ u, neu }: { u: Update; neu: boolean }) {
     <View style={styles.gross}>
       <Motiv art={u.gross!} />
       <View style={styles.grossTitelBox} pointerEvents="none">
-        <Text style={[styles.grossVersion, { color: hell }]}>{u.version.startsWith('LAB') ? u.version : `Version ${u.version}`}</Text>
-        <Text style={styles.grossTitel}>{u.titel}</Text>
+        <Text style={[styles.grossVersion, { color: hell }]}>{u.version.startsWith('LAB') ? u.version : T('Version {{v}}', { v: u.version })}</Text>
+        <Text style={styles.grossTitel}>{T(u.titel)}</Text>
       </View>
       <View style={styles.grossInhalt}>
         <View style={styles.metaZeile}>
           <Text style={styles.datum}>{datum(u.datum)}</Text>
           {neu ? <Text style={styles.neu}>{T('Neu')}</Text> : null}
         </View>
-        <Text style={styles.kurz}>{u.kurz}</Text>
+        <Text style={styles.kurz}>{T(u.kurz)}</Text>
         <Punkte punkte={u.punkte} farbe={hell} />
       </View>
     </View>
@@ -129,7 +129,7 @@ function Punkte({ punkte, farbe }: { punkte: string[]; farbe: string }) {
       {punkte.map((p) => (
         <View key={p} style={styles.punkt}>
           <View style={[styles.punktZeichen, { backgroundColor: farbe }]} />
-          <Text style={styles.punktText}>{p}</Text>
+          <Text style={styles.punktText}>{T(p)}</Text>
         </View>
       ))}
     </View>
@@ -149,8 +149,8 @@ function KleineKarte({ u, neu, letzte }: { u: Update; neu: boolean; letzte: bool
           <Text style={styles.datum}>{datum(u.datum)}</Text>
           {neu ? <Text style={styles.neu}>{T('Neu')}</Text> : null}
         </View>
-        <Text style={styles.titel}>{u.titel}</Text>
-        <Text style={styles.kurz}>{u.kurz}</Text>
+        <Text style={styles.titel}>{T(u.titel)}</Text>
+        <Text style={styles.kurz}>{T(u.kurz)}</Text>
         <Punkte punkte={u.punkte} farbe={color.akzent} />
       </View>
     </View>

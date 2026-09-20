@@ -11,7 +11,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { proAktiv } from '@/lib/pro';
 import { api, type MonatsAbzeichen as Daten } from '@/lib/supabase';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { flaeche } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -33,7 +33,14 @@ const MONATSFARBE = [
   '#3D5A80', '#6D597A', '#4F772D', '#90A955', '#D08C60', '#E9C46A',
   '#E76F51', '#F4A261', '#8E5A3C', '#A0522D', '#5E503F', '#2E4057',
 ];
-const KURZ = ['JÄN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ'];
+/** Drei Buchstaben aus dem System: JÄN / JAN, MÄR / MAR ... */
+function kurzmonat(m: number): string {
+  return new Date(2026, m, 15)
+    .toLocaleDateString(lokale(), { month: 'short' })
+    .replace('.', '')
+    .slice(0, 3)
+    .toUpperCase();
+}
 
 function punkte(g: number, inset: number) {
   const r = g / 2;
@@ -67,7 +74,7 @@ export function Monatsmedaille({ monat, stufe, groesse = 56 }: { monat: string; 
         {stufe >= 2 ? <Polygon points={punkte(groesse, 7)} fill="none" stroke={RAND[stufe]} strokeOpacity={0.45} strokeWidth={1} /> : null}
       </Svg>
       <View style={styles.medailleMitte}>
-        <Text style={[styles.medailleMonat, { fontSize: groesse * 0.2 }]}>{KURZ[m]}</Text>
+        <Text style={[styles.medailleMonat, { fontSize: groesse * 0.2 }]}>{kurzmonat(m)}</Text>
         <Text style={[styles.medailleJahr, { fontSize: groesse * 0.14 }]}>{String(d.getFullYear()).slice(2)}</Text>
       </View>
     </View>
@@ -103,7 +110,7 @@ export function AbzeichenLeiste() {
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <Text style={styles.leisteTitel}>{T('Monats-Abzeichen')}</Text>
         <Text style={styles.klein} numberOfLines={1}>
-          {jetzt.lerntage} Lerntage{n ? ` · noch ${n.bis - jetzt.lerntage} bis ${n.stufe}` : ' · Gold!'}
+          {jetzt.lerntage} Lerntage{n ? T(' · noch {{n}} bis {{stufe}}', { n: n.bis - jetzt.lerntage, stufe: T(n.stufe) }) : ' · Gold!'}
         </Text>
       </View>
       <View style={styles.leisteRechts}>
@@ -145,7 +152,7 @@ export function AbzeichenScreen() {
   const jetzt = d?.monate[0];
   const n = jetzt ? naechste(jetzt.lerntage) : null;
   const monatsname = jetzt
-    ? new Date(`${jetzt.monat}T12:00:00`).toLocaleDateString('de-AT', { month: 'long' })
+    ? new Date(`${jetzt.monat}T12:00:00`).toLocaleDateString(lokale(), { month: 'long' })
     : '';
 
   return (
@@ -168,11 +175,11 @@ export function AbzeichenScreen() {
             <View style={styles.held}>
               <Monatsmedaille monat={jetzt.monat} stufe={jetzt.stufe} groesse={112} />
               <Text style={styles.heldTitel}>
-                {jetzt.stufe > 0 ? `${monatsname}: ${STUFE[jetzt.stufe]}` : `Dein ${monatsname}`}
+                {jetzt.stufe > 0 ? `${monatsname}: ${T(STUFE[jetzt.stufe])}` : `Dein ${monatsname}`}
               </Text>
               <Text style={styles.intro}>
                 {jetzt.lerntage} {jetzt.lerntage === 1 ? 'Lerntag' : 'Lerntage'}
-                {n ? ` – noch ${n.bis - jetzt.lerntage} bis ${n.stufe}` : ' – mehr geht nicht.'} · {d.uebrig}{' '}
+                {n ? T(' – noch {{n}} bis {{stufe}}', { n: n.bis - jetzt.lerntage, stufe: T(n.stufe) }) : ' – mehr geht nicht.'} · {d.uebrig}{' '}
                 {d.uebrig === 1 ? 'Tag' : 'Tage'} übrig
               </Text>
               <View style={styles.stufen}>
@@ -180,7 +187,7 @@ export function AbzeichenScreen() {
                   <View key={s} style={styles.stufe}>
                     <View style={[styles.stufePunkt, { borderColor: RAND[i + 1] }, jetzt.lerntage >= s && { backgroundColor: RAND[i + 1] }]} />
                     <Text style={styles.klein}>
-                      {STUFE[i + 1]} · {s}
+                      {T(STUFE[i + 1])} · {s}
                     </Text>
                   </View>
                 ))}
@@ -192,7 +199,7 @@ export function AbzeichenScreen() {
               {d.monate.slice(1).map((m) => (
                 <View key={m.monat} style={styles.rasterFeld}>
                   <Monatsmedaille monat={m.monat} stufe={m.stufe} groesse={64} />
-                  <Text style={styles.klein}>{m.stufe > 0 ? STUFE[m.stufe] : `${m.lerntage} Tage`}</Text>
+                  <Text style={styles.klein}>{m.stufe > 0 ? T(STUFE[m.stufe]) : `${m.lerntage} Tage`}</Text>
                 </View>
               ))}
             </View>

@@ -3,6 +3,7 @@ import { Text, type StyleProp, type TextStyle } from 'react-native';
 
 import { useImBild } from '@/lib/imBild';
 import { getPrefs } from '@/lib/prefs';
+import { lokale } from '@/lib/sprache';
 
 /**
  * Eine Zahl, die hochzaehlt, statt zu springen - fuer LAB-Ergebnisse, XP,
@@ -15,7 +16,7 @@ import { getPrefs } from '@/lib/prefs';
  */
 
 // Ziffern mit Tausender-Leerzeichen (auch schmal/geschuetzt) oder -Punkt und
-// Komma-Nachkommastellen, wie toLocaleString('de-AT') sie liefert.
+// Komma-Nachkommastellen, wie toLocaleString(lokale()) sie liefert.
 const ZAHL = /\d{1,3}(?:[   .]\d{3})*(?:,\d+)?|\d+(?:,\d+)?/;
 
 function zerlegen(text: string) {

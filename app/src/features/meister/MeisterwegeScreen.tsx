@@ -24,7 +24,7 @@ import {
 } from '@/lib/meisterwege';
 import { useIchPro } from '@/lib/pro';
 import { api } from '@/lib/supabase';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { flaeche, sechseckRegelPunkte } from '@/theme/design';
 import { color, radius, space, type } from '@/theme/tokens';
 
@@ -168,7 +168,7 @@ export function MeisterwegeScreen() {
                       {saison.gelesen >= saison.ziel
                         ? 'Verdient – der Rahmen bleibt dir auch nach der Saison.'
                         : saison.laeuft
-                          ? `${saison.gelesen} / ${saison.ziel} Karten gelesen · bis ${new Date(saison.bis).toLocaleDateString('de-AT', { day: 'numeric', month: 'long' })}`
+                          ? `${saison.gelesen} / ${saison.ziel} Karten gelesen · bis ${new Date(saison.bis).toLocaleDateString(lokale(), { day: 'numeric', month: 'long' })}`
                           : 'Diese Saison ist vorbei.'}
                     </Text>
                   </View>

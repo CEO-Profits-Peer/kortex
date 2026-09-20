@@ -1,3 +1,4 @@
+import { lokale } from '@/lib/sprache';
 /**
  * Das LAB: Werkzeuge und ihre Rechnung.
  *
@@ -112,7 +113,7 @@ export function werkzeug(id: string): Werkzeug | undefined {
 // --- Formatierung --------------------------------------------------------------
 
 const zahlFmt = (n: number, stellen = 0) =>
-  n.toLocaleString('de-AT', { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+  n.toLocaleString(lokale(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
 
 export function euro(n: number): string {
   // Grosse Betraege gerundet: "≈ 253.500 €" sagt mehr als "253.462,17 €",

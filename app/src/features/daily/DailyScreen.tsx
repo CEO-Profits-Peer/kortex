@@ -22,7 +22,7 @@ import type {
   DailySubmission,
 } from '@/lib/types.db';
 import { fehlerText } from '@/lib/fehler';
-import { T } from '@/lib/sprache';
+import { T, lokale } from '@/lib/sprache';
 import { categoryAccent, color, radius, space, type } from '@/theme/tokens';
 
 /**
@@ -57,7 +57,7 @@ function formatDuration(ms: number): string {
 /** Heute, ausgeschrieben. Ein Datum wie "2026-09-10" liest niemand gern. */
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T12:00:00Z`);
-  return d.toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' });
+  return d.toLocaleDateString(lokale(), { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 export function DailyScreen() {
