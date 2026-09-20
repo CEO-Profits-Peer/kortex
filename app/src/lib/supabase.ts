@@ -543,6 +543,18 @@ export const api = {
     return (data ?? []) as { monat: string; stufe: number }[];
   },
 
+  /**
+   * 0126: dieselbe Karte in der anderen Sprache, oder null.
+   *
+   * Wird erst gefragt, wenn jemand wischt - nicht fuer jede Karte im
+   * Stapel, von denen die meisten nie gewischt werden.
+   */
+  async sprachfassung(contentId: string): Promise<{ id: string; language: string; title: string } | null> {
+    const { data, error } = await supabase.rpc('sprachfassung', { p_id: contentId });
+    if (error) throw error;
+    return (data ?? null) as { id: string; language: string; title: string } | null;
+  },
+
   // --- Eigene Lernpfade (0123, PRO) ---------------------------------------
 
   async meineEigenenPfade(): Promise<EigenerPfad[]> {

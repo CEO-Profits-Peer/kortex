@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -13,6 +13,8 @@ import { hashtagsFuer } from '@/components/HashtagLauf';
 import { BatchCheckpoint } from '@/features/quiz/BatchCheckpoint';
 import { EnoughForToday } from '@/features/feed/EnoughForToday';
 import { analytics } from '@/lib/analytics';
+import { getPrefs, setPref } from '@/lib/prefs';
+import { T } from '@/lib/sprache';
 import { GridBackground } from '@/components/GridBackground';
 import { useMeasuredHeight } from '@/components/useMeasuredHeight';
 import { TAB_BAR_HEIGHT } from '@/components/BlueprintTabBar';
@@ -27,7 +29,7 @@ import { fehlerText } from '@/lib/fehler';
 import { beiWiederOnline, istNetzfehler, useOnline } from '@/lib/online';
 import { vorratAuffuellen, vorratNehmen } from '@/lib/vorrat';
 import { notizenLaden } from '@/lib/notizen';
-import { color, space, type } from '@/theme/tokens';
+import { color, radius, space, type } from '@/theme/tokens';
 
 import { FeedTutorial, useFeedTutorial } from './FeedTutorial';
 import { appendArranged, arrangeBatch } from './arrange';
@@ -115,10 +117,22 @@ export function FeedScreen({
   // Karte das aber auch sagen, statt so zu tun, als sei sie neu.
   const [repeats, setRepeats] = useState<Set<string>>(new Set());
 
+  // 20.09.: der Ring wird EINMAL vorgeschlagen, nach 50 gelesenen Karten.
+  // Vorher weiss niemand, wovon die Rede ist; oefter waere Werbung.
+  const [ringFrage, setRingFrage] = useState(false);
+
   const onValidated = useCallback((item: ContentItem) => {
     setBatch((prev) => (prev.some((p) => p.id === item.id) ? prev : [...prev, item]));
     setReadToday((n) => n + 1);
     analytics.cardRead(item.primary_category_id, item.dwell_target_ms, item.difficulty);
+
+    const p = getPrefs();
+    const gelesen = (p.karten ?? 0) + 1;
+    void setPref('karten', gelesen);
+    if (gelesen >= 50 && !p.ringVorgeschlagen && !p.ringmenue) {
+      void setPref('ringVorgeschlagen', true);
+      setRingFrage(true);
+    }
   }, []);
 
   const { onViewableItemsChanged, closeAll, pause, resume } = useDwellTracking(onValidated);
@@ -404,7 +418,30 @@ export function FeedScreen({
           <Text style={styles.errorTitle}>Konfiguration fehlt</Text>
           <Text style={styles.errorBody}>{configError}</Text>
         </View>
-      </GridBackground>
+        {/* Der Vorschlag: einmal, klein, und mit einem klaren Nein. */}
+      {ringFrage ? (
+        <View style={styles.ringFrage}>
+          <Text style={styles.ringFrageText}>
+            {T('Tipp: Lange auf eine Karte drücken kann die Symbole um deinen Finger legen. Ausprobieren?')}
+          </Text>
+          <View style={styles.ringFrageKnoepfe}>
+            <Pressable onPress={() => setRingFrage(false)} hitSlop={8}>
+              <Text style={styles.ringFrageNein}>{T('Nein')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                void setPref('ringmenue', true);
+                setRingFrage(false);
+              }}
+              hitSlop={8}
+            >
+              <Text style={styles.ringFrageJa}>{T('Einschalten')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+    </GridBackground>
     );
   }
 
@@ -514,6 +551,22 @@ export function FeedScreen({
 }
 
 const styles = StyleSheet.create({
+  ringFrage: {
+    position: 'absolute',
+    left: space.xl,
+    right: space.xl,
+    bottom: 96,
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.ink.faint,
+    backgroundColor: color.bgElevated,
+  },
+  ringFrageText: { ...type.body, fontSize: 13, lineHeight: 19, color: color.ink.high },
+  ringFrageKnoepfe: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.lg },
+  ringFrageNein: { ...type.label, fontSize: 13, color: color.ink.low },
+  ringFrageJa: { ...type.label, fontSize: 13, color: color.akzent },
   listWrap: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.sm, padding: space.xl },
   errorTitle: { ...type.title, color: color.ink.max },

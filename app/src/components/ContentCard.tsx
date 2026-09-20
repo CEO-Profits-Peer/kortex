@@ -28,7 +28,9 @@ import { isKineticScript } from '@/features/kinetic/types';
 import { Icon } from '@/components/Icon';
 import { isHero, paginate } from '@/components/paginate';
 import { SourceBadge } from '@/components/SourceBadge';
-import { KartenMenue } from '@/components/KartenMenue';
+import { KartenMenue, type MenuEintrag } from '@/components/KartenMenue';
+import { KartenRueckseite } from '@/components/KartenRueckseite';
+import { Ringmenue } from '@/components/Ringmenue';
 import { werkzeugFuerKarte } from '@/features/lab/rechnen';
 import { notizSpeichern, useNotiz } from '@/lib/notizen';
 import { Interaction, isInteractionBuilt } from '@/features/interactions';
@@ -39,7 +41,8 @@ import { sound } from '@/lib/sound';
 import { taktUmschalten, taktVorhanden } from '@/lib/kartenTakt';
 import { onSpeechChange, speakingCardId, stopSpeech, toggleSpeech } from '@/lib/speech';
 import { contentState, setContentState, useContentState } from '@/lib/contentState';
-import { usePrefs } from '@/lib/prefs';
+import { karteAlsBild } from '@/lib/kartenbild';
+import { getPrefs, usePrefs } from '@/lib/prefs';
 import { shareCard } from '@/lib/share';
 import { api } from '@/lib/supabase';
 import type { ContentItem, Source } from '@/lib/types.db';
@@ -139,6 +142,10 @@ function ContentCardBase({
   // aufgeht. Beide liegen IN der Karte - sie halten nichts an.
   const [menue, setMenue] = useState(false);
   const [notizOffen, setNotizOffen] = useState(false);
+  // Einschaltbar (20.09.): statt des Menues dreht sich die Karte um.
+  const rueckseite = usePrefs().karteRueckseite;
+  // 20.09. (einschaltbar): langer Druck legt die Symbole um den Finger.
+  const [ring, setRing] = useState<{ x: number; y: number } | null>(null);
   const [comments, setComments] = useState(item.comment_count ?? 0);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -298,6 +305,48 @@ function ContentCardBase({
     }
   }, [item.id, menue]);
 
+  /**
+   * Nach links wischen: dieselbe Karte in der anderen Sprache (20.09.).
+   *
+   * Der einzige Knopf, der keiner ist. Gefragt wird erst beim Wischen -
+   * und wenn es keine zweite Fassung gibt, passiert nichts ausser einem
+   * kurzen Hinweis. In den Einstellungen abschaltbar.
+   */
+  const spracheWechseln = useCallback(() => {
+    if (!getPrefs().wischSprache) return;
+    void api
+      .sprachfassung(item.id)
+      .then((andere) => {
+        if (!andere) {
+          setShareNote(T('Diese Karte gibt es nur in einer Sprache'));
+          setTimeout(() => setShareNote(null), 2200);
+          return;
+        }
+        haptics.light();
+        router.push(`/reel/${encodeURIComponent(andere.id)}`);
+      })
+      .catch(() => undefined);
+  }, [item.id]);
+
+  const wischen = Gesture.Pan()
+    .activeOffsetX([-24, 24])
+    // Senkrecht gehoert dem Feed. Nur wer deutlich quer zieht, meint die
+    // Sprache - deshalb muss die Waagrechte die Senkrechte klar schlagen.
+    .failOffsetY([-28, 28])
+    .onEnd((e) => {
+      if (e.translationX < -70 && Math.abs(e.translationY) < 60) {
+        runOnJS(spracheWechseln)();
+      }
+    });
+
+  const langDruck = Gesture.LongPress()
+    .minDuration(320)
+    .onStart((e) => {
+      if (!getPrefs().ringmenue) return;
+      runOnJS(haptics.medium)();
+      runOnJS(setRing)({ x: e.x, y: e.y });
+    });
+
   const einTipp = Gesture.Tap()
     .numberOfTaps(1)
     .maxDuration(260)
@@ -307,7 +356,7 @@ function ContentCardBase({
 
   // Erst der Doppeltipp, dann der einfache: sonst schluckt der einfache
   // das Like, bevor der zweite Tipp ankommt.
-  const tippGesten = Gesture.Exclusive(doubleTap, einTipp);
+  const tippGesten = Gesture.Race(wischen, langDruck, Gesture.Exclusive(doubleTap, einTipp));
 
   const burstStyle = useAnimatedStyle(() => ({
     opacity: burst.value,
@@ -428,6 +477,92 @@ function ContentCardBase({
   // gezeichnet wird. Zwei Kopien derselben Bedingung waren schon einmal der
   // Grund dafuer, dass eine Karte anders geschaetzt als gezeichnet wurde.
   const hasHero = page === 0 && isHero(current.blocks, 0);
+
+  /**
+   * Was nicht beim Lesen gebraucht wird (20.09.).
+   *
+   * EINE Liste fuer zwei Kleider: das Menue hinter den drei Punkten und
+   * die Rueckseite der Karte zeigen dasselbe. So koennen die beiden Wege
+   * nie auseinanderlaufen.
+   */
+  const menuEintraege: MenuEintrag[] = [
+    {
+      id: 'repost',
+      icon: 'refresh',
+      label: reposted ? T('Empfohlen') : T('Empfehlen'),
+      aktiv: reposted,
+      onPress: () => {
+        setMenue(false);
+        void onRepost();
+      },
+    },
+    {
+      id: 'notiz',
+      icon: 'lesson',
+      label: T('Notiz'),
+      onPress: () => {
+        setMenue(false);
+        setNotizOffen(true);
+      },
+    },
+    ...(labWerkzeug
+      ? [
+          {
+            id: 'rechnen',
+            icon: 'sliders' as const,
+            label: T('Selbst rechnen'),
+            onPress: () => {
+  setMenue(false);
+  router.push(`/lab/${labWerkzeug.id}`);
+            },
+          },
+        ]
+      : []),
+    {
+      id: 'hoeren',
+      icon: 'listen',
+      label: T('Ab hier anhören'),
+      onPress: () => {
+        setMenue(false);
+        router.push('/hoeren');
+      },
+    },
+    ...(item.uebersetzt_aus
+      ? [
+          {
+            id: 'original',
+            icon: 'source' as const,
+            label: item.language === 'en' ? T('Auf Deutsch ansehen') : T('Auf Englisch ansehen'),
+            onPress: () => {
+  setMenue(false);
+  router.push(`/reel/${encodeURIComponent(item.uebersetzt_aus!)}`);
+            },
+          },
+        ]
+      : []),
+    {
+      id: 'bild',
+      icon: 'share',
+      label: T('Als Bild'),
+      onPress: () => {
+        setMenue(false);
+        void karteAlsBild(item, accent).then((e) => {
+          if (e === 'nicht') return;
+          setShareNote(e === 'geladen' ? T('Bild gespeichert') : T('Geteilt'));
+          setTimeout(() => setShareNote(null), 2200);
+        });
+      },
+    },
+    {
+      id: 'kategorie',
+      icon: 'courses',
+      label: T('Zum Thema'),
+      onPress: () => {
+        setMenue(false);
+        router.push(`/category/${encodeURIComponent(item.primary_category_id)}`);
+      },
+    },
+  ];
 
   return (
     <Animated.View style={[styles.card, { height }, shell]}>
@@ -571,6 +706,10 @@ function ContentCardBase({
             reposted={reposted}
             speaking={speaking}
             onListen={kinetic ? undefined : () => toggleSpeech(item)}
+            onListenLong={() => {
+              haptics.medium();
+              router.push('/hoeren');
+            }}
             onRepost={onRepost}
             tint={accent}
             onLike={() => applyLike(!liked)}
@@ -587,75 +726,21 @@ function ContentCardBase({
             }}
           />
 
-          {menue ? (
-            <KartenMenue
-              onClose={() => setMenue(false)}
-              eintraege={[
-                {
-                  id: 'repost',
-                  icon: 'refresh',
-                  label: reposted ? T('Empfohlen') : T('Empfehlen'),
-                  aktiv: reposted,
-                  onPress: () => {
-                    setMenue(false);
-                    void onRepost();
-                  },
-                },
-                {
-                  id: 'notiz',
-                  icon: 'lesson',
-                  label: T('Notiz'),
-                  onPress: () => {
-                    setMenue(false);
-                    setNotizOffen(true);
-                  },
-                },
-                ...(labWerkzeug
-                  ? [
-                      {
-                        id: 'rechnen',
-                        icon: 'sliders' as const,
-                        label: T('Selbst rechnen'),
-                        onPress: () => {
-                          setMenue(false);
-                          router.push(`/lab/${labWerkzeug.id}`);
-                        },
-                      },
-                    ]
-                  : []),
-                {
-                  id: 'hoeren',
-                  icon: 'listen',
-                  label: T('Ab hier anhören'),
-                  onPress: () => {
-                    setMenue(false);
-                    router.push('/hoeren');
-                  },
-                },
-                ...(item.uebersetzt_aus
-                  ? [
-                      {
-                        id: 'original',
-                        icon: 'source' as const,
-                        label: item.language === 'en' ? T('Auf Deutsch ansehen') : T('Auf Englisch ansehen'),
-                        onPress: () => {
-                          setMenue(false);
-                          router.push(`/reel/${encodeURIComponent(item.uebersetzt_aus!)}`);
-                        },
-                      },
-                    ]
-                  : []),
-                {
-                  id: 'kategorie',
-                  icon: 'courses',
-                  label: T('Zum Thema'),
-                  onPress: () => {
-                    setMenue(false);
-                    router.push(`/category/${encodeURIComponent(item.primary_category_id)}`);
-                  },
-                },
-              ]}
+          {ring ? (
+            <Ringmenue
+              x={ring.x}
+              y={ring.y}
+              eintraege={menuEintraege}
+              onClose={() => setRing(null)}
             />
+          ) : null}
+
+          {menue ? (
+            rueckseite ? (
+              <KartenRueckseite titel={item.title} eintraege={menuEintraege} onClose={() => setMenue(false)} />
+            ) : (
+              <KartenMenue eintraege={menuEintraege} onClose={() => setMenue(false)} />
+            )
           ) : null}
 
           <Animated.View style={[styles.burst, burstStyle]} pointerEvents="none">

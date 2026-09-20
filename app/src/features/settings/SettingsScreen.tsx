@@ -689,6 +689,23 @@ export function SettingsScreen() {
             label={T('Vibration')}
             rechts={<Schalter wert={prefs.haptics} onChange={(v) => void setPref('haptics', v)} />}
           />
+          {/* 20.09.: wie die Karte bedient wird. Alles drei ist Geschmack und
+              haengt am Geraet, nicht am Konto. */}
+          <Zeile
+            label={T('Wischen wechselt die Sprache')}
+            hint={T('Nach links: dieselbe Karte in der anderen Sprache')}
+            rechts={<Schalter wert={prefs.wischSprache} onChange={(v) => void setPref('wischSprache', v)} />}
+          />
+          <Zeile
+            label={T('Kartenrückseite')}
+            hint={T('Die drei Punkte drehen die Karte um, statt ein Menü zu öffnen')}
+            rechts={<Schalter wert={prefs.karteRueckseite} onChange={(v) => void setPref('karteRueckseite', v)} />}
+          />
+          <Zeile
+            label={T('Ring bei langem Druck')}
+            hint={T('Lange auf die Karte drücken legt die Symbole um den Finger')}
+            rechts={<Schalter wert={prefs.ringmenue} onChange={(v) => void setPref('ringmenue', v)} />}
+          />
           <Zeile
             label={T('Neue Animationen')}
             hint={T('Test: Zahlen zählen hoch, Bildschirme gleiten herein')}

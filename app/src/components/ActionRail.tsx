@@ -57,12 +57,15 @@ function RailButton({
   active,
   tint,
   onPress,
+  onLongPress,
 }: {
   icon: IconName;
   label: string;
   active?: boolean;
   tint: string;
   onPress: () => void;
+  /** 20.09.: zwei verwandte Dinge, ein Platz - kurz vorlesen, lang anhoeren. */
+  onLongPress?: () => void;
 }) {
   const press = useSharedValue(0);
   const animated = useAnimatedStyle(() => ({
@@ -133,6 +136,7 @@ export function ActionRail({
   onShare,
   onComment,
   onListen,
+  onListenLong,
   onMehr,
   mehrOffen,
 }: {
@@ -166,6 +170,8 @@ export function ActionRail({
    * sondern kaputt.
    */
   onListen?: () => void;
+  /** Langer Druck auf "Hören": der Audio-Modus ab dieser Karte (20.09.). */
+  onListenLong?: () => void;
 }) {
   return (
     <View style={styles.rail} pointerEvents="box-none">
@@ -176,6 +182,7 @@ export function ActionRail({
           active={speaking}
           tint={tint}
           onPress={onListen}
+          onLongPress={onListenLong}
         />
       ) : null}
       <RailButton

@@ -37,6 +37,26 @@ export type Prefs = {
   testAnimationen: boolean;
   /** PRO (19.09.): Lichtschein auf dem Stein des aktiven Tabs. */
   steinAnimiert: boolean;
+
+  // --- Karte bedienen (20.09.) ---------------------------------------------
+  /**
+   * Statt des Menues dreht sich die Karte um: hinten Notiz, Quelle,
+   * Sprache, Rechnen. Standard AUS - eine Karte, die sich unerwartet
+   * dreht, ist eine Ueberraschung; wer es will, schaltet es ein.
+   */
+  karteRueckseite: boolean;
+  /**
+   * Langer Druck auf die Karte oeffnet einen Ring aus Symbolen um den
+   * Finger. Standard AUS, wird nach 50 gelesenen Karten einmal
+   * vorgeschlagen.
+   */
+  ringmenue: boolean;
+  /** Wischen nach links zeigt dieselbe Karte in der anderen Sprache. */
+  wischSprache: boolean;
+  /** Wurde der Ring schon vorgeschlagen? Einmal reicht. */
+  ringVorgeschlagen: boolean;
+  /** Gelesene Karten auf diesem Geraet - nur fuer den Vorschlag oben. */
+  karten: number;
 };
 
 const DEFAULTS: Prefs = {
@@ -48,6 +68,11 @@ const DEFAULTS: Prefs = {
   stimmen: {},
   testAnimationen: false,
   steinAnimiert: false,
+  karteRueckseite: false,
+  ringmenue: false,
+  wischSprache: true,
+  ringVorgeschlagen: false,
+  karten: 0,
 };
 
 const KEY = 'prefs_v1';
