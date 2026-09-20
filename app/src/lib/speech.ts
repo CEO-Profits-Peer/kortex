@@ -1,4 +1,5 @@
 import * as Speech from 'expo-speech';
+import { AppState, Platform } from 'react-native';
 
 import { duckMusic } from './music';
 import { getPrefs } from './prefs';
@@ -270,6 +271,45 @@ export function speakSentence(opts: {
     }
     Speech.stop();
   };
+}
+
+/**
+ * Darf im Hintergrund weitergesprochen werden? (19.09.)
+ *
+ * Standard ist NEIN: wer die App verlaesst oder das Handy sperrt, will
+ * nicht, dass eine Erklaerkarte in der Tasche weiterredet - und genau das
+ * ist passiert, weil Erklaerkarten in Schleife laufen und niemand sie
+ * angehalten hat.
+ *
+ * JA setzt nur der Audio-Modus (/hoeren). Dort ist Weiterlaufen der ganze
+ * Zweck.
+ */
+let hintergrundErlaubt = false;
+
+export function hintergrundSprechen(an: boolean): void {
+  hintergrundErlaubt = an;
+}
+
+/** Nur fuer Bildschirme, die auf das Anhalten reagieren wollen. */
+const ruheHoerer = new Set<() => void>();
+
+export function onSprechRuhe(fn: () => void): () => void {
+  ruheHoerer.add(fn);
+  return () => ruheHoerer.delete(fn);
+}
+
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden || hintergrundErlaubt) return;
+    stopSpeech();
+    ruheHoerer.forEach((fn) => fn());
+  });
+} else if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active' || hintergrundErlaubt) return;
+    stopSpeech();
+    ruheHoerer.forEach((fn) => fn());
+  });
 }
 
 export function stopSpeech() {

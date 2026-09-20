@@ -10,7 +10,7 @@ import Animated, {
 import { Icon } from '@/components/Icon';
 import { useIsActiveCard } from '@/lib/activeCard';
 import { getPrefs } from '@/lib/prefs';
-import { speakSentence, stopSpeech } from '@/lib/speech';
+import { onSprechRuhe, speakSentence, stopSpeech } from '@/lib/speech';
 import type { ContentItem } from '@/lib/types.db';
 import { color, motion, radius, space, type } from '@/theme/tokens';
 
@@ -73,6 +73,20 @@ const NO_BEATS: KineticBeat[] = [];
 const LOOP_PAUSE_MS = 1100;
 
 /**
+ * Wie oft sich eine Erklaerkarte wiederholt, bevor sie stehen bleibt.
+ *
+ * Vorher: endlos. Wer auf einer Karte stehen blieb - weil er mitlas, weil
+ * das Telefon auf dem Tisch lag -, hoerte etwa alle zwanzig Sekunden
+ * dieselbe Stimme wieder anfangen. Gemeldet als "die Stimme geht einfach
+ * wieder los".
+ *
+ * Zweimal ist die richtige Zahl: einmal ansehen, einmal nachvollziehen.
+ * Danach bleibt die Karte stehen und zeigt die Abspieltaste - wer ein
+ * drittes Mal will, tippt.
+ */
+const MAX_RUNDEN = 2;
+
+/**
  * Ab wann eine Fertigmeldung zu schnell kam, um echt zu sein.
  *
  * Kein Satz ist in einer Dreiviertelsekunde gesprochen. Kommt die Meldung
@@ -126,6 +140,11 @@ export function KineticCard({
    * fragt sich, ob man sich verschaut hat.
    */
   const [round, setRound] = useState(0);
+  // Die Runde NUR ueber eine Ref lesen. Stuende sie in der
+  // Abhaengigkeitsliste des Taktgebers, liefe er bei jedem Rundenwechsel
+  // neu an, sein Aufraeumen loeschte den laufenden Zeitgeber - und der
+  // Wiedereinstieg scheitert am Waechter `speaking.current === beat`. Die
+  // Karte blieb dann einfach stehen (gemessen: Takt 4 von 5, fuer immer).
 
   /** Laeuft gerade eine Aeusserung oder ein Zeitgeber? Zum Abbrechen. */
   const cancel = useRef<(() => void) | null>(null);
@@ -142,6 +161,9 @@ export function KineticCard({
 
   /** Laeuft gerade die Atempause vor dem naechsten Durchlauf? */
   const resting = useRef(false);
+
+  const rundeRef = useRef(0);
+  rundeRef.current = round;
 
   const clearPending = useCallback(() => {
     cancel.current?.();
@@ -170,6 +192,19 @@ export function KineticCard({
     setPaused(false);
     setRound(0);
   }, [isActive, clearPending]);
+
+  // App im Hintergrund, Handy gesperrt: anhalten und ANGEHALTEN BLEIBEN.
+  // Frueher lief die Schleife weiter und sprach beim Zurueckkommen sofort
+  // wieder - "die Stimme geht einfach wieder los". Weiter geht es erst auf
+  // Tastendruck.
+  useEffect(
+    () =>
+      onSprechRuhe(() => {
+        clearPending();
+        setPaused(true);
+      }),
+    [clearPending],
+  );
 
   // --- Der Taktgeber --------------------------------------------------------
   useEffect(() => {
@@ -227,6 +262,12 @@ export function KineticCard({
         timer.current = null;
         speaking.current = null;
         resting.current = false;
+        if (rundeRef.current + 1 >= MAX_RUNDEN) {
+          // Genug gehoert: stehen bleiben, nicht wieder anfangen.
+          setPaused(true);
+          setBeat(beats.length - 1);
+          return;
+        }
         setBeat(0);
         setRound((r) => r + 1);
       }, LOOP_PAUSE_MS);

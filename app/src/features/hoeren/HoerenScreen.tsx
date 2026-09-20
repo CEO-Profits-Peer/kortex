@@ -18,7 +18,7 @@ import {
   sessionTitel,
   wachMoeglich,
 } from '@/lib/hoerSession';
-import { karteAlsStuecke, speakSentence, stopSpeech } from '@/lib/speech';
+import { hintergrundSprechen, karteAlsStuecke, speakSentence, stopSpeech } from '@/lib/speech';
 import { api } from '@/lib/supabase';
 import type { ContentItem } from '@/lib/types.db';
 import { vorratNehmen } from '@/lib/vorrat';
@@ -71,8 +71,11 @@ export function HoerenScreen() {
         }
       }
     })();
+    // Nur hier darf im Hintergrund weitergesprochen werden.
+    hintergrundSprechen(true);
     return () => {
       weg = true;
+      hintergrundSprechen(false);
       abbrechen.current?.();
       stopSpeech();
       sessionBeenden();
