@@ -19,6 +19,21 @@ export type Update = {
 
 export const UPDATES: Update[] = [
   {
+    version: '2.6',
+    datum: '2026-09-20',
+    titel: 'Die Karte in deiner Hand',
+    kurz: 'Weniger Knöpfe, mehr Gesten – und die Oberfläche spricht Englisch.',
+    punkte: [
+      'Aufgeräumte Karte: Vorlesen, Like, Kommentar, Teilen – der Rest im Menü',
+      'Tippen hält an, langer Druck legt die Symbole um den Finger',
+      'Nach links wischen: dieselbe Karte in der anderen Sprache',
+      'Kartenrückseite als Alternative zum Menü, Karte als Bild zum Teilen',
+      'Rahmen mit Ornamenten, freie Farbwahl und drei PRO-Rahmen',
+      'Eigene Lernpfade und der Jahresrückblick als Bild (PRO)',
+      'Englische Oberfläche',
+    ],
+  },
+  {
     version: '2.5',
     datum: '2026-09-19',
     titel: 'Zuhören, fragen, dranbleiben',

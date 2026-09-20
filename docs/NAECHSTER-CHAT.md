@@ -1,124 +1,65 @@
-# Start für den nächsten Chat (Stand 2026-09-19)
+# Start für den nächsten Chat (Stand 20. September 2026)
 
 In den neuen Chat einfügen:
 
 > Lies `docs/HANDOFF.md` und `docs/NAECHSTER-CHAT.md` im Repo `CEO-Profits-Peer/kortex` (ElyCic).
-> Die Entscheidungen unten sind getroffen, du kannst direkt mit Schritt 1 bauen.
+> Die Entscheidungen unten sind getroffen — bau direkt weiter, frag nicht nach, was hier schon steht.
 
-## Wo wir stehen
-- **Design 2.0 (V2.2)** ist per Schalter unter Einstellungen > Design aktiv:
-  - Bordeaux und Gold, Gold sparsam eingesetzt.
-  - Eckige Tab-Leiste; das Sechseck auf dem aktiven Tab ist wählbar als Stein oder Flach.
-  - Hinweise in `color.akzent`, Auswahl über `gewaehlt()`.
-  - Keine Serifenschrift (abgelehnt).
-- **Neues App-Icon:** Bordeaux-Stein mit goldenem Knoten.
-- **Profilbilder:** regelmäßige Sechsecke mit Waben-Editor (Format v2, `lib/avatarWaben.ts`).
-- **PRO** ist echt und wird vom Server durchgesetzt (0091):
-  - Grenzen in `create_post`
-  - Anpinnen 1 / 3
-  - Profilbild-Stile Metall und Glas plus 4 Gründe
-  - Abzeichen
-  - Codes über `scripts/pro_code.py`
-  - PRO-Fenster `zeigeProSperre`
-- **Noch kein Kauf:** RevenueCat ist geplant.
-- **Werkstatt `/atelier`:** ohne Konto erreichbar. Die Reiter `design` und `pro` zeigen die Bausteine.
+---
 
-## Vom Nutzer gewünscht (18.09.), noch NICHT gebaut
-1. **Quiz:** bis 5 Antworten mit PRO (kostenlos 3).
-2. **PRO-Freischalt-Animation:** aufwendig, danach eine Vorstellung der Features.
-3. **„PRO werden"-Banner** ausblenden, wenn PRO aktiv ist.
-4. **Optische PRO-Aufwertung**, z. B. dezente Gold-Dreiecke im Hintergrund.
-5. **Restliche PRO-Features:**
-   - Profil-Themes
-   - Statistik
-   - Beiträge planen
-   - Ligen
-   - LAB-Szenarien
-   - Export
-   - Stimmen
-   - Streak-Schutz
-   - Saison-Rahmen
-   - animierter Stein
-6. **Fortschritt durch Lernen** („Battlepass"-Idee):
-   - Freischalten je Themenbereich und Level: Rahmen, Namensfarbe, Profilbild-Farben.
-   - Gewünscht sind auch schwarze und dunkle Farben, die zum Stil passen.
+## Wo wir stehen (Version 2.6)
 
-## ENTSCHIEDEN (18.09., Nutzer hat allen vier Punkten zugestimmt)
-1. **Muster wählbar, nie automatisch:** Das Hintergrund-Muster „Gold-Dreiecke" (sehr dezent) und die Gold-Stein-Variante des Sechsecks (Tab- und Feed-Leiste, neben Stein und Flach) sind PRO-Optionen. Die App wird für PRO nicht automatisch umgefärbt.
-2. **Meisterwege** (Name bestätigt, NICHT „Battlepass"):
-   - Stufen je Hauptthema, die der Server aus der Mastery berechnet. Nicht kaufbar, nicht mogelbar.
-   - Beispiel Wissenschaft: Stufe 2 Rahmen „Laborglas", Stufe 3 Namensfarbe, Stufe 5 besondere Profilbild-Farbe.
-   - Namensfarben nur aus einer kleinen, lesbaren Design-2.0-Palette.
-   - Dunkle Profilbild-Farben: Obsidian, Anthrazit, Tiefgrün, Nachtblau, Schwarz-Gold. Dazu helle Gründe: Elfenbein, Champagner, Sand.
-   - PRO bekommt je Meisterweg eine Zusatzvariante, aber NIE schnelleren Fortschritt.
-3. **Reihenfolge:**
-   1. ✅ Quiz 5 Antworten mit PRO (kostenlos 3). Migration `0093_quiz_fuenf.sql` eingespielt (19.09.).
-   2. ✅ Freischalt-Animation (`features/pro/ProWillkommen.tsx`, Vorschau: `/atelier` → design → „Willkommen“), etwa 5 s, jederzeit überspringbar:
-      - Der Bildschirm wird Bordeaux, die sechs Facetten fliegen zum Sechseck, die Goldkante zeichnet sich, goldene Dreiecke sprühen, „Willkommen bei PRO".
-      - Danach 3–4 Wischkarten (Profilbild-Stile, Stapel 50, Anpinnen, Abzeichen), jede mit Knopf „Ausprobieren".
-      - Ruhige Version bei „Bewegung reduzieren".
-   3. ✅ Das „PRO werden"-Banner verschwindet bei PRO ersatzlos.
-   4. ✅ Meisterwege (19.09.): `0095_meisterwege.sql` (muss eingespielt werden), Seite `/meisterwege`, Rahmen am Profilbild, Namensfarbe, Meister-Farben im Editor. Stufen 50/150/400/800/1500 Mastery je Hauptthema.
-   5. ✅ PRO-Features (19.09.), alle gebaut:
-      - Streak-Schutz (0096)
-      - Gold-Stein und Gold-Dreiecke (nur App)
-      - Stapel-Export für Anki (nur App)
-      - Vorlese-Tempo und Browser-Stimme (nur App)
-      - LAB-Szenarien (nur App, gespeichert auf dem Gerät)
-      - Beiträge planen (0097)
-      - Profil-Themes (0098)
-      - Reichweite und Lern-Heatmap (0099, zählt erst ab dem Einspielen)
-      - private Ligen (0100)
-   6. **Migrationen 0095–0100 müssen eingespielt werden** (`npx supabase db push --linked --yes`). Jede hat einen Selbsttest mit Rollback.
-   7. Offen: PDF-Export; beim Gold-Profil-Theme fehlt die Kante an den abgeschrägten Ecken.
-4. **Stimmen:** nur Tempo und Browser-Stimmen. Keine kostenpflichtigen Google-Stimmen, die Abrechnung bleibt aus.
+**Datenbank:** Migrationen bis **0126** eingespielt, jede mit Selbsttest und Rollback.
+**Web:** `elycic.pages.dev`, ich darf selbst deployen (`npm run deploy:web`).
+**Pipeline:** läuft alle 3 h (GitHub Actions). Kurse 2×/Tag, Übersetzungen 3×/Tag à 4 Karten.
 
-## ENTSCHIEDEN (19.09., zweite Runde)
-- **Neue Animationen: bleiben** ("Peak"), aber nur, wenn man sie sieht (umgesetzt: `lib/imBild.ts`).
-- **Nach den neuen Features:**
-  1. Karten-UI remastern – eine Karte darf nicht mit Knöpfen überladen werden (Rechnen, Notiz, …).
-  2. Volle Übersetzung ins Englische.
-- **Karten in die andere Sprache übersetzen** statt neu generieren (billiger). Dabei darf niemand dieselbe Karte in beiden Sprachen bekommen.
-- **Feature-Liste**, ja zu:
-  - 1 Erklär-es-mir-nochmal
-  - 2 Prüfungsmodus, dazu **Themenwünsche**: gewünschte Themen lesen, die meistgewünschten als Kartenserie bauen
-  - 3 Lernpfade
-  - 4 Karten-Zusammenhänge
-  - 5 Klassen-Modus
-  - 6 Lernpartner
-  - 7 Frage an die Community (wenn umsetzbar)
-  - 9 Monats-Abzeichen
-  - 10 Jahresrückblick
-  - 12 Lokale Karten
-  - 13 Audio-Modus
-- **Gebaut (19.09.):**
-  - 1 Erklär-es-nochmal und 4 „Dazu passt“ (0109)
-  - 2 Prüfungsmodus `/pruefung` (0110)
-  - Themenwünsche `/wuensche` (0111): Freigabe im Kontrollzentrum, Reiter „Wünsche“; Evergreen baut bis zu 4 Karten je Freigabe zuerst, danach Meldung an die Wünschenden
-  - 3 Lernpfade (0112): 14 kuratierte Pfade, `courses.py` baut Stationen ohne Kurs zuerst (2 Kurse/Tag im Workflow)
-  - 5 Klassen-Modus (0113): „Überblick“ im eigenen Gruppen-Stapel, anonym, Quote erst ab 3 Antworten
-  - 6 Lernpartner (0114): `/lernpartner`, Wochenziel zu zweit, Anstupsen
-- **Web-Deploy darf ich selbst** (`npm run deploy:web`).
-  - 7 Frage an die Community (0115/0116): Schalter „Als Frage stellen“, beste Antwort, im Studio „Kannst du helfen?“
-  - 9 Monats-Abzeichen (0117): `/abzeichen`, Leiste im Profil, 8/15/22 Lerntage
-  - 10 Jahresrückblick (0118): `/jahr`, Einstieg in der Statistik
-  - 12 Lokale Karten (0119): 122 regionale Themen, `content_items.region_code` über Evergreen
-  - 13 Audio-Modus: `/hoeren` (Feed/Offline-Vorrat oder `?kurs=`), keine XP fürs Hören
-  - Update-Historie `/updates` (lib/updates.ts, neue Pakete oben eintragen), Duelle ins Profil, Wiederholen + Prüfungen ins Studio
-- **Karten-UI-Remaster (entschieden 19.09.):** Die Knöpfe wandern in ein Drei-Punkte-Menü (Rechnen, Notiz, Melden, Quelle, „Auf Englisch ansehen“). **Teilen kommt NICHT ins Menü** – wird später besprochen.
-- **Übersetzungen laufen** (0121/0122, pipeline/uebersetzen.py, dreimal täglich vier Karten).
-- **Rahmen-Ornamente:** vier Vorschläge in `/atelier` → design (Ranke, Flechtband, Lorbeer, Beschlag). Noch nichts vergeben – erst nach Rückmeldung.
-- **Als Nächstes:** Karten in die andere Sprache übersetzen (Pipeline, nie dieselbe Karte doppelt für eine Person), dann Karten-UI-Remaster, dann volle englische Übersetzung. Offen: 8 „Fertig für heute“, 11 Karten vorschlagen.
-- **Noch offen:**
-  - 8 „Fertig für heute“ – überlegt er noch.
-  - 11 Karten vorschlagen – beliebte Themen entweder ihm zur Freigabe vorlegen oder die Pipeline muss Unangemessenes erkennen. Erst besprechen.
-- **Später:** Quiz-Antworten auf dem Server, Namen ändern, USA, RevenueCat.
+### Seit dem letzten Handover gebaut
+- **Lernen:** Prüfungsmodus (0110), Lernpfade (0112, 14 kuratierte Pfade), Lernpartner (0114),
+  Klassen-Überblick im Gruppen-Stapel (0113), Themenwünsche mit Freigabe im Kontrollzentrum
+  (0111/0120), Frage an die Community + beste Antwort (0115/0116), Monats-Abzeichen (0117),
+  Jahresrückblick (0118), lokale Karten je Bundesland (0119), Audio-Modus `/hoeren`.
+- **Karten-Übersetzung (0121/0122):** `pipeline/uebersetzen.py` übersetzt fertige Karten; Prüfung auf
+  Struktur, Antwortreihenfolge und alle Zahlen. Feed und „Dazu passt“ filtern über `familie` —
+  **niemand bekommt dieselbe Karte zweimal in zwei Sprachen.** Keine News, keine Kurslektionen.
+- **Karten-Umbau (20.09.):** Leiste = Vorlesen, Like, Kommentar, Teilen, drei Punkte. Menü liegt
+  IN der Karte (kein Modal, scrollbar, hält nichts an). Tippen hält an/weiter (`lib/kartenTakt.ts`),
+  langer Druck auf „Hören“ startet den Audio-Modus, „Rechnen“ links unten.
+- **Gesten (einschaltbar, Einstellungen › Dieses Gerät):** Kartenrückseite statt Menü, Ring bei
+  langem Druck (Vorschlag einmalig nach 50 gelesenen Karten), Wischen nach links = andere
+  Sprachfassung (0126 findet sie in beide Richtungen). Karte als Bild im Menü.
+- **Rahmen:** sieben Ornamente (Ranke, Flechtband, Beschlag, Filigran, Krone, Siegel, Knoten) je
+  Thema vergeben; Farbe frei wählbar mit PRO (0124), drei PRO-Rahmen Onyx/Aurum/Prisma, Farbe auch
+  im öffentlichen Profil (0125).
+- **PRO:** eigene Lernpfade (0123), Jahresrückblick als Bild, Gold-Kante am Monats-Abzeichen.
+- **Englische Oberfläche:** ~650 Texte. **Muster:** `T('deutscher Satz')` aus `lib/sprache.ts`,
+  Wörterbuch `locales/ui-en.json` (deutscher Text = Schlüssel), Datum über `lokale()`.
+  **Jeder neue sichtbare Text gehört in T() und ins Wörterbuch.**
+
+---
+
+## Was als Nächstes ansteht
+
+1. **Handy-Test durch den Nutzer** (nur er kann das): Menü, Ring, Wischen nach links, Rückseite,
+   Audio-Modus bei gesperrtem Bildschirm. Beißt sich das Wischen mit dem Scrollen?
+2. **Rest der Übersetzung:** LAB-Werkzeuge (`features/lab/rechnen.ts`, großer Block) und die Texte,
+   die der Server schickt (Push-Nachrichten, Fehlermeldungen aus SQL).
+3. **Offen beim Nutzer:** Notiz durch Markieren im Text (Idee 5), Menüpunkte per Ziehen umsortieren
+   („höchstens“), Punkt 8 der Feature-Liste („Fertig für heute“).
+4. **Vor dem Release:** Quiz-Antworten nicht mehr an den Client (Warteliste seit 14.09.),
+   Test-Schalter „Neue Animationen“ an oder aus, Namen festlegen (ElyCic ist Platzhalter).
+5. **Nur der Nutzer:** GitHub-Token für den Pipeline-Anstoß, PostHog- und Sentry-Schlüssel,
+   RevenueCat für den echten PRO-Kauf.
+6. **LAB 3.0** wird als eigener großer Eintrag in `lib/updates.ts` vermarktet, sobald es fertig ist.
+
+---
 
 ## Regeln, die weiter gelten
-- Kein Geheimnis ausgeben.
+
+- Kein Geheimnis ausgeben (pipeline/.env, Admin-PIN).
 - Der Client schreibt nie XP, Mastery, Level, Streak oder PRO.
-- Eine eingespielte Migration nie ändern, sondern immer eine neue anlegen.
-- SQL-Funktionen nur nach Lesen der vollständigen aktuellen Fassung neu schreiben.
-- Knöpfe mit einem Wort beschriften.
-- Commits auf Deutsch.
+- Eine eingespielte Migration nie ändern — immer eine neue anlegen.
+- SQL-Funktionen nur nach Lesen der **vollständigen** aktuellen Fassung neu schreiben
+  (am 20.09. einmal verletzt und sofort aufgefallen: `meisterwege()` aus dem Gedächtnis).
+- Knöpfe mit einem Wort beschriften. Commits auf Deutsch.
 - Vor größeren Design-Änderungen erst reden.
+- Teilen bleibt **sichtbar** auf der Karte und kommt nicht ins Menü (ausdrücklich entschieden).
