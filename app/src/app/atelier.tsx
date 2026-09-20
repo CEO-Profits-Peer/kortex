@@ -468,8 +468,8 @@ export default function Atelier() {
                   <OrnamentRahmen
                     art={o.art}
                     size={78}
-                    farbe={['#B78BFF', '#00F0FF', '#7CFF6B', '#FF9F45'][i % 4]}
-                    gold={i === 3}
+                    farbe={['#B78BFF', '#00F0FF', '#FF9F45', '#7CFF6B', '#FF6BA8', '#D9B872', '#5AD1C4'][i % 7]}
+                    gold={i >= 5}
                   />
                 </View>
                 <Text style={styles.werkKlein}>{o.titel}</Text>
